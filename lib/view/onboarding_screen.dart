@@ -1,5 +1,5 @@
 import 'package:fitmind_ai/controller/onboarding_controller.dart';
-import 'package:fitmind_ai/view/login_screen.dart';
+import 'package:fitmind_ai/view/profile_view.dart';
 import 'package:flutter/material.dart';
 
 
@@ -59,7 +59,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               alignment: Alignment.topRight,
               child: TextButton(
                 onPressed: () {
-                 Navigator.push(context, MaterialPageRoute(builder: (context) => const LoginScreen()));
+                 Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileView()));
                 },
                 child: const Text(
                   "Skip",
@@ -142,7 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: SizedBox(
                 width: double.infinity,
-                height: 55,
+                height: 65,
 
                 child: ElevatedButton(
                   onPressed: nextPage,
@@ -154,9 +154,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ),
 
-                  child: Text(
-                    _currentPage == 2 ? "Start" : "Next →",
-                    style: const TextStyle(fontSize: 18),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _currentPage == 2 ? "Start" : "Next ",
+                        style: const TextStyle(fontSize: 18,color: Colors.white),
+                      ),
+                      const Icon(Icons.arrow_forward, size: 18,color: Colors.white,),
+                    ],
                   ),
                 ),
               ),
