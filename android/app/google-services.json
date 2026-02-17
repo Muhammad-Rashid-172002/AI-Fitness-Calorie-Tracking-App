@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "486151944621",
+    "project_id": "mydiet-apps",
+    "storage_bucket": "mydiet-apps.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:486151944621:android:6bb020e173a958cfdc8924",
+        "android_client_info": {
+          "package_name": "com.example.fitmind_ai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBc7EsikoRe54ebU1MQPPcJTx_03ygS9Ac"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

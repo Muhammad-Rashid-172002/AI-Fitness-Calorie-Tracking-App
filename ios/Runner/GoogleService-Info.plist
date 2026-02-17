@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>486151944621-ish0dmjd5g9poeqedsskf08tsfp2o4kc.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.486151944621-ish0dmjd5g9poeqedsskf08tsfp2o4kc</string>
+	<key>API_KEY</key>
+	<string>AIzaSyBROdQroJAvri6cnFKIiJX0qJXqDGh8ZdY</string>
+	<key>GCM_SENDER_ID</key>
+	<string>486151944621</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.fitmindAi</string>
+	<key>PROJECT_ID</key>
+	<string>mydiet-apps</string>
+	<key>STORAGE_BUCKET</key>
+	<string>mydiet-apps.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:486151944621:ios:a4353c03e391d399dc8924</string>
+</dict>
+</plist>

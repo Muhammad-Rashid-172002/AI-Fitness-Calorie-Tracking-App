@@ -1,7 +1,6 @@
 import 'package:fitmind_ai/controller/onboarding_controller.dart';
-import 'package:fitmind_ai/view/profile_view.dart';
+import 'package:fitmind_ai/view/auth_view/signup_screen.dart';
 import 'package:flutter/material.dart';
-
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -11,7 +10,6 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-
   final PageController _pageController = PageController();
   int _currentPage = 0;
 
@@ -46,24 +44,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      backgroundColor: Colors.black,
-
+      backgroundColor: const Color(0xFF0F172A), // Deep Dark
       body: SafeArea(
         child: Column(
           children: [
-
             // Skip Button
             Align(
               alignment: Alignment.topRight,
               child: TextButton(
                 onPressed: () {
-                 Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileView()));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SignUpScreen(),
+                    ),
+                  );
                 },
                 child: const Text(
                   "Skip",
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 14),
                 ),
               ),
             ),
@@ -77,38 +77,64 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   setState(() => _currentPage = index);
                 },
                 itemBuilder: (context, index) {
-
                   return Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-
-                      // Icon
-                      Text(
-                        pages[index]["icon"]!,
-                        style: const TextStyle(fontSize: 80),
+                      // Icon with Glow
+                      Container(
+                        height: 140,
+                        width: 140,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF22C55E), // Green
+                              Color(0xFF06B6D4), // Cyan
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0xFF22C55E).withOpacity(0.4),
+                              blurRadius: 25,
+                              spreadRadius: 3,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Text(
+                            pages[index]["icon"]!,
+                            style: const TextStyle(fontSize: 55),
+                          ),
+                        ),
                       ),
 
-                      const SizedBox(height: 30),
+                      const SizedBox(height: 40),
 
                       // Title
                       Text(
                         pages[index]["title"]!,
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
-                          fontSize: 26,
+                          fontSize: 28,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: Color(0xFFF8FAFC),
+                          letterSpacing: 1,
                         ),
                       ),
 
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 16),
 
                       // Description
-                      Text(
-                        pages[index]["desc"]!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 40),
+                        child: Text(
+                          pages[index]["desc"]!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF94A3B8),
+                            height: 1.6,
+                          ),
                         ),
                       ),
                     ],
@@ -120,55 +146,88 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             // Indicators
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(3, (index) {
-                return Container(
-                  margin: const EdgeInsets.all(4),
+              children: List.generate(pages.length, (index) {
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  margin: const EdgeInsets.all(5),
                   height: 8,
-                  width: _currentPage == index ? 25 : 8,
+                  width: _currentPage == index ? 26 : 8,
                   decoration: BoxDecoration(
                     color: _currentPage == index
-                        ? Colors.green
-                        : Colors.grey,
-                    borderRadius: BorderRadius.circular(5),
+                        ? const Color(0xFF22C55E)
+                        : const Color(0xFF334155),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                 );
               }),
             ),
 
-            const SizedBox(height: 25),
+            const SizedBox(height: 30),
 
             // Next Button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 22),
               child: SizedBox(
                 width: double.infinity,
-                height: 65,
+                height: 62,
+                child: GestureDetector(
+                  onTap: nextPage,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(22),
 
-                child: ElevatedButton(
-                  onPressed: nextPage,
-
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                  ),
-
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        _currentPage == 2 ? "Start" : "Next ",
-                        style: const TextStyle(fontSize: 18,color: Colors.white),
+                      // Gradient Background
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFF22C55E), // Green
+                          Color(0xFF06B6D4), // Cyan
+                          Color(0xFF38BDF8), // Light Blue
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      const Icon(Icons.arrow_forward, size: 18,color: Colors.white,),
-                    ],
+
+                      // Glow Shadow
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF22C55E).withOpacity(0.45),
+                          blurRadius: 25,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Text
+                          Text(
+                            _currentPage == 2 ? "Get Started" : "Next",
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          // Icon
+                          const Icon(
+                            Icons.arrow_forward_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-
-            const SizedBox(height: 25),
           ],
         ),
       ),

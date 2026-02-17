@@ -1,3 +1,5 @@
+import 'package:fitmind_ai/resources/app_them.dart';
+import 'package:fitmind_ai/view/scan_screen.dart';
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -8,182 +10,162 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  int selectedMacro = -1;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Greeting & Name
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getGreeting(),
+                        style: TextStyle(color: textGrey, fontSize: 18),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Rashid",
+                        style: TextStyle(
+                          color: textMain,
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: Icon(Icons.notifications, color: textGrey),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
 
-    appBar: AppBar(
-  backgroundColor: Colors.black,
-  elevation: 0,
-  toolbarHeight: 90,
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      // Calories Card
+                      _caloriesCard(),
+                      const SizedBox(height: 20),
 
-  title: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    mainAxisAlignment: MainAxisAlignment.center,
-    children: [
-      SizedBox(height: 18),
-      // Greeting
-      Text(
-        _getGreeting(),
-        style: const TextStyle(
-          color: Colors.grey,
-          fontSize: 18,
-        ),
-      ),
+                      // Scan Button
+                      _scanButton(),
+                      const SizedBox(height: 20),
 
-      const SizedBox(height: 4),
+                      // Macros Card
+                      _macrosCard(),
+                      const SizedBox(height: 20),
 
-      // Name
-      const Text(
-        "Rashid",
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 26,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-
-     
-
-     
-    ],
-  ),
-),
-
-body: SingleChildScrollView(
-        padding: const EdgeInsets.only(left: 10, right: 16),
-
-        child: Column(
-          children: [
-            SizedBox(height: 20),
-            // Calories Card
-            _caloriesCard(),
-
-            const SizedBox(height: 20),
-
-            // Scan Button
-            _scanButton(),
-
-            const SizedBox(height: 20),
-
-            // Macros Card
-            _macrosCard(),
-
-            const SizedBox(height: 20),
-
-            // Daily Tip
-            _dailyTipCard(),
-          ],
+                      // Daily Tip
+                      _dailyTipCard(),
+                      const SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  // Calories Progress Card
   Widget _caloriesCard() {
     return Container(
-      height: 300,
-      width: double.infinity,
       padding: const EdgeInsets.all(20),
-
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Colors.green, Colors.teal],
+        gradient: LinearGradient(
+          colors: [Colors.green.shade700, Colors.teal.shade700],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
       ),
-
       child: Row(
         children: [
-
           // Left Text
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-
-              Text(
-                "Today's \nCalories",
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 20,
-                ),
-              ),
-
-              SizedBox(height: 8),
-
-              Text(
-                "2426",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              Text(
-                "remaining",
-                style: TextStyle(color: Colors.white70, fontSize: 19),
-              ),
-
-              SizedBox(height: 10),
-
-              Row(
-                children: [
-
-                  Icon(Icons.restaurant,
-                      color: Colors.white70, size: 22),
-
-                  SizedBox(width: 5),
-
-                  Text(
-                    "0 meals \nlogged",
-                    style: TextStyle(color: Colors.white70, fontSize: 18),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Today's \nCalories",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "2426",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  "remaining",
+                  style: TextStyle(color: Colors.white70, fontSize: 18),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Icon(Icons.restaurant, color: Colors.white70, size: 22),
+                    const SizedBox(width: 5),
+                    Text(
+                      "0 meals \nlogged",
+                      style: TextStyle(color: Colors.white70, fontSize: 16),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
 
-          const Spacer(),
+          const SizedBox(width: 10),
 
           // Circular Progress
           Stack(
             alignment: Alignment.center,
             children: [
-
               SizedBox(
-                width: 200,
-                height: 200,
-
+                width: 140,
+                height: 140,
                 child: CircularProgressIndicator(
                   value: 0.0,
-                  strokeWidth: 14,
-                  backgroundColor: Colors.white,
-                  valueColor:
-                      const AlwaysStoppedAnimation(Colors.white),
+                  strokeWidth: 12,
+                  backgroundColor: Colors.white24,
+                  valueColor: AlwaysStoppedAnimation(Colors.white),
                 ),
               ),
-
-              const Column(
+              Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-
                   Text(
                     "0",
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   Text(
                     "of 2426 kcal",
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 18,
-                    ),
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                 ],
               ),
@@ -194,22 +176,22 @@ body: SingleChildScrollView(
     );
   }
 
-  // Scan Meal Button
   Widget _scanButton() {
     return SizedBox(
       width: double.infinity,
-      height: 65,
-
+      height: 60,
       child: ElevatedButton.icon(
-        onPressed: () {},
-
-        icon: const Icon(Icons.camera_alt, color: Colors.white,size: 25,),
-
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ScanScreen()),
+          );
+        },
+        icon: const Icon(Icons.camera_alt, color: Colors.white),
         label: const Text(
           "Scan a Meal",
-          style: TextStyle(fontSize: 22, color: Colors.white),
+          style: TextStyle(fontSize: 20, color: Colors.white),
         ),
-
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.orange,
           shape: RoundedRectangleBorder(
@@ -220,145 +202,114 @@ body: SingleChildScrollView(
     );
   }
 
-  // Macros Card
   Widget _macrosCard() {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(20),
+    final macros = [
+      {"title": "Protein", "value": 45, "max": 120},
+      {"title": "Carbs", "value": 80, "max": 200},
+      {"title": "Fat", "value": 30, "max": 70},
+    ];
 
-    decoration: BoxDecoration(
-      color: const Color(0xFF1A1A1A),
-      borderRadius: BorderRadius.circular(20),
-    ),
+    return Column(
+      children: macros.asMap().entries.map((entry) {
+        int idx = entry.key;
+        var macro = entry.value;
+        bool selected = selectedMacro == idx;
 
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+        double progress = (macro["value"] as int) / (macro["max"] as int);
 
-        const Text(
-          "Macros",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
-        const SizedBox(height: 15),
-
-        _macroRow("Protein", 45, 120),
-        _macroRow("Carbs", 80, 200),
-        _macroRow("Fat", 30, 70),
-      ],
-    ),
-  );
-}
-  
-  // Macro Row
- Widget _macroRow(String title, double value, double max) {
-  double progress = value / max;
-
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 14),
-
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-
-        // Title + Numbers
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
+        return GestureDetector(
+          onTap: () => setState(() => selectedMacro = idx),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: selected ? primary.withOpacity(0.1) : cardColor,
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(
+                color: selected ? primary : Colors.transparent,
+                width: 1.5,
               ),
             ),
-
-            Text(
-              "${value.toInt()}g / ${max.toInt()}g",
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 6),
-
-        // Progress Bar
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: LinearProgressIndicator(
-            value: progress,
-            minHeight: 7,
-            backgroundColor: Colors.grey.shade800,
-            valueColor: AlwaysStoppedAnimation(
-              _getMacroColor(title),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      macro["title"] as String,
+                      style: TextStyle(color: textGrey, fontSize: 16),
+                    ),
+                    Text(
+                      "${macro['value']}g / ${macro['max']}g",
+                      style: TextStyle(
+                        color: textMain,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 8,
+                    backgroundColor: Colors.grey.shade800,
+                    valueColor: AlwaysStoppedAnimation(
+                      _getMacroColor(macro["title"] as String),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
-
-Color _getMacroColor(String title) {
-  switch (title) {
-    case "Protein":
-      return Colors.green;
-    case "Carbs":
-      return Colors.orange;
-    case "Fat":
-      return Colors.red;
-    default:
-      return Colors.blue;
+        );
+      }).toList(),
+    );
   }
-}
-  // Daily Tip Card
+
+  Color _getMacroColor(String title) {
+    switch (title) {
+      case "Protein":
+        return primary;
+      case "Carbs":
+        return Colors.orange;
+      case "Fat":
+        return Colors.redAccent;
+      default:
+        return accent;
+    }
+  }
+
   Widget _dailyTipCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
-
       decoration: BoxDecoration(
-        color: const Color(0xFF10231B),
+        color: cardColor,
         borderRadius: BorderRadius.circular(15),
       ),
-
       child: Row(
-        children: const [
-
-          Icon(Icons.eco, color: Colors.green),
-
-          SizedBox(width: 10),
-
+        children: [
+          Icon(Icons.eco, color: primary),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 Text(
                   "DAILY TIP",
                   style: TextStyle(
-                    color: Colors.green,
+                    color: primary,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
-                SizedBox(height: 5),
-
+                const SizedBox(height: 5),
                 Text(
                   "Add more greens to your meals",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
+                  style: TextStyle(color: textMain, fontSize: 14),
                 ),
               ],
             ),
@@ -368,14 +319,10 @@ Color _getMacroColor(String title) {
     );
   }
 }
+
 String _getGreeting() {
   final hour = DateTime.now().hour;
-
-  if (hour < 12) {
-    return "Good Morning ☀️";
-  } else if (hour < 17) {
-    return "Good Afternoon 🌤️";
-  } else {
-    return "Good Evening 🌙";
-  }
+  if (hour < 12) return "Good Morning ☀️";
+  if (hour < 17) return "Good Afternoon 🌤️";
+  return "Good Evening 🌙";
 }

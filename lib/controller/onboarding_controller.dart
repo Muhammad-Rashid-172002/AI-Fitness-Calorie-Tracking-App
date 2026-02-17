@@ -1,4 +1,5 @@
-import 'package:fitmind_ai/view/profile_view.dart';
+
+import 'package:fitmind_ai/view/auth_view/signup_screen.dart';
 import 'package:flutter/material.dart';
 
 // 
@@ -8,7 +9,7 @@ class OnboardingController {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (context) => const ProfileView(),
+        builder: (context) => const SignUpScreen(),
       ),
     );
   }
