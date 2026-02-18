@@ -1,10 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/components/custom_text_field.dart';
 import 'package:fitmind_ai/components/showCustomSnackBar.dart';
+import 'package:fitmind_ai/controller/google_auth_controller.dart';
 import 'package:fitmind_ai/controller/signup_controller.dart';
 import 'package:fitmind_ai/view/auth_view/login_Screen.dart';
 import 'package:fitmind_ai/view/onboarding/step_one_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -22,6 +24,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+  final GoogleAuthController googleController = GoogleAuthController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,85 +97,85 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
 
                 const SizedBox(height: 30),
-SizedBox(
-  width: double.infinity,
-  height: 62,
-  child: GestureDetector(
-    onTap: () async {
+                SizedBox(
+                  width: double.infinity,
+                  height: 62,
+                  child: GestureDetector(
+                    onTap: () async {
+                      // Show loading dialog
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => const Center(
+                          child: SpinKitFadingCircle(
+                            color: Colors.green,
+                            size: 60.0,
+                          ),
+                        ),
+                      );
 
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+                      // Call signup
+                      String? result = await controller.signUp();
 
-      // Call signup
-      String? result = await controller.signUp();
+                      // Close loading safely
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      }
 
-      // Close loading safely
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      }
+                      // If success
+                      if (result == null) {
+                        // Check current user
+                        final user = FirebaseAuth.instance.currentUser;
+                        print("Logged in user: ${user?.email}");
 
-      // If success
-      if (result == null) {
+                        // Show success message
+                        showCustomSnackBar(
+                          context,
+                          "Account Created Successfully",
+                          true,
+                        );
 
-        // Check current user
-        final user = FirebaseAuth.instance.currentUser;
-        print("Logged in user: ${user?.email}");
+                        // Navigate to next screen (replace signup)
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const StepOneScreen(),
+                          ),
+                        );
+                      }
+                      // If error
+                      else {
+                        showCustomSnackBar(context, result, false);
+                      }
+                    },
 
-        // Show success message
-        showCustomSnackBar(
-          context,
-          "Account Created Successfully",
-          true,
-        );
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(22),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFF22C55E),
+                            Color(0xFF06B6D4),
+                            Color(0xFF38BDF8),
+                          ],
+                        ),
+                      ),
 
-        // Navigate to next screen (replace signup)
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const StepOneScreen(),
-          ),
-        );
-
-      } 
-      // If error
-      else {
-        showCustomSnackBar(context, result, false);
-      }
-    },
-
-    child: Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF22C55E),
-            Color(0xFF06B6D4),
-            Color(0xFF38BDF8),
-          ],
-        ),
-      ),
-
-      child: const Center(
-        child: Text(
-          "Sign Up",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    ),
-  ),
-),
+                      child: const Center(
+                        child: Text(
+                          "Sign Up",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
                 SizedBox(height: 45),
 
                 /// Divider
@@ -202,7 +205,37 @@ SizedBox(
                       backgroundColor: const Color(0xFF020617),
                     ),
 
-                    onPressed: () {},
+                    onPressed: () async {
+                      // Show loading
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) =>
+                            const Center(child: CircularProgressIndicator(color: Colors.green,)),
+                      );
+
+                      // Call Google Login
+                      String? result = await googleController
+                          .signInWithGoogle();
+
+                      Navigator.pop(context); // Remove loading
+
+                      // Success
+                      if (result == null) {
+                        showCustomSnackBar(context, "Login Successful", true);
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const StepOneScreen(),
+                          ),
+                        );
+                      }
+                      // Error
+                      else {
+                        showCustomSnackBar(context, result, false);
+                      }
+                    },
 
                     icon: const Icon(
                       Icons.g_mobiledata,

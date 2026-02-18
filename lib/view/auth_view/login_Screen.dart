@@ -1,9 +1,12 @@
 import 'package:fitmind_ai/components/custom_text_field.dart';
 import 'package:fitmind_ai/components/showCustomSnackBar.dart';
+import 'package:fitmind_ai/controller/google_auth_controller.dart';
 import 'package:fitmind_ai/controller/login_controller.dart';
 import 'package:fitmind_ai/view/auth_view/signup_screen.dart';
+import 'package:fitmind_ai/view/buttom_bar.dart';
 import 'package:fitmind_ai/view/onboarding/step_one_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +17,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final LoginController controller = LoginController();
+  //final GoogleAuthController _googleAuthController = GoogleAuthController();
 
   @override
   void dispose() {
@@ -21,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  final GoogleAuthController googleController = GoogleAuthController();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,11 +34,10 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Form(
-            key: controller.formKey, // ⭐ Important
+            key: controller.formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 /// Title
                 const Text(
                   "Welcome Back",
@@ -95,24 +99,37 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 62,
                   child: GestureDetector(
-                    onTap: () {
+                    onTap: () async {
+                      // Show Loading
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => const Center(
+                          child: SpinKitFadingCircle(
+                            color: Colors.green,
+                            size: 60.0,
+                          ),
+                        ),
+                      );
 
-                      //  Validation Check
-                      if (controller.validateForm()) {
+                      // Firebase Login
+                      String? result = await controller.login();
 
-                        showCustomSnackBar(
-                            context, "Login Successful", true);
+                      // Close Loading
+                      Navigator.pop(context);
 
+                      // Success
+                      if (result == null) {
+                        showCustomSnackBar(context, "Login Successful", true);
+
+                        //  Go to HOME PAGE (Not StepOne)
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const StepOneScreen(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const MainView()),
                         );
-
                       } else {
-                        showCustomSnackBar(
-                            context, "Fix errors first", false);
+                        // Error
+                        showCustomSnackBar(context, result, false);
                       }
                     },
 
@@ -141,7 +158,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-
+              
+              
                 const SizedBox(height: 45),
 
                 /// Divider
@@ -171,7 +189,38 @@ class _LoginScreenState extends State<LoginScreen> {
                       backgroundColor: const Color(0xFF020617),
                     ),
 
-                    onPressed: () {},
+                    onPressed: () async {
+                      // Show loading
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (_) => const Center(
+                          child: CircularProgressIndicator(color: Colors.green),
+                        ),
+                      );
+
+                      // Call Google Login
+                      String? result = await googleController
+                          .signInWithGoogle();
+
+                      Navigator.pop(context); // Remove loading
+
+                      // Success
+                      if (result == null) {
+                        showCustomSnackBar(context, "Login Successful", true);
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const StepOneScreen(),
+                          ),
+                        );
+                      }
+                      // Error
+                      else {
+                        showCustomSnackBar(context, result, false);
+                      }
+                    },
 
                     icon: const Icon(
                       Icons.g_mobiledata,
@@ -197,9 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const SignUpScreen(),
-                        ),
+                        MaterialPageRoute(builder: (_) => const SignUpScreen()),
                       );
                     },
                     child: const Text.rich(

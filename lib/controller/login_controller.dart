@@ -1,16 +1,41 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/utils/validator.dart';
 import 'package:flutter/material.dart';
 
-
 class LoginController {
+
   final formKey = GlobalKey<FormState>();
 
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  // Validate Form
-  bool validateForm() {
-    return formKey.currentState!.validate();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // ✅ Login Function
+  Future<String?> login() async {
+
+    if (!formKey.currentState!.validate()) {
+      return "Fix errors first";
+    }
+
+    try {
+
+      await _auth.signInWithEmailAndPassword(
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
+      );
+
+      return null; // Success
+
+    } on FirebaseAuthException catch (e) {
+
+      return e.message ?? "Login failed";
+
+    } catch (e) {
+
+      return "Something went wrong";
+
+    }
   }
 
   void dispose() {
@@ -19,11 +44,9 @@ class LoginController {
   }
 
   // Validators
-  String? emailValidator(String? value) {
-    return Validator.validateEmail(value ?? "");
-  }
+  String? emailValidator(String? value) =>
+      Validator.validateEmail(value ?? "");
 
-  String? passwordValidator(String? value) {
-    return Validator.validatePassword(value ?? "");
-  }
+  String? passwordValidator(String? value) =>
+      Validator.validatePassword(value ?? "");
 }

@@ -1,6 +1,9 @@
 import 'package:fitmind_ai/controller/splash_controller.dart';
 import 'package:flutter/material.dart';
 
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+
+
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,8 +16,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   void initState() {
-    super.initState();
-    SplashController.startTimer(context);
+super.initState();
+  SplashService().isLogin(context);
   }
 
   @override
@@ -87,13 +90,24 @@ Widget build(BuildContext context) {
             ),
           ),
 
-          const SizedBox(height: 35),
+      const SizedBox(height: 35),
 
-          // Loading Indicator
-          const CircularProgressIndicator(
+      // Loading Indicator
+   
+      const SizedBox(height: 35),
+
+      // Loading Indicator
+      SizedBox(
+        height: 80,
+        width: 80,
+        child: Center(
+          child: SpinKitFadingCircle(
             color: Color(0xFF22C55E),
-            strokeWidth: 3,
+            size: 60.0,
           ),
+        ),
+      ),
+
         ],
       ),
     ),
