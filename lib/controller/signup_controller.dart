@@ -4,6 +4,7 @@ import 'package:fitmind_ai/utils/validator.dart';
 import 'package:flutter/material.dart';
 
 class SignUpController {
+
   final formKey = GlobalKey<FormState>();
 
   final nameController = TextEditingController();
@@ -14,12 +15,16 @@ class SignUpController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  //  Register User
+  // Register User
   Future<String?> signUp() async {
-    if (!validateForm()) return "Invalid Form";
+
+    if (!formKey.currentState!.validate()) {
+      return "Fix errors first";
+    }
 
     try {
-      // 1️ Create User in Firebase Auth
+
+      // Create user
       UserCredential userCredential =
           await _auth.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
@@ -28,26 +33,28 @@ class SignUpController {
 
       String uid = userCredential.user!.uid;
 
-      // 2️ Save User Data in Firestore
+      // Save user in Firestore
       await _firestore.collection("users").doc(uid).set({
+
         "uid": uid,
         "name": nameController.text.trim(),
         "email": emailController.text.trim(),
+        "isPremium": false,
         "createdAt": FieldValue.serverTimestamp(),
+
       });
 
-      return null; //  Success
+      return null; // Success
 
     } on FirebaseAuthException catch (e) {
-      return e.message; //  Firebase Error
-    } catch (e) {
-      return "Something went wrong";
-    }
-  }
 
-  // Validate All Fields
-  bool validateForm() {
-    return formKey.currentState!.validate();
+      return e.message ?? "Auth Error";
+
+    } catch (e) {
+
+      return "Something went wrong";
+
+    }
   }
 
   void dispose() {
@@ -58,22 +65,18 @@ class SignUpController {
   }
 
   // Validators
-  String? nameValidator(String? value) {
-    return Validator.validateName(value ?? "");
-  }
+  String? nameValidator(String? value) =>
+      Validator.validateName(value ?? "");
 
-  String? emailValidator(String? value) {
-    return Validator.validateEmail(value ?? "");
-  }
+  String? emailValidator(String? value) =>
+      Validator.validateEmail(value ?? "");
 
-  String? passwordValidator(String? value) {
-    return Validator.validatePassword(value ?? "");
-  }
+  String? passwordValidator(String? value) =>
+      Validator.validatePassword(value ?? "");
 
-  String? confirmPasswordValidator(String? value) {
-    return Validator.validateConfirmPassword(
-      passwordController.text,
-      value ?? "",
-    );
-  }
+  String? confirmPasswordValidator(String? value) =>
+      Validator.validateConfirmPassword(
+        passwordController.text,
+        value ?? "",
+      );
 }

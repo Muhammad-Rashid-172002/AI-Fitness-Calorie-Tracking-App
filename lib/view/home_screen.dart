@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/view/scan_screen.dart';
 import 'package:flutter/material.dart';
@@ -24,32 +26,67 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // Greeting & Name
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _getGreeting(),
-                        style: TextStyle(color: textGrey, fontSize: 18),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        "Rashid",
-                        style: TextStyle(
-                          color: textMain,
-                          fontSize: 26,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: Icon(Icons.notifications, color: textGrey),
-                  ),
-                ],
+  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  children: [
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _getGreeting(),
+          style: TextStyle(color: textGrey, fontSize: 18),
+        ),
+        const SizedBox(height: 4),
+
+        // Dynamic user name
+        StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection("users")
+              .doc(FirebaseAuth.instance.currentUser!.uid)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Text(
+                "Loading...",
+                style: TextStyle(
+                  color: textMain,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            }
+
+            if (!snapshot.hasData || !snapshot.data!.exists) {
+              return Text(
+                "user",
+                style: TextStyle(
+                  color: textMain,
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                ),
+              );
+            }
+
+            final userData = snapshot.data!.data() as Map<String, dynamic>;
+            final userName = userData["name"] ?? "user";
+
+            return Text(
+              userName,
+              style: TextStyle(
+                color: textMain,
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
               ),
+            );
+          },
+        ),
+      ],
+    ),
+    // IconButton(
+    //   onPressed: () {},
+    //   icon: Icon(Icons.notifications, color: textGrey),
+    // ),
+  ],
+),
               const SizedBox(height: 20),
 
               Expanded(

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/components/custom_text_field.dart';
 import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:fitmind_ai/controller/signup_controller.dart';
@@ -33,7 +34,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 /// Title
                 const Text(
                   "Create Account",
@@ -94,61 +94,86 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
 
                 const SizedBox(height: 30),
+SizedBox(
+  width: double.infinity,
+  height: 62,
+  child: GestureDetector(
+    onTap: () async {
 
-                /// Sign Up Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 62,
-                  child: GestureDetector(
-                    onTap: () {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
 
-                      // ✅ Validation Check
-                      if (controller.validateForm()) {
+      // Call signup
+      String? result = await controller.signUp();
 
-                        showCustomSnackBar(
-                            context, "Account Created", true);
+      // Close loading safely
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
 
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const StepOneScreen(),
-                          ),
-                        );
+      // If success
+      if (result == null) {
 
-                      } else {
-                        showCustomSnackBar(
-                            context, "Fix errors first", false);
-                      }
-                    },
+        // Check current user
+        final user = FirebaseAuth.instance.currentUser;
+        print("Logged in user: ${user?.email}");
 
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(22),
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF22C55E),
-                            Color(0xFF06B6D4),
-                            Color(0xFF38BDF8),
-                          ],
-                        ),
-                      ),
+        // Show success message
+        showCustomSnackBar(
+          context,
+          "Account Created Successfully",
+          true,
+        );
 
-                      child: const Center(
-                        child: Text(
-                          "Sign Up",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  height: 45,
-                ),
+        // Navigate to next screen (replace signup)
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const StepOneScreen(),
+          ),
+        );
+
+      } 
+      // If error
+      else {
+        showCustomSnackBar(context, result, false);
+      }
+    },
+
+    child: Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF22C55E),
+            Color(0xFF06B6D4),
+            Color(0xFF38BDF8),
+          ],
+        ),
+      ),
+
+      child: const Center(
+        child: Text(
+          "Sign Up",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    ),
+  ),
+),
+                SizedBox(height: 45),
 
                 /// Divider
                 Row(
@@ -200,7 +225,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 /// Already Account
                 Center(
                   child: TextButton(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context)=> const LoginScreen())),
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LoginScreen(),
+                      ),
+                    ),
                     child: const Text.rich(
                       TextSpan(
                         text: "Already have an account? ",
