@@ -3,8 +3,6 @@ import 'package:fitmind_ai/controller/scan_controller.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:flutter/material.dart';
 
-
-
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
 
@@ -15,18 +13,42 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   final ScanController controller = ScanController();
   File? selectedImage;
+  bool _loading = false;
+  String? shortMsg; // Short message to display
 
   void _takePhoto() async {
     File? image = await controller.pickFromCamera();
     if (image != null) {
-      setState(() => selectedImage = image);
+      setState(() {
+        selectedImage = image;
+        shortMsg = null;
+        _loading = true;
+      });
+
+      // Call controller method to analyze image
+      String msg = await controller.analyzeFoodImage(image);
+      setState(() {
+        shortMsg = msg;
+        _loading = false;
+      });
     }
   }
 
   void _pickGallery() async {
     File? image = await controller.pickFromGallery();
     if (image != null) {
-      setState(() => selectedImage = image);
+      setState(() {
+        selectedImage = image;
+        shortMsg = null;
+        _loading = true;
+      });
+
+      // Call controller method to analyze image
+      String msg = await controller.analyzeFoodImage(image);
+      setState(() {
+        shortMsg = msg;
+        _loading = false;
+      });
     }
   }
 
@@ -40,7 +62,6 @@ class _ScanScreenState extends State<ScanScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               /// Title
               const Text(
                 "Scan Meal",
@@ -53,10 +74,7 @@ class _ScanScreenState extends State<ScanScreen> {
               const SizedBox(height: 8),
               const Text(
                 "Take a photo or pick from gallery",
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.white70,
-                ),
+                style: TextStyle(fontSize: 16, color: Colors.white70),
               ),
               const SizedBox(height: 30),
 
@@ -80,26 +98,33 @@ class _ScanScreenState extends State<ScanScreen> {
                     height: 260,
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 40),
-                   decoration: BoxDecoration(
-      gradient: LinearGradient(
-        colors: [Colors.green.shade700, Colors.teal.shade700],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      borderRadius: BorderRadius.circular(20),
-    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.green.shade700, Colors.teal.shade700],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                     child: Column(
                       children: const [
                         CircleAvatar(
                           radius: 40,
                           backgroundColor: Colors.white24,
-                          child: Icon(Icons.camera_alt, size: 60, color: Colors.white),
+                          child: Icon(
+                            Icons.camera_alt,
+                            size: 60,
+                            color: Colors.white,
+                          ),
                         ),
                         SizedBox(height: 35),
                         Text(
                           "Take Photo",
                           style: TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                         SizedBox(height: 10),
                         Text(
@@ -107,6 +132,30 @@ class _ScanScreenState extends State<ScanScreen> {
                           style: TextStyle(color: Colors.white70, fontSize: 14),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 20),
+
+              /// Loading indicator or short message
+              if (_loading)
+                const Center(child: CircularProgressIndicator())
+              else if (shortMsg != null)
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade800,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Text(
+                      shortMsg!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
@@ -132,12 +181,18 @@ class _ScanScreenState extends State<ScanScreen> {
                             SizedBox(height: 10),
                             Text(
                               "Gallery",
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                             SizedBox(height: 5),
                             Text(
                               "Pick from photos",
-                              style: TextStyle(color: Colors.white54, fontSize: 12),
+                              style: TextStyle(
+                                color: Colors.white54,
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                         ),
@@ -161,12 +216,18 @@ class _ScanScreenState extends State<ScanScreen> {
                           SizedBox(height: 10),
                           Text(
                             "Quick Add",
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           SizedBox(height: 5),
                           Text(
                             "Log a meal fast",
-                            style: TextStyle(color: Colors.white54, fontSize: 12),
+                            style: TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
