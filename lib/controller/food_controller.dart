@@ -1,77 +1,118 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:fitmind_ai/config/key.dart';
 import 'package:fitmind_ai/models/food_model.dart';
 import 'package:http/http.dart' as http;
 
-
 class FoodController {
-  final String geminiApiKey = "Your Gemini API Key";
-  final String nutritionAppId = "YOUR_EDAMAM_APP_ID"; // optional
-  final String nutritionApiKey = "YOUR_EDAMAM_API_KEY"; // optional
 
-  // Step 1: Send image to Gemini API and detect food
-  Future<String> detectFood(File image) async {
-    // Convert image to base64
-    final bytes = await image.readAsBytes();
-    final base64Image = base64Encode(bytes);
+  final String geminiApiKey = AppKeys.geminiApiKey;
 
-    final url = Uri.parse("https://api.gemini.google.com/v1/images/analyze"); // Example
-    final response = await http.post(
-      url,
-      headers: {
-        'Authorization': 'Bearer $geminiApiKey',
-        'Content-Type': 'application/json'
-      },
-      body: jsonEncode({
-        "image": base64Image,
-        "question": "What food is in this image?"
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['answer'] ?? "Unknown Food";
-    } else {
-      throw Exception("Failed to detect food");
-    }
-  }
-
-  // Step 2: Optional - Fetch nutrition info from Edamam
-  Future<Map<String, dynamic>?> getNutrition(String foodName) async {
-    final url = Uri.parse(
-        "https://api.edamam.com/api/nutrition-data?app_id=$nutritionAppId&app_key=$nutritionApiKey&ingr=$foodName");
-    final response = await http.get(url);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return {
-        "calories": data['calories'],
-        "fats": data['totalNutrients']['FAT']?['quantity']
-      };
-    }
-    return null;
-  }
-
-  // Step 3: Generate short message
-  String generateShortMsg(String foodName, double? calories, double? fats) {
-    if (calories != null && fats != null) {
-      if (calories < 400 && fats < 15) {
-        return "$foodName 🍴: Low calorie, healthy ✅";
-      } else {
-        return "$foodName 🍴: High in calories/fats, eat occasionally ❌";
-      }
-    } else {
-      return "$foodName 🍴: Looks delicious! 😋"; // fallback
-    }
-  }
-
-  // Full workflow
+  /// Analyze Food Image
   Future<Food> analyzeFood(File image) async {
-    final foodName = await detectFood(image);
-    final nutrition = await getNutrition(foodName);
-    final msg = generateShortMsg(
-        foodName, nutrition?['calories'], nutrition?['fats']);
-    return Food(
-        name: foodName, shortMsg: msg, calories: nutrition?['calories'], fats: nutrition?['fats']);
+    try {
+
+      final bytes = await image.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      final url = Uri.parse(
+        "https://api.gemini.google.com/v1/images/analyze",
+      );
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Bearer $geminiApiKey',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          "image": base64Image,
+          "question":
+              "Identify the food and give calories, fats, carbs, protein",
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception("API Error: ${response.statusCode}");
+      }
+
+      final data = jsonDecode(response.body);
+
+      final foodName = data['answer'] ?? "Unknown Food";
+      final nutrition = data['nutrition'] ?? {};
+
+      final calories = nutrition['calories']?.toDouble();
+      final fats = nutrition['fats']?.toDouble();
+      final carbs = nutrition['carbs']?.toDouble();
+      final protein = nutrition['protein']?.toDouble();
+
+      /// Generate Smart Recommendation
+      final shortMsg = _generateSmartMsg(
+        foodName,
+        calories,
+        fats,
+        carbs,
+        protein,
+      );
+
+      return Food(
+        name: foodName,
+        shortMsg: shortMsg,
+        calories: calories,
+        fats: fats,
+        carbs: carbs,
+        protein: protein,
+      );
+    } catch (e) {
+      throw Exception("Analyze Error: $e");
+    }
+  }
+
+  /// AI Recommendation System
+  String _generateSmartMsg(
+    String food,
+    double? calories,
+    double? fats,
+    double? carbs,
+    double? protein,
+  ) {
+
+    String msg = "🍽 $food Detected\n\n";
+
+    if (calories != null) msg += "🔥 Calories: $calories kcal\n";
+    if (protein != null) msg += "💪 Protein: $protein g\n";
+    if (carbs != null) msg += "🍞 Carbs: $carbs g\n";
+    if (fats != null) msg += "🧈 Fats: $fats g\n";
+
+    msg += "\n📊 Recommendation:\n";
+
+    /// Health Logic
+    if (calories != null && fats != null && protein != null) {
+
+      // Weight Loss
+      if (calories < 350 && fats < 12) {
+        msg += "✅ Good for weight loss & daily diet.";
+      }
+
+      // Gym / Muscle
+      else if (protein > 20 && calories < 500) {
+        msg += "💪 Great for muscle building & gym users.";
+      }
+
+      // Balanced
+      else if (calories < 450 && protein > 15) {
+        msg += "🥗 Balanced meal. Safe to eat regularly.";
+      }
+
+      // Junk
+      else {
+        msg += "⚠ High calories/fat. Eat in moderation.";
+      }
+
+    } else {
+      msg += "ℹ Nutrition data incomplete.";
+    }
+
+    return msg;
   }
 }

@@ -1,5 +1,9 @@
-import 'package:fitmind_ai/resources/app_them.dart';
+import 'package:fitmind_ai/models/food_model.dart';
 import 'package:flutter/material.dart';
+import 'package:fitmind_ai/controller/scan_controller.dart';
+
+import 'package:fitmind_ai/resources/app_them.dart';
+import 'package:intl/intl.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -9,30 +13,10 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  // Filter options
+  final ScanController controller = ScanController();
   final List<String> filters = ["Day", "Week", "Month"];
   int selectedIndex = 0;
 
-  // Sample data
-  final Map<String, List<Map<String, String>>> historyData = {
-    "Day": [
-      {"time": "07:00 AM", "activity": "Morning Jog", "cal": "120 kcal"},
-      {"time": "09:00 AM", "activity": "Yoga", "cal": "80 kcal"},
-    ],
-    "Week": [
-      {"time": "Mon", "activity": "Gym", "cal": "500 kcal"},
-      {"time": "Wed", "activity": "Cycling", "cal": "350 kcal"},
-      {"time": "Fri", "activity": "Swimming", "cal": "400 kcal"},
-    ],
-    "Month": [
-      {"time": "1 Feb", "activity": "Gym", "cal": "500 kcal"},
-      {"time": "3 Feb", "activity": "Yoga", "cal": "200 kcal"},
-      {"time": "10 Feb", "activity": "Running", "cal": "600 kcal"},
-      {"time": "15 Feb", "activity": "Cycling", "cal": "450 kcal"},
-    ],
-  };
-
- 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,7 +24,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Screen Title
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -69,7 +52,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     onTap: () => setState(() => selectedIndex = index),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: 10, horizontal: 24),
                       decoration: BoxDecoration(
                         color: isSelected ? activeColor : Colors.transparent,
                         borderRadius: BorderRadius.circular(50),
@@ -81,7 +65,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         filters[index],
                         style: TextStyle(
                           color: isSelected ? bgColor : inactiveColor,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -92,61 +77,99 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
             const SizedBox(height: 12),
 
-            // History List
+            // Real History List
             Expanded(
-              child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: historyData[filters[selectedIndex]]!.length,
-                itemBuilder: (context, index) {
-                  var item = historyData[filters[selectedIndex]]![index];
+              child: StreamBuilder<List<Scan>>(
+                stream: controller.getScanHistory(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return Center(
+                        child: Text(
+                      "No meals logged yet",
+                      style: TextStyle(color: inactiveColor),
+                    ));
+                  }
 
-                  return GestureDetector(
-                    onTap: () {},
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      margin: const EdgeInsets.symmetric(vertical: 6),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: cardColor,
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: activeColor.withOpacity(0.3),
+                  // Filter based on selectedIndex
+                  DateTime now = DateTime.now();
+                  List<Scan> filtered = snapshot.data!.where((scan) {
+                    if (selectedIndex == 0) {
+                      return scan.timestamp.day == now.day &&
+                          scan.timestamp.month == now.month &&
+                          scan.timestamp.year == now.year;
+                    } else if (selectedIndex == 1) {
+                      DateTime weekStart =
+                          now.subtract(Duration(days: now.weekday - 1));
+                      return scan.timestamp.isAfter(weekStart);
+                    } else {
+                      DateTime monthStart = DateTime(now.year, now.month, 1);
+                      return scan.timestamp.isAfter(monthStart);
+                    }
+                  }).toList();
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: filtered.length,
+                    itemBuilder: (context, index) {
+                      var scan = filtered[index];
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(
+                            color: activeColor.withOpacity(0.3),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: activeColor.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: activeColor.withOpacity(0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                item["activity"]!,
-                                style: TextStyle(
-                                    color: activeColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                scan.imageUrl,
+                                width: 60,
+                                height: 60,
+                                fit: BoxFit.cover,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                item["time"]!,
-                                style: TextStyle(color: inactiveColor, fontSize: 13),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    scan.result,
+                                    style: TextStyle(
+                                        color: activeColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    DateFormat('hh:mm a, dd MMM')
+                                        .format(scan.timestamp),
+                                    style: TextStyle(
+                                        color: inactiveColor, fontSize: 13),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          Text(
-                            item["cal"]!,
-                            style: TextStyle(color: activeColor, fontSize: 14),
-                          ),
-                        ],
-                      ),
-                    ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   );
                 },
               ),

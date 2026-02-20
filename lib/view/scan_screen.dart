@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:fitmind_ai/controller/scan_controller.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
+import 'package:fitmind_ai/view/analyzing_screen.dart';
 import 'package:flutter/material.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -13,44 +14,40 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   final ScanController controller = ScanController();
   File? selectedImage;
-  bool _loading = false;
-  String? shortMsg; // Short message to display
+//  bool _loading = false;
+  //String? shortMsg; // Short message to display
 
   void _takePhoto() async {
-    File? image = await controller.pickFromCamera();
-    if (image != null) {
-      setState(() {
-        selectedImage = image;
-        shortMsg = null;
-        _loading = true;
-      });
+  File? image = await controller.pickFromCamera();
 
-      // Call controller method to analyze image
-      String msg = await controller.analyzeFoodImage(image);
-      setState(() {
-        shortMsg = msg;
-        _loading = false;
-      });
-    }
+  if (image != null) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AnalyzingScreen(
+          image: image,
+          analyzeFuture: controller.analyzeFoodImage(image),
+        ),
+      ),
+    );
   }
+}
 
   void _pickGallery() async {
-    File? image = await controller.pickFromGallery();
-    if (image != null) {
-      setState(() {
-        selectedImage = image;
-        shortMsg = null;
-        _loading = true;
-      });
+  File? image = await controller.pickFromGallery();
 
-      // Call controller method to analyze image
-      String msg = await controller.analyzeFoodImage(image);
-      setState(() {
-        shortMsg = msg;
-        _loading = false;
-      });
-    }
+  if (image != null) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AnalyzingScreen(
+          image: image,
+          analyzeFuture: controller.analyzeFoodImage(image),
+        ),
+      ),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -139,27 +136,29 @@ class _ScanScreenState extends State<ScanScreen> {
               const SizedBox(height: 20),
 
               /// Loading indicator or short message
-              if (_loading)
-                const Center(child: CircularProgressIndicator())
-              else if (shortMsg != null)
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(15),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade800,
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: Text(
-                      shortMsg!,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-
+              // if (_loading)
+              //   const Center(child: CircularProgressIndicator())
+              // else // Keep your ScanScreen as is, but replace shortMsg container with detailed info container
+              // if (shortMsg != null)
+              //   Center(
+              //     child: Container(
+              //       width: double.infinity,
+              //       padding: const EdgeInsets.all(15),
+              //       decoration: BoxDecoration(
+              //         color: Colors.green.shade800,
+              //         borderRadius: BorderRadius.circular(15),
+              //       ),
+              //       child: Text(
+              //         shortMsg!,
+              //         textAlign: TextAlign.left,
+              //         style: const TextStyle(
+              //           color: Colors.white,
+              //           fontSize: 16,
+              //           fontWeight: FontWeight.bold,
+              //         ),
+              //       ),
+              //     ),
+              //   ),
               const SizedBox(height: 25),
 
               /// Row Buttons

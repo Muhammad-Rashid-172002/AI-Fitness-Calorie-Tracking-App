@@ -46,3 +46,6 @@ app.*.map.json
 
 # Firebase config (contains API keys)
 lib/firebase_options.dart
+
+# Ignore API key file
+lib/config/key.dart

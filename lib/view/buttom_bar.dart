@@ -1,7 +1,7 @@
 import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/view/history_screen.dart';
 import 'package:fitmind_ai/view/home_screen.dart';
-import 'package:fitmind_ai/view/premium_screen.dart';
+import 'package:fitmind_ai/view/Premium_Screens/premium_screen.dart' hide bgColor;
 import 'package:fitmind_ai/view/profile_screen.dart';
 import 'package:fitmind_ai/view/scan_screen.dart';
 import 'package:flutter/material.dart';

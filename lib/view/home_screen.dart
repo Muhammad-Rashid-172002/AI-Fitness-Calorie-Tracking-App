@@ -213,6 +213,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+
+
   Widget _scanButton() {
     return SizedBox(
       width: double.infinity,
