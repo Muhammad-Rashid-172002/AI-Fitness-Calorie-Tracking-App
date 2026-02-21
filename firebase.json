@@ -1,1 +1,48 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"mydiet-apps","appId":"1:486151944621:android:6bb020e173a958cfdc8924","fileOutput":"android/app/google-services.json"}},"ios":{"default":{"projectId":"mydiet-apps","appId":"1:486151944621:ios:a4353c03e391d399dc8924","uploadDebugSymbols":false,"fileOutput":"ios/Runner/GoogleService-Info.plist"}},"dart":{"lib/firebase_options.dart":{"projectId":"mydiet-apps","configurations":{"android":"1:486151944621:android:6bb020e173a958cfdc8924","ios":"1:486151944621:ios:a4353c03e391d399dc8924","web":"1:486151944621:web:b2f0d39c7736b084dc8924"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "mydiet-apps",
+          "appId": "1:486151944621:android:6bb020e173a958cfdc8924",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "ios": {
+        "default": {
+          "projectId": "mydiet-apps",
+          "appId": "1:486151944621:ios:a4353c03e391d399dc8924",
+          "uploadDebugSymbols": false,
+          "fileOutput": "ios/Runner/GoogleService-Info.plist"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "mydiet-apps",
+          "configurations": {
+            "android": "1:486151944621:android:6bb020e173a958cfdc8924",
+            "ios": "1:486151944621:ios:a4353c03e391d399dc8924",
+            "web": "1:486151944621:web:b2f0d39c7736b084dc8924"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ]
+}

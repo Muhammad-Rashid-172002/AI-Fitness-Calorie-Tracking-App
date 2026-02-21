@@ -16,7 +16,7 @@ class ScanResultScreen extends StatelessWidget {
     required this.result,
     required this.food,
   }) {
-    controller.saveScan(image, result);
+    //controller.saveScan(image, result);
   }
 
   @override

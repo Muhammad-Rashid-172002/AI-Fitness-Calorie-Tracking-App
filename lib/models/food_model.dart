@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Food {
   final String name;
   final String shortMsg;
@@ -16,33 +18,28 @@ class Food {
   });
 }
 
+// Scan model
 class Scan {
   final String id;
-  final String imageUrl;
   final String result;
+  final String? imagePath;
   final DateTime timestamp;
 
   Scan({
     required this.id,
-    required this.imageUrl,
     required this.result,
+    this.imagePath,
     required this.timestamp,
   });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'imageUrl': imageUrl,
-      'result': result,
-      'timestamp': timestamp.toIso8601String(),
-    };
-  }
 
   factory Scan.fromMap(String id, Map<String, dynamic> map) {
     return Scan(
       id: id,
-      imageUrl: map['imageUrl'],
-      result: map['result'],
-      timestamp: DateTime.parse(map['timestamp']),
+      result: map['result'] ?? "",
+      imagePath: map['imagePath'],
+      timestamp: (map['createdAt'] as Timestamp?)?.toDate() ??
+          (map['timestamp'] as Timestamp?)?.toDate() ??
+          DateTime.now(),
     );
   }
 }

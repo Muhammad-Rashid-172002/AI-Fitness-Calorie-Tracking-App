@@ -1,9 +1,9 @@
-import 'package:fitmind_ai/models/food_model.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:fitmind_ai/controller/scan_controller.dart';
-
-import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:intl/intl.dart';
+import 'package:fitmind_ai/controller/scan_controller.dart';
+import 'package:fitmind_ai/models/food_model.dart';
+import 'package:fitmind_ai/resources/app_them.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -14,6 +14,7 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   final ScanController controller = ScanController();
+
   final List<String> filters = ["Day", "Week", "Month"];
   int selectedIndex = 0;
 
@@ -24,6 +25,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: SafeArea(
         child: Column(
           children: [
+            // Title
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Row(
@@ -77,7 +79,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
             const SizedBox(height: 12),
 
-            // Real History List
+            // History List
             Expanded(
               child: StreamBuilder<List<Scan>>(
                 stream: controller.getScanHistory(),
@@ -85,36 +87,50 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
+
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return Center(
-                        child: Text(
-                      "No meals logged yet",
-                      style: TextStyle(color: inactiveColor),
-                    ));
+                      child: Text(
+                        "No meals logged yet",
+                        style: TextStyle(color: inactiveColor),
+                      ),
+                    );
                   }
 
-                  // Filter based on selectedIndex
+                  // Filter by selected tab
                   DateTime now = DateTime.now();
                   List<Scan> filtered = snapshot.data!.where((scan) {
                     if (selectedIndex == 0) {
+                      // Today
                       return scan.timestamp.day == now.day &&
                           scan.timestamp.month == now.month &&
                           scan.timestamp.year == now.year;
                     } else if (selectedIndex == 1) {
-                      DateTime weekStart =
-                          now.subtract(Duration(days: now.weekday - 1));
+                      // Week
+                      DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
                       return scan.timestamp.isAfter(weekStart);
                     } else {
+                      // Month
                       DateTime monthStart = DateTime(now.year, now.month, 1);
                       return scan.timestamp.isAfter(monthStart);
                     }
                   }).toList();
 
+                  if (filtered.isEmpty) {
+                    return Center(
+                      child: Text(
+                        "No meals logged in this period",
+                        style: TextStyle(color: inactiveColor),
+                      ),
+                    );
+                  }
+
                   return ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
-                      var scan = filtered[index];
+                      Scan scan = filtered[index];
+
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
                         margin: const EdgeInsets.symmetric(vertical: 6),
@@ -135,14 +151,26 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         ),
                         child: Row(
                           children: [
+                            // Image or placeholder
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                scan.imageUrl,
-                                width: 60,
-                                height: 60,
-                                fit: BoxFit.cover,
-                              ),
+                              child: scan.imagePath != null
+                                  ? Image.file(
+                                      File(scan.imagePath!),
+                                      width: 60,
+                                      height: 60,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Container(
+                                      width: 60,
+                                      height: 60,
+                                      color: Colors.grey[400],
+                                      child: const Icon(
+                                        Icons.fastfood,
+                                        color: Colors.white,
+                                        size: 30,
+                                      ),
+                                    ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -152,14 +180,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   Text(
                                     scan.result,
                                     style: TextStyle(
-                                        color: activeColor,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16),
+                                      color: activeColor,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    DateFormat('hh:mm a, dd MMM')
-                                        .format(scan.timestamp),
+                                    DateFormat('hh:mm a, dd MMM').format(scan.timestamp),
                                     style: TextStyle(
                                         color: inactiveColor, fontSize: 13),
                                   ),
