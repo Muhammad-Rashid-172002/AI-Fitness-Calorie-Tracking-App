@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fitmind_ai/components/showCustomSnackBar.dart';
+import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:fitmind_ai/view/Premium_Screens/trial_screen.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +15,7 @@ class PremiumScreen extends StatefulWidget {
 
 class _PremiumScreenState extends State<PremiumScreen> {
   final Color bgColor = const Color(0xFF0F172A);
-  String selectedPlan = ""; // default selected plan
+  String selectedPlan = "";
   bool? isPremium; // null = loading, true/false = fetched
 
   @override
@@ -22,17 +24,27 @@ class _PremiumScreenState extends State<PremiumScreen> {
     _checkPremiumStatus();
   }
 
-  /// Fetch premium status from Firebase
+  /// Check Firebase if user is premium
   Future<void> _checkPremiumStatus() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final doc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
-    if (!mounted) return;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .get();
+      if (!mounted) return;
 
-    setState(() {
-      isPremium = doc.exists && (doc.data()?['premium'] ?? false);
-    });
+      setState(() {
+        isPremium = doc.exists && (doc.data()?['premium'] ?? false);
+      });
+    } catch (e) {
+      debugPrint("Error fetching premium status: $e");
+      setState(() {
+        isPremium = false;
+      });
+    }
   }
 
   @override
@@ -49,53 +61,145 @@ class _PremiumScreenState extends State<PremiumScreen> {
     );
   }
 
-  /// UI for premium users
-  Widget _premiumCongratsUI() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [Colors.greenAccent, Colors.transparent],
-              ),
-            ),
-            padding: const EdgeInsets.all(40),
-            child: const Icon(Icons.emoji_events, size: 100, color: Colors.amber),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            "Congratulations!",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
+  /// Show this UI if user is premium
+Widget _premiumCongratsUI() {
+  return Center(
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [Colors.greenAccent, Colors.transparent],
             ),
           ),
-          const SizedBox(height: 10),
-          const Text(
-            "You are already a Premium user",
-            style: TextStyle(color: Colors.white70, fontSize: 18),
+          padding: const EdgeInsets.all(40),
+          child: const Icon(Icons.emoji_events, size: 100, color: Colors.amber),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          "Congratulations!",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 30),
-          CustomGradientButton(
-            text: "Explore Premium Features",
-            onPressed: () {
-              // Navigate to premium feature screen or do any action
-            },
-          ),
-        ],
-      ),
-    );
-  }
+        ),
+        const SizedBox(height: 10),
+        const Text(
+          "You are already a Premium user",
+          style: TextStyle(color: Colors.white70, fontSize: 18),
+        ),
+        const SizedBox(height: 30),
 
-  /// UI for non-premium users
+        // Explore Premium Features
+        CustomGradientButton(
+          text: "Explore Premium Features",
+          onPressed: () {
+            // Navigate to premium features screen
+          },
+        ),
+
+        const SizedBox(height: 15),
+
+        // Cancel Premium Button
+        CustomGradientButton(
+          text: "Cancel Premium",
+          onPressed: () async {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user == null) return;
+
+            // Show confirmation dialog
+            final confirm = await showDialog<bool>(
+  context: context,
+  builder: (context) => AlertDialog(
+    backgroundColor: bgColor, // app dark background
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(20),
+    ),
+    title: const Text(
+      "Cancel Premium",
+      style: TextStyle(
+        color: Colors.white, // title text color
+        fontWeight: FontWeight.bold,
+      ),
+    ),
+    content: const Text(
+      "Are you sure you want to cancel your Premium subscription?",
+      style: TextStyle(
+        color: Colors.white70, // softer content text
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context, false),
+        style: TextButton.styleFrom(
+          foregroundColor: Colors.grey[400], // No button color
+        ),
+        child: const Text(
+          "No",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      TextButton(
+        onPressed: () => Navigator.pop(context, true),
+        style: TextButton.styleFrom(
+          foregroundColor: activeColor, // premium accent color
+        ),
+        child: const Text(
+          "Yes",
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    ],
+  ),
+);
+            if (confirm != true) return;
+
+            try {
+              // 1️⃣ Cancel subscription in Stripe
+              // Make sure you have a function in your StripePaymentProvider to cancel
+              // await context.read<StripePaymentProvider>().cancelSubscription();
+
+              // 2️⃣ Update Firebase
+              await FirebaseFirestore.instance
+                  .collection("users")
+                  .doc(user.uid)
+                  .set({
+                "premium": false,
+                "premiumPlan": null,
+                "premiumStart": null,
+                "trialEnds": null,
+              }, SetOptions(merge: true));
+
+              // 3️⃣ Update local state
+              setState(() {
+                isPremium = false;
+              });
+
+              // 4️⃣ Show success message
+              showCustomSnackBar(
+                  context, "Premium subscription canceled.", true);
+            } catch (e) {
+              showCustomSnackBar(context,
+                  "Failed to cancel premium. Please try again.", false);
+              debugPrint("Cancel Premium Error: $e");
+            }
+          },
+        ),
+      ],
+    ),
+  );
+}/// Show this UI if user is NOT premium
   Widget _goPremiumUI() {
     return Stack(
       children: [
-        /// Background Glow
+        // Background Glow
         Positioned(
           top: -120,
           left: -80,
@@ -111,7 +215,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
           ),
         ),
 
-        /// Scrollable Content
+        // Scrollable content
         SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Column(
@@ -119,7 +223,6 @@ class _PremiumScreenState extends State<PremiumScreen> {
             children: [
               const SizedBox(height: 30),
 
-              /// Title
               const Text(
                 "Go Premium",
                 style: TextStyle(
@@ -135,7 +238,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
               ),
               const SizedBox(height: 30),
 
-              /// Features Card
+              // Features Card
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -158,7 +261,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
               ),
               const SizedBox(height: 25),
 
-              /// Monthly Plan
+              // Plans
               planCard(
                 id: "monthly",
                 title: "Monthly Plan",
@@ -172,8 +275,6 @@ class _PremiumScreenState extends State<PremiumScreen> {
                 },
               ),
               const SizedBox(height: 15),
-
-              /// Re-Activation Plan (50% Off)
               planCard(
                 id: "renew",
                 title: "Re-Activation Offer",
@@ -195,7 +296,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
               ),
               const SizedBox(height: 15),
 
-              /// Start Button
+              // Start Button
               SizedBox(
                 width: double.infinity,
                 child: Opacity(

@@ -1,15 +1,15 @@
 import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:fitmind_ai/services/StripePaymentProvider.dart';
+//import 'package:fitmind_ai/view/Premium_Screens/premium_screen.dart';
+import 'package:fitmind_ai/view/buttom_bar.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:provider/provider.dart';
 
 class TrialScreen extends StatelessWidget {
   final bool isReActivation;
   final String plan;
-
   const TrialScreen({
     super.key,
     required this.plan,
@@ -148,7 +148,7 @@ class TrialScreen extends StatelessWidget {
                         /// Secure Payment Text
                         Center(
                           child: Text(
-                            "Secure payment via Stripe",
+                            "Secure payment via App Store",
                             style: TextStyle(
                               color: Colors.white.withOpacity(0.6),
                             ),
@@ -158,34 +158,53 @@ class TrialScreen extends StatelessWidget {
                         const SizedBox(height: 20),
 
                         /// Continue Button
-                       SizedBox(
-  width: double.infinity,
-  child: CustomGradientButton(
-    text: stripeProvider.isProcessing
-        ? "Processing..."
-        : "Continue to payment",
-    onPressed: stripeProvider.isProcessing
-        ? null
-        : () async {
-            try {
-              await context.read<StripePaymentProvider>().makePayment(
-                    isReActivation: isReActivation,
-                  );
+                        SizedBox(
+                          width: double.infinity,
+                          child: CustomGradientButton(
+                            text: 'Continue to payment',
+                            onPressed: () async {
+                              try {
+                                // Call Stripe payment and wait for result
+                                final bool paymentSuccess = await context
+                                    .read<StripePaymentProvider>()
+                                    .makePayment(
+                                      isReActivation: isReActivation,
+                                    );
 
-              // ✅ Only real success
-              // showCustomSnackBar(
-              //   context,
-              //   "Payment Successful 🎉",
-              //   true,
-              // );
-            } catch (e) {
-              // ❌ Cancel / Fail
-              // 
-              
-            }
-          },
-  ),
-),
+                                if (paymentSuccess) {
+                                  // Payment succeeded
+                                  showCustomSnackBar(
+                                    context,
+                                    "Payment Successful 🎉",
+                                    true,
+                                  );
+
+                                  // Navigate to premium screen
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const MainView(),
+                                    ),
+                                  );
+                                } else {
+                                  // Payment failed
+                                  showCustomSnackBar(
+                                    context,
+                                    "Payment Failed ❌",
+                                    true,
+                                  );
+                                }
+                              } catch (e) {
+                                showCustomSnackBar(
+                                  context,
+                                  "Payment Failed ❌",
+                                  true,
+                                );
+                              }
+                            },
+                          ),
+                        ),
                         const SizedBox(height: 40),
                       ],
                     ),
@@ -229,9 +248,7 @@ class TimelineTile extends StatelessWidget {
             child: Text(number, style: const TextStyle(color: Colors.white)),
           ),
         ),
-
         const SizedBox(width: 15),
-
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,9 +261,7 @@ class TimelineTile extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
               const SizedBox(height: 5),
-
               Text(subtitle, style: const TextStyle(color: Colors.white70)),
             ],
           ),

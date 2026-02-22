@@ -7,26 +7,21 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
 
 class StripePaymentProvider extends ChangeNotifier {
-  bool _isProcessing = false;
-
-  bool get isProcessing => _isProcessing;
-
-  /// isReActivation = true => 50% discount
-  Future<void> makePayment({required bool isReActivation}) async {
-    // 🚫 Prevent double click
-    if (_isProcessing) return;
-
-    _isProcessing = true;
-    notifyListeners();
-
+  /// Make Payment
+  /// Returns true if payment successful, false otherwise
+  Future<bool> makePayment({
+    required bool isReActivation,
+  }) async {
     try {
       String amount;
 
-      // Price Logic
+      // Monthly RM 29.90 = 2990 cents
       if (isReActivation) {
-        amount = "4485"; // 3 months 50% off
+        // 3 Months at 50% discount = 44.85 → 4485 cents
+        amount = "4485";
       } else {
-        amount = "2990"; // Monthly
+        // Normal Monthly
+        amount = "2990";
       }
 
       // 1️⃣ Create Payment Intent
@@ -35,52 +30,44 @@ class StripePaymentProvider extends ChangeNotifier {
         currency: "myr",
       );
 
-      if (paymentIntent['client_secret'] == null) {
-        throw Exception("Payment Intent failed");
-      }
-
       // 2️⃣ Init Payment Sheet
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: paymentIntent['client_secret'],
           merchantDisplayName: "FitMind AI",
           style: ThemeMode.dark,
-          allowsDelayedPaymentMethods: true,
         ),
       );
 
-      // 3️⃣ Present Payment Sheet
-      try {
-        await Stripe.instance.presentPaymentSheet();
-        await Stripe.instance.confirmPaymentSheetPayment();
+      // 3️⃣ Show Payment Sheet
+      await Stripe.instance.presentPaymentSheet();
 
-        debugPrint("Payment Successful ✅");
-      } on StripeException catch (e) {
-        debugPrint("Payment Cancelled ❌: ${e.error.localizedMessage}");
-        throw Exception("Payment Cancelled");
-      }
+      debugPrint("Payment Success ✅");
 
-      // 4️⃣ Update Firebase
+      // 4️⃣ Update Firebase user document with premium + 14-day free trial
       final userId = FirebaseAuth.instance.currentUser!.uid;
 
+      final Timestamp premiumStart = Timestamp.now();
+      final Timestamp premiumEnd = Timestamp.fromDate(
+        premiumStart.toDate().add(const Duration(days: 14)), // 14 days free trial
+      );
+
       await FirebaseFirestore.instance.collection("users").doc(userId).set({
-        "premium": true,
+        "premium": true,                      // mark user as premium
         "premiumPlan": isReActivation ? "Re-Activation" : "Monthly",
-        "premiumStart": Timestamp.now(),
-        "trialEnds": Timestamp.fromDate(
-          DateTime.now().add(const Duration(days: 14)),
-        ),
+        "premiumStart": premiumStart,
+        "premiumEnd": premiumEnd,             // free trial end date
       }, SetOptions(merge: true));
 
-      debugPrint("Firebase Updated ✅");
+      debugPrint("User premium status updated with 14-day trial 🟢");
 
+      // Notify listeners to update UI
       notifyListeners();
+
+      return true;
     } catch (e) {
-      debugPrint("Stripe Error ❌: $e");
-    } finally {
-      // 🔓 Unlock button
-      _isProcessing = false;
-      notifyListeners();
+      debugPrint("Stripe Error ❌ $e");
+      return false;
     }
   }
 
@@ -100,9 +87,12 @@ class StripePaymentProvider extends ChangeNotifier {
       body: {
         "amount": amount,
         "currency": currency,
-        "payment_method_types[]": "card",
       },
     );
+
+    if (response.statusCode != 200) {
+      throw Exception("Failed to create Payment Intent: ${response.body}");
+    }
 
     return json.decode(response.body);
   }
