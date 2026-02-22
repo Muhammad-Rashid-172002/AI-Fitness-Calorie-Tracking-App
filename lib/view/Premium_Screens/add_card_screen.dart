@@ -283,7 +283,7 @@ class _StripePaymentScreenState extends State<StripePaymentScreen> {
               children: [
                 TextButton(
                     onPressed: () async {
-                      await value.makePayment();
+                      await value.makePayment(isReActivation: false);
                     },
                     child: const Text('Pay Now!!'))
               ],

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:fitmind_ai/view/Premium_Screens/trial_screen.dart';
 import 'package:flutter/material.dart';
@@ -11,183 +13,221 @@ class PremiumScreen extends StatefulWidget {
 
 class _PremiumScreenState extends State<PremiumScreen> {
   final Color bgColor = const Color(0xFF0F172A);
+  String selectedPlan = ""; // default selected plan
+  bool? isPremium; // null = loading, true/false = fetched
 
-  String selectedPlan = "yearly"; // default selected plan
+  @override
+  void initState() {
+    super.initState();
+    _checkPremiumStatus();
+  }
+
+  /// Fetch premium status from Firebase
+  Future<void> _checkPremiumStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance.collection("users").doc(user.uid).get();
+    if (!mounted) return;
+
+    setState(() {
+      isPremium = doc.exists && (doc.data()?['premium'] ?? false);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
-        child: Stack(
-          children: [
+        child: isPremium == null
+            ? const Center(child: CircularProgressIndicator())
+            : isPremium!
+                ? _premiumCongratsUI()
+                : _goPremiumUI(),
+      ),
+    );
+  }
 
-            /// Background Glow
-            Positioned(
-              top: -120,
-              left: -80,
-              child: Container(
-                height: 350,
-                width: 350,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      Colors.green,
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
+  /// UI for premium users
+  Widget _premiumCongratsUI() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [Colors.greenAccent, Colors.transparent],
               ),
             ),
+            padding: const EdgeInsets.all(40),
+            child: const Icon(Icons.emoji_events, size: 100, color: Colors.amber),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            "Congratulations!",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            "You are already a Premium user",
+            style: TextStyle(color: Colors.white70, fontSize: 18),
+          ),
+          const SizedBox(height: 30),
+          CustomGradientButton(
+            text: "Explore Premium Features",
+            onPressed: () {
+              // Navigate to premium feature screen or do any action
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
-            /// Scrollable Content
-            SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
+  /// UI for non-premium users
+  Widget _goPremiumUI() {
+    return Stack(
+      children: [
+        /// Background Glow
+        Positioned(
+          top: -120,
+          left: -80,
+          child: Container(
+            height: 350,
+            width: 350,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [Colors.green, Colors.transparent],
+              ),
+            ),
+          ),
+        ),
 
-                  const SizedBox(height: 10),
+        /// Scrollable Content
+        SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 30),
 
-                  // /// Close Button
-                  // Align(
-                  //   alignment: Alignment.topRight,
-                  //   child: IconButton(
-                  //     icon: const Icon(Icons.close, color: Colors.white),
-                  //     onPressed: () => Navigator.pop(context),
-                  //   ),
-                  // ),
+              /// Title
+              const Text(
+                "Go Premium",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                "Eat Smarter with AI",
+                style: TextStyle(color: Colors.white70, fontSize: 16),
+              ),
+              const SizedBox(height: 30),
 
-                  const SizedBox(height: 10),
-
-                  /// Title
-                  const Text(
-                    "Go Premium",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+              /// Features Card
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: const Column(
+                  children: [
+                    FeatureTile(
+                      icon: Icons.camera_alt_outlined,
+                      text: "Unlimited AI Scans",
                     ),
-                  ),
-
-                  const SizedBox(height: 6),
-
-                  const Text(
-                    "Eat Smarter with AI",
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
+                    FeatureTile(
+                      icon: Icons.auto_awesome,
+                      text: "Smart Nutrition Insights",
                     ),
-                  ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 25),
 
-                  const SizedBox(height: 30),
+              /// Monthly Plan
+              planCard(
+                id: "monthly",
+                title: "Monthly Plan",
+                subtitle: "RM 29.90 / month",
+                price: "RM 29.90",
+                isSelected: selectedPlan == "monthly",
+                onTap: () {
+                  setState(() {
+                    selectedPlan = "monthly";
+                  });
+                },
+              ),
+              const SizedBox(height: 15),
 
-                  /// Features Card
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.white24),
-                    ),
-                    child: const Column(
-                      children: [
-                        FeatureTile(
-                          icon: Icons.camera_alt_outlined,
-                          text: "Unlimited AI Scans",
-                        ),
-                        FeatureTile(
-                          icon: Icons.auto_awesome,
-                          text: "Smart Nutrition Insights",
-                        ),
-                        // FeatureTile(
-                        //   icon: Icons.check_circle_outline,
-                        //   text: "Personalized Diet Tracking",
-                        // ),
-                        // FeatureTile(
-                        //   icon: Icons.shield_outlined,
-                        //   text: "Ad-Free Experience",
-                        // ),
-                      ],
-                    ),
-                  ),
+              /// Re-Activation Plan (50% Off)
+              planCard(
+                id: "renew",
+                title: "Re-Activation Offer",
+                subtitle: "3 Months at 50% Discount",
+                price: "RM 44.85",
+                badge: "SPECIAL OFFER",
+                isSelected: selectedPlan == "renew",
+                onTap: () {
+                  setState(() {
+                    selectedPlan = "renew";
+                  });
+                },
+              ),
+              const SizedBox(height: 30),
 
-                  const SizedBox(height: 25),
+              const Text(
+                "14-Day Free Trial Available",
+                style: TextStyle(color: Colors.white70),
+              ),
+              const SizedBox(height: 15),
 
-                  /// Yearly Plan
-                  planCard(
-                    id: "yearly",
-                    title: "Yearly Plan",
-                    subtitle: "\$4.99 / month",
-                    price: "\$59.99",
-                    badge: "BEST VALUE",
-                    isSelected: selectedPlan == "yearly",
-                    onTap: () {
-                      setState(() {
-                        selectedPlan = "yearly";
-                      });
-                    },
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  /// Monthly Plan
-                  planCard(
-                    id: "monthly",
-                    title: "Monthly Plan",
-                    subtitle: "Cancel anytime",
-                    price: "\$9.99 / month",
-                    isSelected: selectedPlan == "monthly",
-                    onTap: () {
-                      setState(() {
-                        selectedPlan = "monthly";
-                      });
-                    },
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  const Text(
-                    "7-Day Free Trial Available",
-                    style: TextStyle(color: Colors.white70),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  /// Start Button
-                  SizedBox(
-                    width: double.infinity,
+              /// Start Button
+              SizedBox(
+                width: double.infinity,
+                child: Opacity(
+                  opacity: selectedPlan.isEmpty ? 0.5 : 1,
+                  child: IgnorePointer(
+                    ignoring: selectedPlan.isEmpty,
                     child: CustomGradientButton(
                       text: 'Start Free Trial',
-                  
                       onPressed: () {
-                        print("Selected Plan: $selectedPlan");
+                        if (selectedPlan.isEmpty) return;
+
+                        bool isReActivation = selectedPlan == "renew";
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const TrialScreen(),
+                            builder: (context) => TrialScreen(
+                              plan: selectedPlan,
+                              isReActivation: isReActivation,
+                            ),
                           ),
                         );
                       },
-                    
                     ),
                   ),
-
-                  const SizedBox(height: 12),
-
-                  const Text(
-                    "Restore Purchase",
-                    style: TextStyle(color: Colors.white54),
-                  ),
-
-                  const SizedBox(height: 30),
-                ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 30),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -222,14 +262,16 @@ class _PremiumScreenState extends State<PremiumScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(subtitle,
-                    style: const TextStyle(color: Colors.white70)),
+                Text(subtitle, style: const TextStyle(color: Colors.white70)),
                 if (badge != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
@@ -247,10 +289,11 @@ class _PremiumScreenState extends State<PremiumScreen> {
             Text(
               price,
               style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold),
-            )
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
@@ -258,30 +301,24 @@ class _PremiumScreenState extends State<PremiumScreen> {
   }
 }
 
-class FeatureTile extends StatefulWidget {
+class FeatureTile extends StatelessWidget {
   final IconData icon;
   final String text;
 
   const FeatureTile({super.key, required this.icon, required this.text});
 
   @override
-  State<FeatureTile> createState() => _FeatureTileState();
-}
-
-class _FeatureTileState extends State<FeatureTile> {
-  @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
         children: [
-          Icon(widget.icon, color: Colors.green),
+          Icon(icon, color: Colors.green),
           const SizedBox(width: 15),
           Expanded(
             child: Text(
-              widget.text,
-              style:
-                  const TextStyle(color: Colors.white, fontSize: 15),
+              text,
+              style: const TextStyle(color: Colors.white, fontSize: 15),
             ),
           ),
         ],

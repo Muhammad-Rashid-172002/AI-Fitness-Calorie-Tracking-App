@@ -1,8 +1,9 @@
 import 'dart:io';
+import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:fitmind_ai/models/food_model.dart';
+import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:flutter/material.dart';
 import 'package:fitmind_ai/controller/scan_controller.dart';
-
 
 class ScanResultScreen extends StatelessWidget {
   final File image;
@@ -23,28 +24,21 @@ class ScanResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        title: const Text(
-          "Scan Result",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-        ),
-      ),
+      // appBar: AppBar(
+      //   backgroundColor: Colors.transparent,
+      //   elevation: 0,
+      //   iconTheme: const IconThemeData(color: Colors.black87),
+      //   title: const Text(
+      //     "Scan Result",
+      //     style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+      //   ),
+      // ),
       body: Stack(
         children: [
           // Blurred background for premium effect
+          Positioned.fill(child: Image.file(image, fit: BoxFit.cover)),
           Positioned.fill(
-            child: Image.file(
-              image,
-              fit: BoxFit.cover,
-            ),
-          ),
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.35),
-            ),
+            child: Container(color: Colors.black.withOpacity(0.35)),
           ),
 
           // Main content
@@ -112,8 +106,10 @@ class ScanResultScreen extends StatelessWidget {
                         _nutritionCard("Calories", "${food.calories} kcal"),
                       if (food.protein != null)
                         _nutritionCard("Protein", "${food.protein} g"),
-                      if (food.fats != null) _nutritionCard("Fat", "${food.fats} g"),
-                      if (food.carbs != null) _nutritionCard("Carbs", "${food.carbs} g"),
+                      if (food.fats != null)
+                        _nutritionCard("Fat", "${food.fats} g"),
+                      if (food.carbs != null)
+                        _nutritionCard("Carbs", "${food.carbs} g"),
 
                       const SizedBox(height: 25),
 
@@ -121,6 +117,27 @@ class ScanResultScreen extends StatelessWidget {
                       _healthMessageCard(food),
                     ],
                   ),
+                ),
+                const SizedBox(height: 30),
+
+                CustomGradientButton(
+                  text: "Done",
+                  onPressed: () async {
+                    await controller.saveScan(
+                      result: result,
+                      food: food,
+                      
+                    );
+                    await controller.getTodayMealCount();
+
+                    showCustomSnackBar(
+                      context,
+                      "Scan Saved Successfully",
+                      true,
+                    );
+
+                    Navigator.pop(context); // Back to home
+                  },
                 ),
               ],
             ),
@@ -141,8 +158,20 @@ class ScanResultScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );

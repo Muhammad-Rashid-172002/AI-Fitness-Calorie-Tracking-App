@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fitmind_ai/controller/scan_controller.dart';
-import 'package:fitmind_ai/models/food_model.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -78,17 +78,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
 
             const SizedBox(height: 12),
-
             // History List
             Expanded(
-              child: StreamBuilder<List<Scan>>(
+              child: StreamBuilder<QuerySnapshot<Object?>>(
                 stream: controller.getScanHistory(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return Center(
                       child: Text(
                         "No meals logged yet",
@@ -97,22 +96,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     );
                   }
 
-                  // Filter by selected tab
+                  // Convert documents to a list of maps (and normalize timestamp) then filter by selected tab
                   DateTime now = DateTime.now();
-                  List<Scan> filtered = snapshot.data!.where((scan) {
+                  List<Map<String, dynamic>> items = snapshot.data!.docs.map((doc) {
+                    final raw = doc.data();
+                    final data = (raw is Map<String, dynamic>) ? raw : Map<String, dynamic>.from(raw as Map);
+                    return data;
+                  }).toList();
+
+                  List<Map<String, dynamic>> filtered = items.where((data) {
+                    final ts = data['timestamp'];
+                    DateTime timestamp;
+                    if (ts is Timestamp) {
+                      timestamp = ts.toDate();
+                    } else if (ts is DateTime) {
+                      timestamp = ts;
+                    } else {
+                      timestamp = DateTime.tryParse(ts?.toString() ?? '') ?? DateTime.now();
+                    }
+
                     if (selectedIndex == 0) {
                       // Today
-                      return scan.timestamp.day == now.day &&
-                          scan.timestamp.month == now.month &&
-                          scan.timestamp.year == now.year;
+                      return timestamp.day == now.day &&
+                          timestamp.month == now.month &&
+                          timestamp.year == now.year;
                     } else if (selectedIndex == 1) {
                       // Week
                       DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
-                      return scan.timestamp.isAfter(weekStart);
+                      return timestamp.isAfter(weekStart);
                     } else {
                       // Month
                       DateTime monthStart = DateTime(now.year, now.month, 1);
-                      return scan.timestamp.isAfter(monthStart);
+                      return timestamp.isAfter(monthStart);
                     }
                   }).toList();
 
@@ -129,7 +144,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: filtered.length,
                     itemBuilder: (context, index) {
-                      Scan scan = filtered[index];
+                      final data = filtered[index];
+                      final ts = data['timestamp'];
+                      DateTime timestamp;
+                      if (ts is Timestamp) {
+                        timestamp = ts.toDate();
+                      } else if (ts is DateTime) {
+                        timestamp = ts;
+                      } else {
+                        timestamp = DateTime.tryParse(ts?.toString() ?? '') ?? DateTime.now();
+                      }
+                      final String result = data['result']?.toString() ?? '';
+                      final String? imagePath = data['imagePath'] as String?;
 
                       return AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
@@ -154,9 +180,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             // Image or placeholder
                             ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: scan.imagePath != null
+                              child: imagePath != null
                                   ? Image.file(
-                                      File(scan.imagePath!),
+                                      File(imagePath),
                                       width: 60,
                                       height: 60,
                                       fit: BoxFit.cover,
@@ -178,7 +204,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    scan.result,
+                                    result,
                                     style: TextStyle(
                                       color: activeColor,
                                       fontWeight: FontWeight.bold,
@@ -187,7 +213,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    DateFormat('hh:mm a, dd MMM').format(scan.timestamp),
+                                    DateFormat('hh:mm a, dd MMM').format(timestamp),
                                     style: TextStyle(
                                         color: inactiveColor, fontSize: 13),
                                   ),
@@ -202,9 +228,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 },
               ),
             ),
-          ],
+            ]),
+          
         ),
-      ),
-    );
+      );
+    
   }
 }

@@ -1,8 +1,14 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fitmind_ai/controller/scan_controller.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
+import 'package:fitmind_ai/resources/custom_gradient_button.dart';
+import 'package:fitmind_ai/view/history_screen.dart';
 import 'package:fitmind_ai/view/scan_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,6 +19,60 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int selectedMacro = -1;
+
+  // Daily stats
+  int todayMeals = 0;
+  int todayCalories = 0;
+  int dailyGoal = 2426; // Default daily calories
+  int streakDays = 0;
+
+  // Macro nutrients today (start with 0)
+  int todayProtein = 0;
+  int todayCarbs = 0;
+  int todayFat = 0;
+
+  final ScanController controller = ScanController();
+
+  @override
+  void initState() {
+    super.initState();
+    loadTodayMeals();
+  }
+
+  // Load meals and macros from Firestore or local storage
+  void loadTodayMeals() async {
+    int count = await controller.getTodayMealCount();
+    // int calories = await controller.getTodayTotalCalories();
+    // int protein = await controller.getTodayTotalProtein();
+    // int carbs = await controller.getTodayTotalCarbs();
+    // int fat = await controller.getTodayTotalFat();
+    //int streak = await controller.getStreakDays();
+
+    setState(() {
+      todayMeals = count;
+      //   todayCalories = calories;
+      // todayProtein = protein;
+      // todayCarbs = carbs;
+      // todayFat = fat;
+      // streakDays = streak;
+    });
+  }
+
+  // Update UI after a new scan
+  void updateTodayStats({
+    int addedCalories = 0,
+    int addedProtein = 0,
+    int addedCarbs = 0,
+    int addedFat = 0,
+  }) {
+    setState(() {
+      todayMeals += 1;
+      todayCalories += addedCalories;
+      todayProtein += addedProtein;
+      todayCarbs += addedCarbs;
+      todayFat += addedFat;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,88 +86,78 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               // Greeting & Name
               Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          _getGreeting(),
-          style: TextStyle(color: textGrey, fontSize: 18),
-        ),
-        const SizedBox(height: 4),
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _getGreeting(),
+                        style: TextStyle(color: textGrey, fontSize: 18),
+                      ),
+                      const SizedBox(height: 4),
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection("users")
+                            .doc(FirebaseAuth.instance.currentUser!.uid)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Text(
+                              "Loading...",
+                              style: TextStyle(
+                                color: textMain,
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          }
 
-        // Dynamic user name
-        StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection("users")
-              .doc(FirebaseAuth.instance.currentUser!.uid)
-              .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Text(
-                "Loading...",
-                style: TextStyle(
-                  color: textMain,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            }
+                          if (!snapshot.hasData || !snapshot.data!.exists) {
+                            return Text(
+                              "user",
+                              style: TextStyle(
+                                color: textMain,
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          }
 
-            if (!snapshot.hasData || !snapshot.data!.exists) {
-              return Text(
-                "user",
-                style: TextStyle(
-                  color: textMain,
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                ),
-              );
-            }
+                          final userData =
+                              snapshot.data!.data() as Map<String, dynamic>;
+                          final userName = userData["name"] ?? "user";
 
-            final userData = snapshot.data!.data() as Map<String, dynamic>;
-            final userName = userData["name"] ?? "user";
-
-            return Text(
-              userName,
-              style: TextStyle(
-                color: textMain,
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
+                          return Text(
+                            userName,
+                            style: TextStyle(
+                              color: textMain,
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            );
-          },
-        ),
-      ],
-    ),
-    // IconButton(
-    //   onPressed: () {},
-    //   icon: Icon(Icons.notifications, color: textGrey),
-    // ),
-  ],
-),
               const SizedBox(height: 20),
 
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      // Calories Card
-                      _caloriesCard(),
+                      _caloriesCard(todayMeals),
                       const SizedBox(height: 20),
-
-                      // Scan Button
                       _scanButton(),
                       const SizedBox(height: 20),
-
-                      // Macros Card
-                      _macrosCard(),
+                      // _macrosCard(),
+                      // const SizedBox(height: 20),
+                      _lastTwoHistory(),
                       const SizedBox(height: 20),
-
-                      // Daily Tip
                       _dailyTipCard(),
-                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -119,212 +169,357 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _caloriesCard() {
+ Widget _lastTwoHistory() {
+  return StreamBuilder<QuerySnapshot<Object?>>(
+    stream: controller.getScanHistory(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) {
+        return const Center(child: CircularProgressIndicator());
+      }
+
+      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Text(
+              "No recent meals",
+              style: TextStyle(
+                color: inactiveColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        );
+      }
+
+      // Sort latest first
+      List<QueryDocumentSnapshot> docs = snapshot.data!.docs;
+      docs.sort((a, b) {
+        final aRaw = a.data() as Map<String, dynamic>;
+        final bRaw = b.data() as Map<String, dynamic>;
+
+        final aTs = aRaw['timestamp'];
+        final bTs = bRaw['timestamp'];
+
+        DateTime aTime = aTs is Timestamp ? aTs.toDate() : DateTime.fromMillisecondsSinceEpoch(0);
+        DateTime bTime = bTs is Timestamp ? bTs.toDate() : DateTime.fromMillisecondsSinceEpoch(0);
+
+        return bTime.compareTo(aTime);
+      });
+
+      final lastTwo = docs.take(2).toList();
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Recent Meals",
+                style: TextStyle(
+                  color: activeColor,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HistoryScreen(),
+                    ),
+                  );
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: activeColor,
+                  textStyle: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
+                ),
+                child: const Text("See All"),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Meal items
+          ...lastTwo.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final ts = data['timestamp'];
+            DateTime timestamp = ts is Timestamp ? ts.toDate() : DateTime.now();
+            final String result = data['result'] ?? '';
+            final String? imagePath = data['imagePath'];
+
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [activeColor.withOpacity(0.2), activeColor.withOpacity(0.05)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+                border: Border.all(color: activeColor.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: imagePath != null
+                        ? Image.file(
+                            File(imagePath),
+                            width: 70,
+                            height: 70,
+                            fit: BoxFit.cover,
+                          )
+                        : Container(
+                            width: 70,
+                            height: 70,
+                            decoration: BoxDecoration(
+                              color: Colors.green,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: const Icon(
+                              Icons.fastfood,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 16),
+
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          result,
+                          style: TextStyle(
+                            color: activeColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          DateFormat('hh:mm a, dd MMM').format(timestamp),
+                          style: TextStyle(
+                            color: inactiveColor,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Icon(
+                    Icons.chevron_right,
+                    color: activeColor.withOpacity(0.6),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      );
+    },
+  );
+}
+
+
+// Calories/Streak Card
+ Widget _caloriesCard(int todayMeals) {
+    final int maxMeals = 5; // Maximum meals per day for full circle
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.green.shade700, Colors.teal.shade700],
+          colors: [Colors.green.shade600, Colors.teal.shade500],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(25),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 15,
+            offset: Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          // Left Text
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Today's \nCalories",
+                const Text(
+                  "Today's Streak",
                   style: TextStyle(
                     color: Colors.white70,
                     fontSize: 20,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  "2426",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 48,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  "remaining",
-                  style: TextStyle(color: Colors.white70, fontSize: 18),
-                ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(Icons.restaurant, color: Colors.white70, size: 22),
-                    const SizedBox(width: 5),
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white24,
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      child: const Icon(
+                        Icons.restaurant,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
                     Text(
-                      "0 meals \nlogged",
-                      style: TextStyle(color: Colors.white70, fontSize: 16),
+                      "$todayMeals meals logged",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 15),
+                LinearProgressIndicator(
+                  value: (todayMeals / maxMeals).clamp(0.0, 1.0),
+                  minHeight: 8,
+                  backgroundColor: Colors.white24,
+                  valueColor: const AlwaysStoppedAnimation(Colors.white),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  "${((todayMeals / maxMeals) * 100).clamp(0, 100).toStringAsFixed(0)}% of goal",
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
           ),
-
-          const SizedBox(width: 10),
-
-          // Circular Progress
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 140,
-                height: 140,
-                child: CircularProgressIndicator(
-                  value: 0.0,
-                  strokeWidth: 12,
-                  backgroundColor: Colors.white24,
-                  valueColor: AlwaysStoppedAnimation(Colors.white),
+          const SizedBox(width: 15),
+          // Circular animated progress
+          SizedBox(
+            width: 160,
+            height: 160,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Outer ring
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(
+                    begin: 0,
+                    end: (todayMeals / maxMeals).clamp(0.0, 1.0),
+                  ),
+                  duration: const Duration(seconds: 1),
+                  builder: (context, value, _) => CircularProgressIndicator(
+                    value: value,
+                    strokeWidth: 120, // ring thickness
+                    backgroundColor: Colors.white24,
+                    valueColor: const AlwaysStoppedAnimation(Colors.white),
+                  ),
                 ),
-              ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    "0",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+                // Center content (khali space with text)
+                Container(
+                  width: 90, // center circle size
+                  height: 90,
+                  decoration: BoxDecoration(
+                    color: Colors
+                        .transparent, // ya agar chahen to semi-transparent
+                    shape: BoxShape.circle,
                   ),
-                  Text(
-                    "of 2426 kcal",
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "$todayMeals",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        "of $maxMeals meals",
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-
-
-  Widget _scanButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 60,
-      child: ElevatedButton.icon(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ScanScreen()),
-          );
-        },
-        icon: const Icon(Icons.camera_alt, color: Colors.white),
-        label: const Text(
-          "Scan a Meal",
-          style: TextStyle(fontSize: 20, color: Colors.white),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.orange,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15),
-          ),
-        ),
-      ),
+ Widget _scanButton() {
+  return SizedBox(
+    width: double.infinity,
+    height: 65,
+    child: CustomGradientButton(
+  text: 'Scan a Meal',
+  onPressed: () async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ScanScreen()),
     );
-  }
 
-  Widget _macrosCard() {
-    final macros = [
-      {"title": "Protein", "value": 45, "max": 120},
-      {"title": "Carbs", "value": 80, "max": 200},
-      {"title": "Fat", "value": 30, "max": 70},
-    ];
-
-    return Column(
-      children: macros.asMap().entries.map((entry) {
-        int idx = entry.key;
-        var macro = entry.value;
-        bool selected = selectedMacro == idx;
-
-        double progress = (macro["value"] as int) / (macro["max"] as int);
-
-        return GestureDetector(
-          onTap: () => setState(() => selectedMacro = idx),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: selected ? primary.withOpacity(0.1) : cardColor,
-              borderRadius: BorderRadius.circular(15),
-              border: Border.all(
-                color: selected ? primary : Colors.transparent,
-                width: 1.5,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      macro["title"] as String,
-                      style: TextStyle(color: textGrey, fontSize: 16),
-                    ),
-                    Text(
-                      "${macro['value']}g / ${macro['max']}g",
-                      style: TextStyle(
-                        color: textMain,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 8,
-                    backgroundColor: Colors.grey.shade800,
-                    valueColor: AlwaysStoppedAnimation(
-                      _getMacroColor(macro["title"] as String),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Color _getMacroColor(String title) {
-    switch (title) {
-      case "Protein":
-        return primary;
-      case "Carbs":
-        return Colors.orange;
-      case "Fat":
-        return Colors.redAccent;
-      default:
-        return accent;
+    if (result != null && result is Map<String, dynamic>) {
+      updateTodayStats(
+        addedCalories: (result["calories"] ?? 0).toInt(),
+        addedProtein: (result["protein"] ?? 0).toInt(),
+        addedCarbs: (result["carbs"] ?? 0).toInt(),
+        addedFat: (result["fat"] ?? 0).toInt(),
+      );
     }
-  }
+  },
+),
+  );
+}
 
-  Widget _dailyTipCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
+Widget _dailyTipCard() {
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(15),
@@ -359,9 +554,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// Greeting helper
 String _getGreeting() {
   final hour = DateTime.now().hour;
-  if (hour < 12) return "Good Morning ☀️";
-  if (hour < 17) return "Good Afternoon 🌤️";
-  return "Good Evening 🌙";
+  if (hour < 12) return "Good Morning ";
+  if (hour < 17) return "Good Afternoon ";
+  return "Good Evening ";
 }

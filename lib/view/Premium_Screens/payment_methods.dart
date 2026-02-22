@@ -114,7 +114,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                                       // Stripe Payment Direct Open
                                       await context
                                           .read<StripePaymentProvider>()
-                                          .makePayment();
+                                          .makePayment(isReActivation: false);
 
                                       ScaffoldMessenger.of(
                                         context,

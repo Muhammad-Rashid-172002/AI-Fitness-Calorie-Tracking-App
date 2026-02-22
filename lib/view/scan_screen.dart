@@ -1,7 +1,11 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:fitmind_ai/controller/scan_controller.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/view/analyzing_screen.dart';
+import 'package:fitmind_ai/view/Premium_Screens/premium_screen.dart';
 import 'package:flutter/material.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -14,43 +18,97 @@ class ScanScreen extends StatefulWidget {
 class _ScanScreenState extends State<ScanScreen> {
   final ScanController controller = ScanController();
   File? selectedImage;
-//  bool _loading = false;
-  //String? shortMsg; // Short message to display
 
+  bool isSubscribed = false; // default false
+  bool isLoading = true; // 🔹 show loading while fetching premium status
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPremiumStatus(); // Check Firebase on load
+  }
+
+  /// 🔹 Check user's premium status from Firebase
+  Future<void> _checkPremiumStatus() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser!.uid;
+      final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+      if (doc.exists && doc.data()?['premium'] == true) {
+        setState(() {
+          isSubscribed = true;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching premium status: $e");
+    } finally {
+      setState(() {
+        isLoading = false; // 🔹 done fetching
+      });
+    }
+  }
+
+  /// 🔹 Camera button action
   void _takePhoto() async {
-  File? image = await controller.pickFromCamera();
-
-  if (image != null) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AnalyzingScreen(
-          image: image,
-          analyzeFuture: controller.analyzeFoodImage(image),
+    if (!isSubscribed) {
+      _showPremiumRedirect();
+      return;
+    }
+    File? image = await controller.pickFromCamera();
+    if (image != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AnalyzingScreen(
+            image: image,
+            analyzeFuture: controller.analyzeFoodImage(image),
+          ),
         ),
-      ),
-    );
+      );
+    }
   }
-}
 
+  /// 🔹 Gallery button action
   void _pickGallery() async {
-  File? image = await controller.pickFromGallery();
+    if (!isSubscribed) {
+      _showPremiumRedirect();
+      return;
+    }
+    File? image = await controller.pickFromGallery();
+    if (image != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AnalyzingScreen(
+            image: image,
+            analyzeFuture: controller.analyzeFoodImage(image),
+          ),
+        ),
+      );
+    }
+  }
 
-  if (image != null) {
+  /// 🔹 Show SnackBar and redirect to PremiumScreen
+  void _showPremiumRedirect() {
+    showCustomSnackBar(context, "Please subscribe to Premium first!", true);
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => AnalyzingScreen(
-          image: image,
-          analyzeFuture: controller.analyzeFoodImage(image),
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => const PremiumScreen()),
     );
   }
-}
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      // 🔹 Show loading until Firebase check is done
+      return Scaffold(
+        backgroundColor: bgColor,
+        body: const Center(
+          child: CircularProgressIndicator(color: Colors.green),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
@@ -62,11 +120,7 @@ class _ScanScreenState extends State<ScanScreen> {
               /// Title
               const Text(
                 "Scan Meal",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -75,17 +129,12 @@ class _ScanScreenState extends State<ScanScreen> {
               ),
               const SizedBox(height: 30),
 
-              /// Display Selected Image
+              /// Selected Image or Camera Widget
               if (selectedImage != null)
                 Center(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20),
-                    child: Image.file(
-                      selectedImage!,
-                      width: double.infinity,
-                      height: 260,
-                      fit: BoxFit.cover,
-                    ),
+                    child: Image.file(selectedImage!, width: double.infinity, height: 260, fit: BoxFit.cover),
                   ),
                 )
               else
@@ -108,26 +157,12 @@ class _ScanScreenState extends State<ScanScreen> {
                         CircleAvatar(
                           radius: 40,
                           backgroundColor: Colors.white24,
-                          child: Icon(
-                            Icons.camera_alt,
-                            size: 60,
-                            color: Colors.white,
-                          ),
+                          child: Icon(Icons.camera_alt, size: 60, color: Colors.white),
                         ),
                         SizedBox(height: 35),
-                        Text(
-                          "Take Photo",
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        Text("Take Photo", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
                         SizedBox(height: 10),
-                        Text(
-                          "Use your camera to scan a meal",
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
+                        Text("Use your camera to scan a meal", style: TextStyle(color: Colors.white70, fontSize: 14)),
                       ],
                     ),
                   ),
@@ -135,99 +170,42 @@ class _ScanScreenState extends State<ScanScreen> {
 
               const SizedBox(height: 20),
 
-              /// Loading indicator or short message
-              // if (_loading)
-              //   const Center(child: CircularProgressIndicator())
-              // else // Keep your ScanScreen as is, but replace shortMsg container with detailed info container
-              // if (shortMsg != null)
-              //   Center(
-              //     child: Container(
-              //       width: double.infinity,
-              //       padding: const EdgeInsets.all(15),
-              //       decoration: BoxDecoration(
-              //         color: Colors.green.shade800,
-              //         borderRadius: BorderRadius.circular(15),
-              //       ),
-              //       child: Text(
-              //         shortMsg!,
-              //         textAlign: TextAlign.left,
-              //         style: const TextStyle(
-              //           color: Colors.white,
-              //           fontSize: 16,
-              //           fontWeight: FontWeight.bold,
-              //         ),
-              //       ),
-              //     ),
-              //   ),
-              const SizedBox(height: 25),
-
-              /// Row Buttons
+              /// Buttons Row
               Row(
                 children: [
-                  /// Gallery Button
+                  /// Gallery
                   Expanded(
                     child: GestureDetector(
                       onTap: _pickGallery,
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 25),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E1E1E),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
+                        decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(20)),
                         child: Column(
                           children: const [
                             Icon(Icons.photo, size: 35, color: Colors.blue),
                             SizedBox(height: 10),
-                            Text(
-                              "Gallery",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            Text("Gallery", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             SizedBox(height: 5),
-                            Text(
-                              "Pick from photos",
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 12,
-                              ),
-                            ),
+                            Text("Pick from photos", style: TextStyle(color: Colors.white54, fontSize: 12)),
                           ],
                         ),
                       ),
                     ),
                   ),
-
                   const SizedBox(width: 15),
 
-                  /// Quick Add (Dummy)
+                  /// Quick Add (dummy)
                   Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 25),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E1E),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
+                      decoration: BoxDecoration(color: const Color(0xFF1E1E1E), borderRadius: BorderRadius.circular(20)),
                       child: Column(
                         children: const [
                           Icon(Icons.flash_on, size: 35, color: Colors.orange),
                           SizedBox(height: 10),
-                          Text(
-                            "Quick Add",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                          Text("Quick Add", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                           SizedBox(height: 5),
-                          Text(
-                            "Log a meal fast",
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 12,
-                            ),
-                          ),
+                          Text("Log a meal fast", style: TextStyle(color: Colors.white54, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -237,7 +215,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
               const SizedBox(height: 45),
 
-              /// Features List
+              /// Features
               const FeatureItem(text: "AI identifies food from photos"),
               const FeatureItem(text: "Instant calorie & nutrition data"),
               const FeatureItem(text: "Personalized feedback on meals"),
@@ -261,12 +239,7 @@ class FeatureItem extends StatelessWidget {
         children: [
           const Icon(Icons.check_circle, color: Colors.green, size: 22),
           const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(color: Colors.white70, fontSize: 18),
-            ),
-          ),
+          Expanded(child: Text(text, style: const TextStyle(color: Colors.white70, fontSize: 18))),
         ],
       ),
     );
