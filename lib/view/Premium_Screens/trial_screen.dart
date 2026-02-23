@@ -135,7 +135,7 @@ class TrialScreen extends StatelessWidget {
 
                               TimelineTile(
                                 number: "3",
-                                title: "Day 8: Subscription Starts",
+                                title: "Day 14: Subscription Starts",
                                 subtitle:
                                     "Automatically renews at \$59.99/year.",
                               ),

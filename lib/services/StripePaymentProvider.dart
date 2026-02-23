@@ -7,30 +7,21 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:http/http.dart' as http;
 
 class StripePaymentProvider extends ChangeNotifier {
-  /// Make Payment
+  /// Make Payment using Stripe Price IDs
   /// Returns true if payment successful, false otherwise
   Future<bool> makePayment({
     required bool isReActivation,
   }) async {
     try {
-      String amount;
+      // 1️⃣ Select Price ID based on plan
+      final String priceId = isReActivation
+          ? StripeKeys.reActivationPriceId // Replace with your re-activation Price ID
+          : StripeKeys.monthlyPriceId;     // Replace with your monthly Price ID
 
-      // Monthly RM 29.90 = 2990 cents
-      if (isReActivation) {
-        // 3 Months at 50% discount = 44.85 → 4485 cents
-        amount = "4485";
-      } else {
-        // Normal Monthly
-        amount = "2990";
-      }
+      // 2️⃣ Create PaymentIntent using Price ID
+      final paymentIntent = await _createPaymentIntentWithPriceId(priceId);
 
-      // 1️⃣ Create Payment Intent
-      final paymentIntent = await _createPaymentIntent(
-        amount: amount,
-        currency: "myr",
-      );
-
-      // 2️⃣ Init Payment Sheet
+      // 3️⃣ Init Payment Sheet
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: paymentIntent['client_secret'],
@@ -39,12 +30,12 @@ class StripePaymentProvider extends ChangeNotifier {
         ),
       );
 
-      // 3️⃣ Show Payment Sheet
+      // 4️⃣ Present Payment Sheet
       await Stripe.instance.presentPaymentSheet();
 
       debugPrint("Payment Success ✅");
 
-      // 4️⃣ Update Firebase user document with premium + 14-day free trial
+      // 5️⃣ Update Firebase user document with premium + 14-day free trial
       final userId = FirebaseAuth.instance.currentUser!.uid;
 
       final Timestamp premiumStart = Timestamp.now();
@@ -53,15 +44,14 @@ class StripePaymentProvider extends ChangeNotifier {
       );
 
       await FirebaseFirestore.instance.collection("users").doc(userId).set({
-        "premium": true,                      // mark user as premium
+        "premium": true,
         "premiumPlan": isReActivation ? "Re-Activation" : "Monthly",
         "premiumStart": premiumStart,
-        "premiumEnd": premiumEnd,             // free trial end date
+        "premiumEnd": premiumEnd,
       }, SetOptions(merge: true));
 
       debugPrint("User premium status updated with 14-day trial 🟢");
 
-      // Notify listeners to update UI
       notifyListeners();
 
       return true;
@@ -71,11 +61,8 @@ class StripePaymentProvider extends ChangeNotifier {
     }
   }
 
-  /// Create PaymentIntent
-  Future<Map<String, dynamic>> _createPaymentIntent({
-    required String amount,
-    required String currency,
-  }) async {
+  /// Create PaymentIntent with Price ID
+  Future<Map<String, dynamic>> _createPaymentIntentWithPriceId(String priceId) async {
     const secretKey = StripeKeys.secretKey;
 
     final response = await http.post(
@@ -85,8 +72,11 @@ class StripePaymentProvider extends ChangeNotifier {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: {
-        "amount": amount,
-        "currency": currency,
+        "currency": "myr",
+        "payment_method_types[]": "card",
+        "amount": "0", // Amount managed via Price ID in subscription flow
+        "description": "FitMind AI Premium",
+        "metadata[price_id]": priceId,
       },
     );
 
