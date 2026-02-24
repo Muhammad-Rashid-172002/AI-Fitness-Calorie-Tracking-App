@@ -2,6 +2,7 @@ import 'package:fitmind_ai/components/custom_text_field.dart';
 import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:fitmind_ai/controller/google_auth_controller.dart';
 import 'package:fitmind_ai/controller/login_controller.dart';
+import 'package:fitmind_ai/view/auth_view/forgot_password.dart';
 import 'package:fitmind_ai/view/auth_view/signup_screen.dart';
 import 'package:fitmind_ai/view/buttom_bar.dart';
 import 'package:fitmind_ai/view/onboarding/step_one_screen.dart';
@@ -84,6 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: TextButton(
                     onPressed: () {
                       // TODO: Forgot Password
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPassword()));
                     },
                     child: const Text(
                       "Forgot Password?",
