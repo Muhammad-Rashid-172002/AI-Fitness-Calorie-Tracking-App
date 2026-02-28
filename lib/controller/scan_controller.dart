@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class ScanController {
   final ImagePicker _picker = ImagePicker();
@@ -14,7 +15,10 @@ class ScanController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Pick image from camera
+  /// =========================
+  /// IMAGE PICKING
+  /// =========================
+
   Future<File?> pickFromCamera() async {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.camera,
@@ -23,7 +27,6 @@ class ScanController {
     return image != null ? File(image.path) : null;
   }
 
-  /// Pick image from gallery
   Future<File?> pickFromGallery() async {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.gallery,
@@ -32,11 +35,14 @@ class ScanController {
     return image != null ? File(image.path) : null;
   }
 
-  /// Analyze food using Gemini
+  /// =========================
+  /// GEMINI AI ANALYSIS
+  /// =========================
+
   Future<String> analyzeFoodImage(File image) async {
     try {
       final model = GenerativeModel(
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-1.5-preview',
         apiKey: _apiKey,
       );
 
@@ -64,38 +70,62 @@ class ScanController {
     }
   }
 
-  /// Save scan data
- Future<void> saveScan({
-  required String result,
-  required Food food,
-}) async {
-  try {
-    User? user = _auth.currentUser;
-    if (user == null) return;
+  /// =========================
+  /// SAVE SCAN + UPDATE DAILY TOTALS
+  /// =========================
 
-    DateTime now = DateTime.now();
-    String dayName = _getDayName(now.weekday);
+  Future<void> saveScan({
+    required String result,
+    required Food food,
+  }) async {
+    try {
+      User? user = _auth.currentUser;
+      if (user == null) return;
 
-    await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('scans')
-        .add({
-      "result": result,
-      "calories": (food.calories ?? 0).toInt(),
-      "protein": (food.protein ?? 0).toInt(),
-      "fat": (food.fats ?? 0).toInt(),
-      "carbs": (food.carbs ?? 0).toInt(),
-      "day": dayName,
-      "date": now,
-      "createdAt": FieldValue.serverTimestamp(),
-    });
+      DateTime now = DateTime.now();
+      String todayDate = DateFormat('yyyy-MM-dd').format(now);
 
-    print("✅ Scan saved successfully");
-  } catch (e) {
-    print("❌ Firestore save error: $e");
+      final userRef = _firestore.collection('users').doc(user.uid);
+
+      /// 1️⃣ Save scan history
+      await userRef.collection('scans').add({
+        "result": result,
+        "calories": (food.calories ?? 0).toInt(),
+        "protein": (food.protein ?? 0).toInt(),
+        "fat": (food.fats ?? 0).toInt(),
+        "carbs": (food.carbs ?? 0).toInt(),
+        "date": now,
+        "createdAt": FieldValue.serverTimestamp(),
+      });
+
+      /// 2️⃣ Update daily totals
+      final dailyRef =
+          userRef.collection('dailyLogs').doc(todayDate);
+
+      await dailyRef.set({
+        "totalCalories":
+            FieldValue.increment((food.calories ?? 0).toInt()),
+        "totalProtein":
+            FieldValue.increment((food.protein ?? 0).toInt()),
+        "totalCarbs":
+            FieldValue.increment((food.carbs ?? 0).toInt()),
+        "totalFat":
+            FieldValue.increment((food.fats ?? 0).toInt()),
+        "mealCount": FieldValue.increment(1),
+        "date": todayDate,
+        "updatedAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      print("✅ Scan + Daily totals updated successfully");
+    } catch (e) {
+      print("❌ Firestore save error: $e");
+    }
   }
-}/// Get scan history (real-time)
+
+  /// =========================
+  /// REAL-TIME SCAN HISTORY
+  /// =========================
+
   Stream<QuerySnapshot> getScanHistory() {
     final user = _auth.currentUser;
     if (user == null) return const Stream.empty();
@@ -108,82 +138,89 @@ class ScanController {
         .snapshots();
   }
 
-  /// Pick → Analyze → Return Result (NO auto save)
-  Future<String?> pickAndAnalyze({bool fromCamera = true}) async {
-    final File? image = fromCamera
-        ? await pickFromCamera()
-        : await pickFromGallery();
-    if (image == null) return null;
+  /// =========================
+  /// DAILY LOG STREAM (FOR HOME SCREEN)
+  /// =========================
 
-    final String result = await analyzeFoodImage(image);
-    return result;
+  Stream<DocumentSnapshot> getTodayLogStream() {
+    final user = _auth.currentUser;
+    if (user == null) return const Stream.empty();
+
+    String todayDate =
+        DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('dailyLogs')
+        .doc(todayDate)
+        .snapshots();
   }
 
-  /// Helper: Day name
-  String _getDayName(int day) {
-    switch (day) {
-      case 1:
-        return "Mon";
-      case 2:
-        return "Tue";
-      case 3:
-        return "Wed";
-      case 4:
-        return "Thu";
-      case 5:
-        return "Fri";
-      case 6:
-        return "Sat";
-      case 7:
-        return "Sun";
-      default:
-        return "";
-    }
-  }
+  /// =========================
+  /// TODAY STATS (ONE-TIME FETCH)
+  /// =========================
 
-  /// Meals count today
   Future<int> getTodayMealCount() async {
     final user = _auth.currentUser;
     if (user == null) return 0;
 
-    DateTime startOfDay = DateTime(
-      DateTime.now().year,
-      DateTime.now().month,
-      DateTime.now().day,
-    );
+    String todayDate =
+        DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-    final snapshot = await _firestore
+    final doc = await _firestore
         .collection('users')
         .doc(user.uid)
-        .collection('scans')
-        .where('date', isGreaterThanOrEqualTo: startOfDay)
+        .collection('dailyLogs')
+        .doc(todayDate)
         .get();
 
-    return snapshot.docs.length;
+    if (!doc.exists) return 0;
+
+    return (doc.data()?['mealCount'] ?? 0).toInt();
   }
 
-Future<int> getTodayTotalProtein() async => await _getTodayTotalField('protein');
-Future<int> getTodayTotalCarbs() async => await _getTodayTotalField('carbs');
-Future<int> getTodayTotalFat() async => await _getTodayTotalField('fat');
+  Future<int> getTodayTotalCalories() async =>
+      await _getTodayField('totalCalories');
 
-Future<int> _getTodayTotalField(String fieldName) async {
-  final user = _auth.currentUser;
-  if (user == null) return 0;
+  Future<int> getTodayTotalProtein() async =>
+      await _getTodayField('totalProtein');
 
-  DateTime startOfDay = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+  Future<int> getTodayTotalCarbs() async =>
+      await _getTodayField('totalCarbs');
 
-  final snapshot = await _firestore
-      .collection('users')
-      .doc(user.uid)
-      .collection('scans')
-      .where('date', isGreaterThanOrEqualTo: startOfDay)
-      .get();
+  Future<int> getTodayTotalFat() async =>
+      await _getTodayField('totalFat');
 
-  int total = 0;
-  for (var doc in snapshot.docs) {
-    final val = doc.data()[fieldName];
-    total += (val is num) ? val.toInt() : 0;
+  Future<int> _getTodayField(String field) async {
+    final user = _auth.currentUser;
+    if (user == null) return 0;
+
+    String todayDate =
+        DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+    final doc = await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('dailyLogs')
+        .doc(todayDate)
+        .get();
+
+    if (!doc.exists) return 0;
+
+    return (doc.data()?[field] ?? 0).toInt();
   }
-  return total;
-}
+
+  /// =========================
+  /// PICK + ANALYZE (NO SAVE)
+  /// =========================
+
+  Future<String?> pickAndAnalyze({bool fromCamera = true}) async {
+    final File? image =
+        fromCamera ? await pickFromCamera() : await pickFromGallery();
+
+    if (image == null) return null;
+
+    return await analyzeFoodImage(image);
+  }
 }

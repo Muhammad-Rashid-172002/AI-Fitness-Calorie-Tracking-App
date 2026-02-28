@@ -1,5 +1,6 @@
 import 'package:fitmind_ai/controller/profile_controller.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
+import 'package:fitmind_ai/view/WeeklyProgressScreen.dart';
 import 'package:fitmind_ai/view/auth_view/login_Screen.dart';
 import 'package:fitmind_ai/view/edit_profile_screen.dart';
 import 'package:fitmind_ai/view/help_support_screen.dart';
@@ -122,31 +123,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 30),
-
-                  /// Preferences
-                  Text("PREFERENCES", style: TextStyle(color: inactiveColor)),
+              
                   const SizedBox(height: 15),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: SwitchListTile(
-                      value: mealReminder,
-                      activeColor: activeColor,
-                      onChanged: (val) {
-                        setState(() {
-                          mealReminder = val;
-                        });
-                      },
-                      title: const Text(
-                        "Meal Reminders",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      secondary: Icon(Icons.notifications, color: activeColor),
-                    ),
+                  Text("Daily Stats", style: TextStyle(color: inactiveColor)),
+                  SizedBox(height: 10),
+                  AboutTile(
+                    icon: Icons.bar_chart,
+                    title: "Stats",
+                    iconColor: Colors.green, // activeColor
+                    textColor: Colors.white,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => WeeklyProgressScreen(),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 30),
 
@@ -220,6 +213,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       }
                     },
                   ),
+
+                
 
                   /// Reset All Data
                   AboutTile(

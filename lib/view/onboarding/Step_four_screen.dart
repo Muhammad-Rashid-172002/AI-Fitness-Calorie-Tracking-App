@@ -1,5 +1,6 @@
 import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/view/buttom_bar.dart';
+import 'package:fitmind_ai/view/onboarding/StepFiveScreen.dart';
 import 'package:flutter/material.dart';
 import '../../controller/step_four_controller.dart';
 
@@ -39,7 +40,7 @@ class _StepFourScreenState extends State<StepFourScreen> {
       // Success → Go to Main View
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const MainView()),
+        MaterialPageRoute(builder: (_) => const StepFiveScreen()),
       );
     } else {
       // Error
