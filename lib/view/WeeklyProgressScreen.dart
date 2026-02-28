@@ -1,3 +1,4 @@
+import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -15,7 +16,6 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// Map: Day index (0=Sun..6=Sat) -> Total Calories for that day
   Map<int, int> weeklyCalories = {};
   Map<int, int> weeklyProtein = {};
   Map<int, int> weeklyCarbs = {};
@@ -33,20 +33,19 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
     setState(() => isLoading = true);
 
     final user = _auth.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      setState(() => isLoading = false);
+      return;
+    }
 
     DateTime now = DateTime.now();
-    final startOfWeek = now.subtract(
-      Duration(days: now.weekday % 7),
-    ); // Sunday as 0
+    final startOfWeek = now.subtract(Duration(days: now.weekday % 7));
 
-    // Initialize map for all days
-    for (int i = 0; i < 7; i++) {
-      weeklyCalories[i] = 0;
-      weeklyProtein[i] = 0;
-      weeklyCarbs[i] = 0;
-      weeklyFat[i] = 0;
-    }
+    // Clear previous data
+    weeklyCalories.clear();
+    weeklyProtein.clear();
+    weeklyCarbs.clear();
+    weeklyFat.clear();
 
     final dailyLogsSnap = await _firestore
         .collection('users')
@@ -61,6 +60,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
     for (var doc in dailyLogsSnap.docs) {
       final data = doc.data();
       if (data['date'] == null) continue;
+
       DateTime date;
       try {
         date = DateFormat('yyyy-MM-dd').parse(data['date']);
@@ -68,19 +68,17 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
         continue;
       }
 
-      int dayIndex = date.weekday % 7; // 0=Sun, 1=Mon,..6=Sat
+      int dayIndex = date.weekday % 7;
+
       weeklyCalories[dayIndex] =
           (weeklyCalories[dayIndex] ?? 0) +
           ((data['totalCalories'] ?? 0) as num).toInt();
-
       weeklyProtein[dayIndex] =
           (weeklyProtein[dayIndex] ?? 0) +
           ((data['totalProtein'] ?? 0) as num).toInt();
-
       weeklyCarbs[dayIndex] =
           (weeklyCarbs[dayIndex] ?? 0) +
           ((data['totalCarbs'] ?? 0) as num).toInt();
-
       weeklyFat[dayIndex] =
           (weeklyFat[dayIndex] ?? 0) + ((data['totalFat'] ?? 0) as num).toInt();
     }
@@ -90,51 +88,42 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const List<String> days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
     return Scaffold(
+      backgroundColor: bgColor,
       appBar: AppBar(
         title: const Text("Weekly Progress"),
-        backgroundColor: Colors.teal,
+        backgroundColor: cardColor,
+        foregroundColor: textMain,
+        elevation: 0,
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(child: CircularProgressIndicator(color: primary))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  /// WEEKLY CHART CARD FOR CALORIES
                   _buildWeeklyChartCard(
                     title: "Weekly Calories",
                     dataMap: weeklyCalories,
-                    barColor: Colors.orange,
+                    barColor: activeColor,
                   ),
-
                   const SizedBox(height: 25),
-
-                  /// WEEKLY CHART CARD FOR PROTEIN
                   _buildWeeklyChartCard(
                     title: "Weekly Protein",
                     dataMap: weeklyProtein,
-                    barColor: Colors.green,
+                    barColor: accent,
                   ),
-
                   const SizedBox(height: 25),
-
-                  /// WEEKLY CHART CARD FOR CARBS
                   _buildWeeklyChartCard(
                     title: "Weekly Carbs",
                     dataMap: weeklyCarbs,
-                    barColor: Colors.blue,
+                    barColor: Colors.blueAccent,
                   ),
-
                   const SizedBox(height: 25),
-
-                  /// WEEKLY CHART CARD FOR FATS
                   _buildWeeklyChartCard(
                     title: "Weekly Fats",
                     dataMap: weeklyFat,
-                    barColor: Colors.red,
+                    barColor: Colors.redAccent,
                   ),
                 ],
               ),
@@ -147,17 +136,21 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
     required Map<int, int> dataMap,
     required Color barColor,
   }) {
-    int maxY = 5;
-    if (dataMap.values.isNotEmpty) {
-      maxY = dataMap.values.reduce((a, b) => a > b ? a : b) + 10;
+    // Keep only days with actual data
+    final filteredData = dataMap.entries.where((e) => e.value > 0).toList();
+
+    int maxY = 10;
+    if (filteredData.isNotEmpty) {
+      maxY =
+          filteredData.map((e) => e.value).reduce((a, b) => a > b ? a : b) + 10;
     }
 
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: inactiveColor),
         boxShadow: [
           BoxShadow(
             color: Colors.black12,
@@ -171,10 +164,10 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: textMain,
             ),
           ),
           const SizedBox(height: 20),
@@ -184,7 +177,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
                 maxY: maxY.toDouble(),
-                barGroups: dataMap.entries.map((e) {
+                barGroups: filteredData.map((e) {
                   return BarChartGroupData(
                     x: e.key,
                     barRods: [
@@ -200,13 +193,25 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
                 borderData: FlBorderData(show: false),
                 gridData: FlGridData(
                   show: true,
-                  getDrawingHorizontalLine: (_) =>
-                      FlLine(color: Colors.grey.shade300, strokeWidth: 1),
+                  getDrawingHorizontalLine: (_) => FlLine(
+                    color: inactiveColor.withOpacity(0.2),
+                    strokeWidth: 1,
+                  ),
                 ),
                 titlesData: FlTitlesData(
-                  leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: true, reservedSize: 40),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      getTitlesWidget: (value, meta) {
+                        return Text(
+                          value.toInt().toString(), // left axis value
+                          style: TextStyle(color: textGrey, fontSize: 12),
+                        );
+                      },
+                    ),
                   ),
+
                   rightTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
@@ -228,10 +233,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
                         ];
                         return Text(
                           days[value.toInt()],
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.black54,
-                          ),
+                          style: TextStyle(fontSize: 12, color: textGrey),
                         );
                       },
                     ),

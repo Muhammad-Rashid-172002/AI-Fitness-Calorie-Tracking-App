@@ -6,6 +6,7 @@ import 'package:fitmind_ai/view/analyzing_screen.dart';
 import 'package:flutter/material.dart';
 
 class ScanScreen extends StatefulWidget {
+  
   const ScanScreen({super.key});
 
   @override

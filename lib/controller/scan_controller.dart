@@ -39,10 +39,10 @@ class ScanController {
   /// GEMINI AI ANALYSIS
   /// =========================
 
-  Future<String> analyzeFoodImage(File image) async {
+Future<String> analyzeFoodImage(File image) async {
     try {
       final model = GenerativeModel(
-        model: 'gemini-1.5-preview',
+        model: 'gemini-3-flash-preview',
         apiKey: _apiKey,
       );
 
@@ -69,6 +69,7 @@ class ScanController {
       return "Error: ${e.toString()}";
     }
   }
+
 
   /// =========================
   /// SAVE SCAN + UPDATE DAILY TOTALS
@@ -223,4 +224,26 @@ class ScanController {
 
     return await analyzeFoodImage(image);
   }
+
+  /// =========================
+/// PARSE FOOD FROM AI RESULT STRING
+/// =========================
+Food parseFoodFromResult(String result) {
+  final caloriesRegex = RegExp(r'Calories:\s*(\d+)\s*kcal', caseSensitive: false);
+  final fatsRegex = RegExp(r'Fats:\s*(\d+)\s*g', caseSensitive: false);
+  final carbsRegex = RegExp(r'Carbs:\s*(\d+)\s*g', caseSensitive: false);
+  final proteinRegex = RegExp(r'Protein:\s*(\d+)\s*g', caseSensitive: false);
+
+  return Food(
+    name: result.split("Calories").first.replaceAll("Food:", "").trim(),
+    shortMsg: '',
+    calories: double.tryParse(caloriesRegex.firstMatch(result)?.group(1) ?? '0'),
+    fats: double.tryParse(fatsRegex.firstMatch(result)?.group(1) ?? '0'),
+    carbs: double.tryParse(carbsRegex.firstMatch(result)?.group(1) ?? '0'),
+    protein: double.tryParse(proteinRegex.firstMatch(result)?.group(1) ?? '0'),
+  );
+}
+
+
+
 }

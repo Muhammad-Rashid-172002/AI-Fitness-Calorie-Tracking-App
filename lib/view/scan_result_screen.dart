@@ -123,12 +123,11 @@ class ScanResultScreen extends StatelessWidget {
                 CustomGradientButton(
                   text: "Done",
                   onPressed: () async {
-                    await controller.saveScan(
-                      result: result,
-                      food: food,
-                      
-                    );
-                    await controller.getTodayMealCount();
+                    // ✅ Parse AI result to Food object
+                    final parsedFood = controller.parseFoodFromResult(result);
+
+                    // ✅ Save scan with parsed macros
+                    await controller.saveScan(result: result, food: parsedFood);
 
                     showCustomSnackBar(
                       context,
@@ -136,7 +135,13 @@ class ScanResultScreen extends StatelessWidget {
                       true,
                     );
 
-                    Navigator.pop(context); // Back to home
+                    Navigator.of(context).pop({
+                      // pass parsed macros back to HomeScreen
+                      "calories": parsedFood.calories ?? 0,
+                      "protein": parsedFood.protein ?? 0,
+                      "carbs": parsedFood.carbs ?? 0,
+                      "fat": parsedFood.fats ?? 0,
+                    });
                   },
                 ),
               ],
