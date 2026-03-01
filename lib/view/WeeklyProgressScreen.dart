@@ -16,6 +16,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // Weekly nutrient data maps
   Map<int, int> weeklyCalories = {};
   Map<int, int> weeklyProtein = {};
   Map<int, int> weeklyCarbs = {};
@@ -39,48 +40,41 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
     }
 
     DateTime now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday % 7));
 
-    // Clear previous data
-    weeklyCalories.clear();
-    weeklyProtein.clear();
-    weeklyCarbs.clear();
-    weeklyFat.clear();
+    // Week starts from Monday (1) to Sunday (7)
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
 
-    final dailyLogsSnap = await _firestore
-        .collection('users')
-        .doc(user.uid)
-        .collection('dailyLogs')
-        .where(
-          'date',
-          isGreaterThanOrEqualTo: DateFormat('yyyy-MM-dd').format(startOfWeek),
-        )
-        .get();
+    // Initialize maps with all 7 days (Mon-Sun)
+    weeklyCalories = {for (int i = 1; i <= 7; i++) i: 0};
+    weeklyProtein = {for (int i = 1; i <= 7; i++) i: 0};
+    weeklyCarbs = {for (int i = 1; i <= 7; i++) i: 0};
+    weeklyFat = {for (int i = 1; i <= 7; i++) i: 0};
 
-    for (var doc in dailyLogsSnap.docs) {
-      final data = doc.data();
-      if (data['date'] == null) continue;
+    // Fetch all logs for the week
+    for (int i = 0; i < 7; i++) {
+      final date = startOfWeek.add(Duration(days: i));
+      final dateStr = DateFormat('yyyy-MM-dd').format(date);
 
-      DateTime date;
-      try {
-        date = DateFormat('yyyy-MM-dd').parse(data['date']);
-      } catch (_) {
-        continue;
+      final doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .collection('dailyLogs')
+          .doc(dateStr)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data()!;
+        int dayIndex = date.weekday; // 1 = Monday, 7 = Sunday
+
+        weeklyCalories[dayIndex] =
+            (data['totalCalories'] ?? 0).toInt();
+        weeklyProtein[dayIndex] =
+            (data['totalProtein'] ?? 0).toInt();
+        weeklyCarbs[dayIndex] =
+            (data['totalCarbs'] ?? 0).toInt();
+        weeklyFat[dayIndex] =
+            (data['totalFat'] ?? 0).toInt();
       }
-
-      int dayIndex = date.weekday % 7;
-
-      weeklyCalories[dayIndex] =
-          (weeklyCalories[dayIndex] ?? 0) +
-          ((data['totalCalories'] ?? 0) as num).toInt();
-      weeklyProtein[dayIndex] =
-          (weeklyProtein[dayIndex] ?? 0) +
-          ((data['totalProtein'] ?? 0) as num).toInt();
-      weeklyCarbs[dayIndex] =
-          (weeklyCarbs[dayIndex] ?? 0) +
-          ((data['totalCarbs'] ?? 0) as num).toInt();
-      weeklyFat[dayIndex] =
-          (weeklyFat[dayIndex] ?? 0) + ((data['totalFat'] ?? 0) as num).toInt();
     }
 
     setState(() => isLoading = false);
@@ -103,28 +97,24 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
               child: Column(
                 children: [
                   _buildWeeklyChartCard(
-                    title: "Weekly Calories",
-                    dataMap: weeklyCalories,
-                    barColor: activeColor,
-                  ),
+                      title: "Weekly Calories",
+                      dataMap: weeklyCalories,
+                      barColor: activeColor),
                   const SizedBox(height: 25),
                   _buildWeeklyChartCard(
-                    title: "Weekly Protein",
-                    dataMap: weeklyProtein,
-                    barColor: accent,
-                  ),
+                      title: "Weekly Protein",
+                      dataMap: weeklyProtein,
+                      barColor: accent),
                   const SizedBox(height: 25),
                   _buildWeeklyChartCard(
-                    title: "Weekly Carbs",
-                    dataMap: weeklyCarbs,
-                    barColor: Colors.blueAccent,
-                  ),
+                      title: "Weekly Carbs",
+                      dataMap: weeklyCarbs,
+                      barColor: Colors.blueAccent),
                   const SizedBox(height: 25),
                   _buildWeeklyChartCard(
-                    title: "Weekly Fats",
-                    dataMap: weeklyFat,
-                    barColor: Colors.redAccent,
-                  ),
+                      title: "Weekly Fats",
+                      dataMap: weeklyFat,
+                      barColor: Colors.redAccent),
                 ],
               ),
             ),
@@ -136,13 +126,25 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
     required Map<int, int> dataMap,
     required Color barColor,
   }) {
-    // Keep only days with actual data
-    final filteredData = dataMap.entries.where((e) => e.value > 0).toList();
-
+    // Prepare chart data for 7 days (Mon-Sun)
+    List<BarChartGroupData> barGroups = [];
     int maxY = 10;
-    if (filteredData.isNotEmpty) {
-      maxY =
-          filteredData.map((e) => e.value).reduce((a, b) => a > b ? a : b) + 10;
+
+    for (int day = 1; day <= 7; day++) {
+      int value = dataMap[day] ?? 0;
+      if (value > maxY) maxY = value + 10;
+
+      barGroups.add(BarChartGroupData(
+        x: day,
+        barRods: [
+          BarChartRodData(
+            toY: value.toDouble(),
+            width: 18,
+            borderRadius: BorderRadius.circular(6),
+            color: barColor,
+          )
+        ],
+      ));
     }
 
     return Container(
@@ -177,19 +179,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
                 maxY: maxY.toDouble(),
-                barGroups: filteredData.map((e) {
-                  return BarChartGroupData(
-                    x: e.key,
-                    barRods: [
-                      BarChartRodData(
-                        toY: e.value.toDouble(),
-                        width: 18,
-                        borderRadius: BorderRadius.circular(6),
-                        color: barColor,
-                      ),
-                    ],
-                  );
-                }).toList(),
+                barGroups: barGroups,
                 borderData: FlBorderData(show: false),
                 gridData: FlGridData(
                   show: true,
@@ -205,13 +195,12 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
                       reservedSize: 40,
                       getTitlesWidget: (value, meta) {
                         return Text(
-                          value.toInt().toString(), // left axis value
+                          value.toInt().toString(),
                           style: TextStyle(color: textGrey, fontSize: 12),
                         );
                       },
                     ),
                   ),
-
                   rightTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
                   ),
@@ -223,16 +212,10 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
                       showTitles: true,
                       getTitlesWidget: (value, meta) {
                         const days = [
-                          "Sun",
-                          "Mon",
-                          "Tue",
-                          "Wed",
-                          "Thu",
-                          "Fri",
-                          "Sat",
+                          "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
                         ];
                         return Text(
-                          days[value.toInt()],
+                          days[value.toInt() - 1],
                           style: TextStyle(fontSize: 12, color: textGrey),
                         );
                       },

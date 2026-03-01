@@ -1,5 +1,6 @@
 import 'package:fitmind_ai/controller/profile_controller.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
+import 'package:fitmind_ai/view/MonthlyHabitReportScreen.dart';
 import 'package:fitmind_ai/view/WeeklyProgressScreen.dart';
 import 'package:fitmind_ai/view/auth_view/login_Screen.dart';
 import 'package:fitmind_ai/view/edit_profile_screen.dart';
@@ -137,6 +138,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => WeeklyProgressScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(height: 10,),
+                  AboutTile(
+                    icon: Icons.assessment_outlined,
+                    title: "Monthly Habit Report",
+                    iconColor: Colors.green, // activeColor
+                    textColor: Colors.white,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MonthlyHabitReportScreen(),
                         ),
                       );
                     },
