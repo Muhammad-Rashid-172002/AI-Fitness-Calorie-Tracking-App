@@ -1,3 +1,4 @@
+// scan_result_screen.dart
 import 'dart:io';
 import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:fitmind_ai/models/food_model.dart';
@@ -16,41 +17,27 @@ class ScanResultScreen extends StatelessWidget {
     required this.image,
     required this.result,
     required this.food,
-  }) {
-    //controller.saveScan(image, result);
-  }
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      // appBar: AppBar(
-      //   backgroundColor: Colors.transparent,
-      //   elevation: 0,
-      //   iconTheme: const IconThemeData(color: Colors.black87),
-      //   title: const Text(
-      //     "Scan Result",
-      //     style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-      //   ),
-      // ),
       body: Stack(
         children: [
-          // Blurred background for premium effect
           Positioned.fill(child: Image.file(image, fit: BoxFit.cover)),
           Positioned.fill(
             child: Container(color: Colors.black.withOpacity(0.35)),
           ),
-
-          // Main content
           SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
             child: Column(
               children: [
-                // Floating image card
+                // Image Card
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(25),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
                         color: Colors.black26,
                         blurRadius: 25,
@@ -70,7 +57,7 @@ class ScanResultScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
 
-                // Glassmorphism Result Card
+                // Glassmorphism Card
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(25),
@@ -101,7 +88,6 @@ class ScanResultScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
 
-                      // Nutrition info cards
                       if (food.calories != null)
                         _nutritionCard("Calories", "${food.calories} kcal"),
                       if (food.protein != null)
@@ -112,8 +98,6 @@ class ScanResultScreen extends StatelessWidget {
                         _nutritionCard("Carbs", "${food.carbs} g"),
 
                       const SizedBox(height: 25),
-
-                      // Health message based on nutrition values
                       _healthMessageCard(food),
                     ],
                   ),
@@ -123,11 +107,13 @@ class ScanResultScreen extends StatelessWidget {
                 CustomGradientButton(
                   text: "Done",
                   onPressed: () async {
-                    // ✅ Parse AI result to Food object
                     final parsedFood = controller.parseFoodFromResult(result);
 
-                    // ✅ Save scan with parsed macros
-                    await controller.saveScan(result: result, food: parsedFood);
+                    await controller.saveScan(
+                      result: result,
+                      food: parsedFood,
+                     // imageFile: image,
+                    );
 
                     showCustomSnackBar(
                       context,
@@ -136,7 +122,6 @@ class ScanResultScreen extends StatelessWidget {
                     );
 
                     Navigator.of(context).pop({
-                      // pass parsed macros back to HomeScreen
                       "calories": parsedFood.calories ?? 0,
                       "protein": parsedFood.protein ?? 0,
                       "carbs": parsedFood.carbs ?? 0,
@@ -152,41 +137,30 @@ class ScanResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _nutritionCard(String title, String value) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 5),
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.25),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget _nutritionCard(String title, String value) => Container(
+        margin: const EdgeInsets.symmetric(vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.25),
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title,
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.w600)),
+            Text(value,
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      );
 
   Widget _healthMessageCard(Food food) {
     String message = "";
     Color color = Colors.green;
 
-    // Simple logic to determine food healthiness
     if (food.calories != null && food.fats != null) {
       if (food.calories! <= 250 && food.fats! <= 10) {
         message = "Great choice! 🥗 This is healthy food.";
@@ -212,16 +186,13 @@ class ScanResultScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.info_outline, color: Colors.white, size: 28),
+          const Icon(Icons.info_outline, color: Colors.white, size: 28),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               message,
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
+                  color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
         ],

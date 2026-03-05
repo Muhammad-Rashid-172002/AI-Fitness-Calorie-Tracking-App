@@ -76,54 +76,45 @@ Future<String> analyzeFoodImage(File image) async {
   /// =========================
 
   Future<void> saveScan({
-    required String result,
-    required Food food,
-  }) async {
-    try {
-      User? user = _auth.currentUser;
-      if (user == null) return;
+  required String result,
+  required Food food,
+}) async {
+  try {
+    User? user = _auth.currentUser;
+    if (user == null) return;
 
-      DateTime now = DateTime.now();
-      String todayDate = DateFormat('yyyy-MM-dd').format(now);
+    await _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('scans')
+        .add({
 
-      final userRef = _firestore.collection('users').doc(user.uid);
+      "result": food.name.isNotEmpty ? food.name : result,
 
-      /// 1️⃣ Save scan history
-      await userRef.collection('scans').add({
-        "result": result,
-        "calories": (food.calories ?? 0).toInt(),
-        "protein": (food.protein ?? 0).toInt(),
-        "fat": (food.fats ?? 0).toInt(),
-        "carbs": (food.carbs ?? 0).toInt(),
-        "date": now,
-        "createdAt": FieldValue.serverTimestamp(),
-      });
+      // ✅ Numbers (not strings)
+      "calories": (food.calories ?? 0).toInt(),
+      "protein": (food.protein ?? 0).toInt(),
+      "carbs": (food.carbs ?? 0).toInt(),
+      "fat": (food.fats ?? 0).toInt(),
 
-      /// 2️⃣ Update daily totals
-      final dailyRef =
-          userRef.collection('dailyLogs').doc(todayDate);
+      "imagePath": null,
 
-      await dailyRef.set({
-        "totalCalories":
-            FieldValue.increment((food.calories ?? 0).toInt()),
-        "totalProtein":
-            FieldValue.increment((food.protein ?? 0).toInt()),
-        "totalCarbs":
-            FieldValue.increment((food.carbs ?? 0).toInt()),
-        "totalFat":
-            FieldValue.increment((food.fats ?? 0).toInt()),
-        "mealCount": FieldValue.increment(1),
-        "date": todayDate,
-        "updatedAt": FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      // ✅ Identify scan
+      "type": "scan",
 
-      print("✅ Scan + Daily totals updated successfully");
-    } catch (e) {
-      print("❌ Firestore save error: $e");
-    }
+      // ✅ VERY IMPORTANT (same as manual)
+      "timestamp": Timestamp.now(),
+
+    });
+
+    //debugPrint("✅ Scan saved");
+    print('  ✅ Scan saved');
+
+  } catch (e) {
+   // debugPrint("❌ Save error: $e");
+   print('  ❌ Save error: $e');
   }
-
-  /// =========================
+}/// =========================
   /// REAL-TIME SCAN HISTORY
   /// =========================
 

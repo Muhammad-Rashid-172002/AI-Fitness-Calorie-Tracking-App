@@ -1,3 +1,4 @@
+import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:fitmind_ai/controller/profile_controller.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/view/MonthlyHabitReportScreen.dart';
@@ -124,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
-              
+
                   const SizedBox(height: 15),
                   Text("Daily Stats", style: TextStyle(color: inactiveColor)),
                   SizedBox(height: 10),
@@ -142,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       );
                     },
                   ),
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10),
                   AboutTile(
                     icon: Icons.assessment_outlined,
                     title: "Monthly Habit Report",
@@ -219,18 +220,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               .externalApplication, // Opens in browser
                         );
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Could not open Terms of Service link.",
-                            ),
-                          ),
+                        showCustomSnackBar(
+                          context,
+                          "Could not open Terms of Service link.",
+                          false,
                         );
                       }
                     },
                   ),
+                  AboutTile(
+                    icon: Icons.email,
+                    title: "Book Consultation",
+                    iconColor: Colors.orange,
+                    textColor: Colors.white,
+                    onTap: () async {
+                      final Uri emailLaunchUri = Uri(
+                        scheme: 'mailto',
+                        path:
+                            'bahagiajemali@gmail.com', // <-- replace with your client's email
+                        queryParameters: {
+                          'subject': 'Consultation Request - MyDiet App',
+                          'body':
+                              'Hello, I am ${controller.name}. I would like to book a consultation session.',
+                        },
+                      );
 
-                
+                      final url = emailLaunchUri.toString();
+
+                      if (await canLaunchUrlString(url)) {
+                        await launchUrlString(url);
+                      } else {
+                        showCustomSnackBar(
+                          context,
+                          "Could not open email.",
+                          false,
+                        );
+                      }
+                    },
+                  ),
 
                   /// Reset All Data
                   AboutTile(

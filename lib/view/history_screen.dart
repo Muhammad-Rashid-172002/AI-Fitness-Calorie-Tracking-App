@@ -152,13 +152,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                 DateTime now = DateTime.now();
 
+                // Convert Firestore docs to list
                 List<Map<String, dynamic>> items =
                     snapshot.data!.docs.map((doc) {
                   return Map<String, dynamic>.from(
                       doc.data() as Map<String, dynamic>);
                 }).toList();
 
-                /// Filter Data
+                // Filter based on selected filter
                 List<Map<String, dynamic>> filtered =
                     items.where((data) {
 
@@ -212,10 +213,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           DateTime.now();
                     }
 
+                    // Convert numeric fields to String safely
+                    String calories = (data['calories'] ?? 0).toString();
+                    String protein = (data['protein'] ?? 0).toString();
+                    String carbs = (data['carbs'] ?? 0).toString();
+                    String fat = (data['fat'] ?? 0).toString();
+
+                    String type = (data['type'] ?? 'scan').toString().toUpperCase();
+
                     return _historyCard(
                       imagePath: data['imagePath'],
                       result: data['result'] ?? "Food",
                       time: time,
+                      calories: calories,
+                      protein: protein,
+                      carbs: carbs,
+                      fat: fat,
+                      type: type,
                     );
                   },
                 );
@@ -232,6 +246,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     required String? imagePath,
     required String result,
     required DateTime time,
+    required String calories,
+    required String protein,
+    required String carbs,
+    required String fat,
+    required String type, // SCAN / 
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -248,6 +267,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
           /// IMAGE
@@ -283,22 +303,48 @@ class _HistoryScreenState extends State<HistoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
 
-                Text(
-                  result,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: activeColor,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
+                /// TITLE + BADGE
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        result,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: activeColor,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: type == "SCAN" ? Colors.green : Colors.orange,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        type,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 6),
 
+                /// TIME
                 Row(
                   children: [
-
                     Icon(
                       Icons.schedule,
                       size: 14,
@@ -308,8 +354,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     const SizedBox(width: 5),
 
                     Text(
-                      DateFormat('hh:mm a • dd MMM')
-                          .format(time),
+                      DateFormat('hh:mm a • dd MMM').format(time),
                       style: TextStyle(
                         color: inactiveColor,
                         fontSize: 12,
@@ -317,9 +362,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                   ],
                 ),
+
+                const SizedBox(height: 8),
+
+                /// NUTRITION
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _nutriItem("Kcal", calories),
+                    _nutriItem("P", protein),
+                    _nutriItem("C", carbs),
+                    _nutriItem("F", fat),
+                  ],
+                ),
               ],
             ),
           ),
+
+          const SizedBox(width: 6),
 
           /// ARROW
           Icon(
@@ -329,6 +389,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _nutriItem(String title, String value) {
+    return Column(
+      children: [
+        Text(
+          value.isEmpty ? "0" : value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          title,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 11,
+          ),
+        ),
+      ],
     );
   }
 
@@ -359,7 +442,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           const SizedBox(height: 6),
 
           Text(
-            "Start scanning your meals",
+            "Start scanning or adding meals manually",
             style: TextStyle(
               color: inactiveColor.withOpacity(0.8),
               fontSize: 13,

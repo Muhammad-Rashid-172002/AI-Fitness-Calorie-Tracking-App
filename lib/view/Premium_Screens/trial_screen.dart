@@ -146,14 +146,14 @@ class TrialScreen extends StatelessWidget {
                         const SizedBox(height: 40),
 
                         /// Secure Payment Text
-                        Center(
-                          child: Text(
-                            "Secure payment via App Store",
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.6),
-                            ),
-                          ),
-                        ),
+                        // Center(
+                        //   child: Text(
+                        //     "Secure payment via App Store",
+                        //     style: TextStyle(
+                        //       color: Colors.white.withOpacity(0.6),
+                        //     ),
+                        //   ),
+                        // ),
 
                         const SizedBox(height: 20),
 

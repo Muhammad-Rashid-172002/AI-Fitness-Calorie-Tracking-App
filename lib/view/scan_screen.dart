@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:fitmind_ai/controller/scan_controller.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/view/analyzing_screen.dart';
+import 'package:fitmind_ai/view/quick_add_meal_screen.dart';
 import 'package:flutter/material.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -209,45 +210,56 @@ class _ScanScreenState extends State<ScanScreen> {
 
                   const SizedBox(width: 15),
 
-                  /// Quick Add
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 25),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E1E1E),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        children: const [
-                          Icon(
-                            Icons.flash_on,
-                            size: 35,
-                            color: Colors.orange,
-                          ),
+               /// Quick Add
+Expanded(
+  child: GestureDetector(
+    onTap: () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const QuickAddMealScreen(),
+        ),
+      );
+    },
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 25),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: const [
+          Icon(
+            Icons.flash_on,
+            size: 35,
+            color: Colors.orange,
+          ),
 
-                          SizedBox(height: 10),
+          SizedBox(height: 10),
 
-                          Text(
-                            "Quick Add",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+          Text(
+            "Quick Add",
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
 
-                          SizedBox(height: 5),
+          SizedBox(height: 5),
 
-                          Text(
-                            "Log a meal fast",
-                            style: TextStyle(
-                              color: Colors.white54,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+          Text(
+            "Log a meal fast",
+            style: TextStyle(
+              color: Colors.white54,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+),
+               
                 ],
               ),
 
