@@ -20,71 +20,89 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
 
   bool isSaving = false;
 
-  Future<void> saveMeal() async {
-    final user = FirebaseAuth.instance.currentUser;
+Future<void> saveMeal() async {
+  final user = FirebaseAuth.instance.currentUser;
 
-    if (user == null) {
-      showCustomSnackBar(context, "User not logged in", false);
-      return;
-    }
-
-    String mealName = mealNameController.text.trim();
-    String caloriesText = caloriesController.text.trim();
-    String proteinText = proteinController.text.trim();
-    String carbsText = carbsController.text.trim();
-    String fatText = fatController.text.trim();
-
-    if (mealName.isEmpty || caloriesText.isEmpty) {
-      showCustomSnackBar(context, "Please fill required fields", false);
-      return;
-    }
-
-    double calories = double.tryParse(caloriesText) ?? 0;
-    double protein = double.tryParse(proteinText) ?? 0;
-    double carbs = double.tryParse(carbsText) ?? 0;
-    double fat = double.tryParse(fatText) ?? 0;
-
-    setState(() {
-      isSaving = true;
-    });
-
-    try {
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(user.uid)
-          .collection("scans") // Subcollection
-          .add({
-        "result": mealName,
-        "calories": calories,
-        "protein": protein,
-        "carbs": carbs,
-        "fat": fat,
-        "imagePath": null,
-        "type": "manual",
-        "timestamp": Timestamp.now(),
-      });
-
-      showCustomSnackBar(context, "Meal Saved Successfully", true);
-
-      // Clear fields after saving
-      mealNameController.clear();
-      caloriesController.clear();
-      proteinController.clear();
-      carbsController.clear();
-      fatController.clear();
-
-      Navigator.pop(context);
-    } catch (e) {
-      debugPrint("Firestore Error: $e");
-      showCustomSnackBar(context, "Error saving meal: $e", false);
-    } finally {
-      setState(() {
-        isSaving = false;
-      });
-    }
+  if (user == null) {
+    showCustomSnackBar(context, "User not logged in", false);
+    return;
   }
 
-  @override
+  String mealName = mealNameController.text.trim();
+  String caloriesText = caloriesController.text.trim();
+  String proteinText = proteinController.text.trim();
+  String carbsText = carbsController.text.trim();
+  String fatText = fatController.text.trim();
+
+  if (mealName.isEmpty || caloriesText.isEmpty) {
+    showCustomSnackBar(context, "Please fill required fields", false);
+    return;
+  }
+
+  double calories = double.tryParse(caloriesText) ?? 0;
+  double protein = double.tryParse(proteinText) ?? 0;
+  double carbs = double.tryParse(carbsText) ?? 0;
+  double fat = double.tryParse(fatText) ?? 0;
+
+  setState(() {
+    isSaving = true;
+  });
+
+  try {
+    final uid = user.uid;
+    final today = DateTime.now();
+    final todayId =
+        "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+
+    /// 1️⃣ Save meal in scans collection
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("scans")
+        .add({
+      "result": mealName,
+      "calories": calories,
+      "protein": protein,
+      "carbs": carbs,
+      "fat": fat,
+      "imagePath": null,
+      "type": "manual",
+      "timestamp": Timestamp.now(),
+    });
+
+    /// 2️⃣ Update today's progress
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("dailyLogs")
+        .doc(todayId)
+        .set({
+      "totalCalories": FieldValue.increment(calories),
+      "totalProtein": FieldValue.increment(protein),
+      "totalCarbs": FieldValue.increment(carbs),
+      "totalFat": FieldValue.increment(fat),
+      "mealCount": FieldValue.increment(1),
+      "createdAt": Timestamp.now()
+    }, SetOptions(merge: true));
+
+    showCustomSnackBar(context, "Meal Saved Successfully", true);
+
+    mealNameController.clear();
+    caloriesController.clear();
+    proteinController.clear();
+    carbsController.clear();
+    fatController.clear();
+
+    Navigator.pop(context);
+  } catch (e) {
+    debugPrint("Firestore Error: $e");
+    showCustomSnackBar(context, "Error saving meal: $e", false);
+  } finally {
+    setState(() {
+      isSaving = false;
+    });
+  }
+}  @override
   void dispose() {
     mealNameController.dispose();
     caloriesController.dispose();

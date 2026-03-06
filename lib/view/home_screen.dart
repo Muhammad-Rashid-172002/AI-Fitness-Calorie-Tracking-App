@@ -280,52 +280,87 @@ class _HomeScreenState extends State<HomeScreen> {
   /// =========================
   /// AI COACH PANEL
   /// =========================
-  Widget _aiCoachPanel() {
-    return FutureBuilder<String>(
-      future: aiController.generateDailyCoaching(proteinGoal),
-      builder: (context, snapshot) {
+ Widget _aiCoachPanel() {
+  final uid = FirebaseAuth.instance.currentUser!.uid;
+  final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-        if (!snapshot.hasData) {
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: cardColor,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: const Text(
-              "AI Coach is analyzing your week...",
-              style: TextStyle(color: Colors.white),
-            ),
-          );
-        }
+  return StreamBuilder<DocumentSnapshot>(
+    stream: FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("dailyLogs")
+        .doc(today)
+        .snapshots(),
+    builder: (context, snapshot) {
 
+      if (!snapshot.hasData) {
         return Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-
-              Text("Daily AI Coach",
-                  style: TextStyle(
-                      color: primary,
-                      fontWeight: FontWeight.bold)),
-
-              const SizedBox(height: 10),
-
-              Text(snapshot.data!,
-                  style: const TextStyle(color: Colors.white)),
-            ],
+          child: const Text(
+            "AI Coach is analyzing your progress...",
+            style: TextStyle(color: Colors.white),
           ),
         );
-      },
-    );
-  }
+      }
 
-  /// =========================
+      Map<String, dynamic>? data =
+          snapshot.data!.data() as Map<String, dynamic>?;
+
+      int protein = (data?['totalProtein'] ?? 0).toInt();
+
+      return FutureBuilder<String>(
+        future: aiController.generateDailyCoaching(protein),
+        builder: (context, aiSnapshot) {
+
+          if (!aiSnapshot.hasData) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                "AI Coach is thinking...",
+                style: TextStyle(color: Colors.white),
+              ),
+            );
+          }
+
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Daily AI Coach",
+                  style: TextStyle(
+                    color: primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                Text(
+                  aiSnapshot.data!,
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
+}  /// =========================
   /// SCAN BUTTON
   /// =========================
   Widget _scanButton() {
