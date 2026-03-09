@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/view/onboarding/step_three_Screen.dart';
 
-
-
 class StepTwoScreen extends StatefulWidget {
   const StepTwoScreen({super.key});
 
@@ -17,6 +15,7 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
 
   double height = 170;
   double weight = 70;
+  double targetWeight = 65;
   bool isLoading = false;
 
   /// Save Step 2 Data & Continue
@@ -28,6 +27,7 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
     String? result = await _controller.saveStepTwoData(
       height: height.toInt(),
       weight: weight.toInt(),
+      targetWeight: targetWeight.toInt(),
     );
 
     setState(() {
@@ -41,9 +41,9 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
         MaterialPageRoute(builder: (_) => const StepThreeScreen()),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result)));
     }
   }
 
@@ -63,17 +63,29 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                   Text(
                     "Step 2 of 4",
-                    style: TextStyle(color: textMain, fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: textMain,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   GestureDetector(
                     onTap: _saveAndContinue, // skip → still save data
                     child: Text(
                       "SKIP",
-                      style: TextStyle(color: textGrey, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: textGrey,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -98,7 +110,11 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                   children: [
                     Text(
                       "Body Measurements",
-                      style: TextStyle(color: textMain, fontSize: 26, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: textMain,
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -133,6 +149,18 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                 divisions: 120,
                 onChanged: (val) => setState(() => weight = val),
               ),
+              const SizedBox(height: 30),
+
+              /// Target Weight Slider
+              buildSliderCard(
+                title: "Target Weight",
+                unit: "kg",
+                value: targetWeight,
+                min: 30,
+                max: 150,
+                divisions: 120,
+                onChanged: (val) => setState(() => targetWeight = val),
+              ),
               const Spacer(),
 
               /// Continue Button
@@ -154,10 +182,17 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                               children: [
                                 Text(
                                   "Continue",
-                                  style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                                 SizedBox(width: 8),
-                                Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: Colors.white,
+                                ),
                               ],
                             ),
                     ),
@@ -188,7 +223,10 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
         borderRadius: BorderRadius.circular(18),
         color: const Color(0xFF020617),
         boxShadow: [
-          BoxShadow(color: const Color(0xFF22C55E).withOpacity(0.12), blurRadius: 12),
+          BoxShadow(
+            color: const Color(0xFF22C55E).withOpacity(0.12),
+            blurRadius: 12,
+          ),
         ],
       ),
       child: Column(
@@ -198,18 +236,37 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(color: Color(0xFFF8FAFC), fontSize: 16, fontWeight: FontWeight.w600)),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: Color(0xFFF8FAFC),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  gradient: const LinearGradient(colors: [Color(0xFF22C55E), Color(0xFF06B6D4)]),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
+                  ),
                 ),
-                child: Text("${value.toInt()} $unit", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: Text(
+                  "${value.toInt()} $unit",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 10),
+
           /// Slider
           Slider(
             value: value,

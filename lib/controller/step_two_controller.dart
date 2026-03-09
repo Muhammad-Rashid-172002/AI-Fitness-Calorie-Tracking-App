@@ -6,7 +6,7 @@ class StepTwoController {
   /// Save Height & Weight to Firestore
   Future<String?> saveStepTwoData({
     required int height,
-    required int weight,
+    required int weight, required int targetWeight,
   }) async {
     try {
       final user = FirebaseAuth.instance.currentUser;

@@ -14,6 +14,7 @@ class HelpSupportScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
+        
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Help & Support",

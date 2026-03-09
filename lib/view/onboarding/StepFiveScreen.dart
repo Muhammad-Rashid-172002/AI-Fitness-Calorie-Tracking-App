@@ -48,18 +48,21 @@ class _StepFiveScreenState extends State<StepFiveScreen> {
       age: age,
       height: height,
       weight: weight,
+      targetWeight: data["targetWeight"]?.toDouble() ?? weight,
       activityLevel: activityLevel,
       goal: goal,
     );
 
     final result = formula.calculate();
 
+print(result); // 👈 add this
     // 3️⃣ Save formula to Firestore
     await FirebaseFirestore.instance.collection("users").doc(uid).update({
       "dailyCalories": result["dailyCalories"],
       "proteinTarget": result["protein"],
       "carbsTarget": result["carbs"],
       "fatTarget": result["fat"],
+      "estimatedWeeks": result["estimatedWeeks"],
       "formulaCalculated": true,
     });
 
@@ -102,6 +105,37 @@ class _StepFiveScreenState extends State<StepFiveScreen> {
 
                     const SizedBox(height: 35),
 
+                    /// ⏳ Timeline Card
+                    const SizedBox(height: 20),
+
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E293B),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            "Estimated Time To Reach Your Goal",
+                            style: TextStyle(color: textGrey, fontSize: 14),
+                          ),
+
+                          const SizedBox(height: 6),
+
+                          Text(
+                            "${formulaResult!["estimatedWeeks"]} Weeks",
+                            style: TextStyle(
+                              color: primary,
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                     /// 🎯 Big Calories Circle
                     Container(
                       height: 170,
@@ -137,6 +171,8 @@ class _StepFiveScreenState extends State<StepFiveScreen> {
                     const SizedBox(height: 40),
 
                     /// 📊 Macros Row
+
+                    /// 📊 Macros Row
                     Row(
                       children: [
                         Expanded(
@@ -165,6 +201,26 @@ class _StepFiveScreenState extends State<StepFiveScreen> {
                       Icons.opacity,
                     ),
 
+                    const SizedBox(height: 12),
+
+                    _buildMacroCard(
+                      "Timeline",
+                      "${formulaResult!["estimatedWeeks"]} weeks",
+                      Icons.schedule,
+                    ),
+                    const SizedBox(height: 12),
+
+                    // _buildMacroCard(
+                    //   "Fat",
+                    //   formulaResult!["fat"].toString() + " g",
+                    //   Icons.opacity,
+                    // ),
+                    // const SizedBox(height: 12),
+                    // _buildMacroCard(
+                    //   "Timeline",
+                    //   "${formulaResult!["estimatedWeeks"]} weeks",
+                    //   Icons.schedule,
+                    // ),
                     const SizedBox(height: 45),
 
                     /// 🚀 Finish Button
