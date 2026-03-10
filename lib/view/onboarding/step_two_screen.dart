@@ -16,10 +16,22 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
   double height = 170;
   double weight = 70;
   double targetWeight = 65;
+
   bool isLoading = false;
 
   /// Save Step 2 Data & Continue
   Future<void> _saveAndContinue() async {
+    if (targetWeight == weight) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Target weight should be different from current weight",
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() {
       isLoading = true;
     });
@@ -35,15 +47,13 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
     });
 
     if (result == null) {
-      // Success → Go to Step Three
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const StepThreeScreen()),
       );
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(result)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(result)));
     }
   }
 
@@ -57,17 +67,15 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+
               /// Top Bar
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.arrow_back_ios_new,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        color: Colors.white, size: 20),
                   ),
                   Text(
                     "Step 2 of 4",
@@ -78,7 +86,7 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                     ),
                   ),
                   GestureDetector(
-                    onTap: _saveAndContinue, // skip → still save data
+                    onTap: _saveAndContinue,
                     child: Text(
                       "SKIP",
                       style: TextStyle(
@@ -90,6 +98,7 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                   ),
                 ],
               ),
+
               const SizedBox(height: 25),
 
               /// Progress Bar
@@ -102,6 +111,7 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                   valueColor: AlwaysStoppedAnimation(primary),
                 ),
               ),
+
               const SizedBox(height: 35),
 
               /// Title
@@ -125,9 +135,10 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                   ],
                 ),
               ),
+
               const SizedBox(height: 45),
 
-              /// Height Slider
+              /// Height
               buildSliderCard(
                 title: "Height",
                 unit: "cm",
@@ -135,11 +146,16 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                 min: 140,
                 max: 220,
                 divisions: 80,
-                onChanged: (val) => setState(() => height = val),
+                onChanged: (val) {
+                  setState(() {
+                    height = val;
+                  });
+                },
               ),
+
               const SizedBox(height: 30),
 
-              /// Weight Slider
+              /// Weight
               buildSliderCard(
                 title: "Weight",
                 unit: "kg",
@@ -147,20 +163,37 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                 min: 30,
                 max: 150,
                 divisions: 120,
-                onChanged: (val) => setState(() => weight = val),
+                onChanged: (val) {
+                  setState(() {
+                    weight = val;
+
+                    /// important fix
+                    if (targetWeight > weight) {
+                      targetWeight = weight;
+                    }
+                  });
+                },
               ),
+
               const SizedBox(height: 30),
 
-              /// Target Weight Slider
+              /// Target Weight
               buildSliderCard(
                 title: "Target Weight",
                 unit: "kg",
                 value: targetWeight,
                 min: 30,
-                max: 150,
-                divisions: 120,
-                onChanged: (val) => setState(() => targetWeight = val),
+                max: weight,
+                divisions: (weight - 30).toInt() > 0
+                    ? (weight - 30).toInt()
+                    : 1,
+                onChanged: (val) {
+                  setState(() {
+                    targetWeight = val;
+                  });
+                },
               ),
+
               const Spacer(),
 
               /// Continue Button
@@ -189,16 +222,15 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                                   ),
                                 ),
                                 SizedBox(width: 8),
-                                Icon(
-                                  Icons.arrow_forward_rounded,
-                                  color: Colors.white,
-                                ),
+                                Icon(Icons.arrow_forward_rounded,
+                                    color: Colors.white),
                               ],
                             ),
                     ),
                   ),
                 ),
               ),
+
               const SizedBox(height: 25),
             ],
           ),
@@ -207,7 +239,7 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
     );
   }
 
-  /// Slider Card Widget
+  /// Slider Card
   Widget buildSliderCard({
     required String title,
     required String unit,
@@ -217,6 +249,10 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
     required int divisions,
     required Function(double) onChanged,
   }) {
+
+    /// important safety
+    double safeValue = value.clamp(min, max);
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -232,6 +268,7 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+
           /// Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -245,10 +282,8 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   gradient: const LinearGradient(
@@ -256,7 +291,7 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
                   ),
                 ),
                 child: Text(
-                  "${value.toInt()} $unit",
+                  "${safeValue.toInt()} $unit",
                   style: const TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -265,14 +300,15 @@ class _StepTwoScreenState extends State<StepTwoScreen> {
               ),
             ],
           ),
+
           const SizedBox(height: 10),
 
           /// Slider
           Slider(
-            value: value,
+            value: safeValue,
             min: min,
             max: max,
-            divisions: divisions,
+            divisions: divisions > 0 ? divisions : 1,
             activeColor: primary,
             inactiveColor: const Color(0xFF1E293B),
             thumbColor: accent,

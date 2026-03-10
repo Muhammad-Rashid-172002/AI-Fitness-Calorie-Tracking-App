@@ -109,11 +109,8 @@ class ScanResultScreen extends StatelessWidget {
                   onPressed: () async {
                     final parsedFood = controller.parseFoodFromResult(result);
 
-                    await controller.saveScan(
-                      result: result,
-                      food: parsedFood,
-                     // imageFile: image,
-                    );
+                    /// Save scan + update daily logs
+                    await controller.saveScan(result: result, food: parsedFood);
 
                     showCustomSnackBar(
                       context,
@@ -121,7 +118,8 @@ class ScanResultScreen extends StatelessWidget {
                       true,
                     );
 
-                    Navigator.of(context).pop({
+                    /// Return data to HomeScreen
+                    Navigator.pop(context, {
                       "calories": parsedFood.calories ?? 0,
                       "protein": parsedFood.protein ?? 0,
                       "carbs": parsedFood.carbs ?? 0,
@@ -138,24 +136,32 @@ class ScanResultScreen extends StatelessWidget {
   }
 
   Widget _nutritionCard(String title, String value) => Container(
-        margin: const EdgeInsets.symmetric(vertical: 5),
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.25),
-          borderRadius: BorderRadius.circular(15),
+    margin: const EdgeInsets.symmetric(vertical: 5),
+    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.25),
+      borderRadius: BorderRadius.circular(15),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title,
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w600)),
-            Text(value,
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.bold)),
-          ],
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 
   Widget _healthMessageCard(Food food) {
     String message = "";
@@ -192,7 +198,10 @@ class ScanResultScreen extends StatelessWidget {
             child: Text(
               message,
               style: const TextStyle(
-                  color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],

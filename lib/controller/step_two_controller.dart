@@ -18,6 +18,7 @@ class StepTwoController {
           .set({
             "height": height,
             "weight": weight,
+             "targetWeight": targetWeight,
             "updatedAt": FieldValue.serverTimestamp(),
           }, SetOptions(merge: true)); // merge:true → keep existing data
 

@@ -27,49 +27,62 @@ class _StepFiveScreenState extends State<StepFiveScreen> {
 
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
-    // 1️⃣ Load user profile info from Firestore
-    final userDoc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(uid)
-        .get();
-    if (!userDoc.exists) return;
+    try {
+      // 1️⃣ Load user profile info from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .get();
+      if (!userDoc.exists) return;
 
-    final data = userDoc.data()!;
-    final gender = data["gender"] ?? "Male";
-    final age = data["age"] ?? 25;
-    final height = (data["height"] ?? 170).toDouble();
-    final weight = (data["weight"] ?? 70).toDouble();
-    final activityLevel = data["activityLevel"] ?? "Moderately Active";
-    final goal = data["goal"] ?? "Maintain Weight";
+      final data = userDoc.data()!;
+      final gender = data["gender"] ?? "Male";
+      final age = data["age"] ?? 25;
+      final height = (data["height"] ?? 170).toDouble();
+      final weight = (data["weight"] ?? 70).toDouble();
+      final targetWeight = data["targetWeight"] != null
+          ? (data["targetWeight"] as num).toDouble()
+          : weight;
+      final activityLevel = data["activityLevel"] ?? "Moderately Active";
+      final goal = data["goal"] ?? "Maintain Weight";
 
-    // 2️⃣ Calculate formula
-    final formula = FormulaRecommendation(
-      gender: gender,
-      age: age,
-      height: height,
-      weight: weight,
-      targetWeight: data["targetWeight"]?.toDouble() ?? weight,
-      activityLevel: activityLevel,
-      goal: goal,
-    );
+      // 2️⃣ Calculate formula
+      final formula = FormulaRecommendation(
+        gender: gender,
+        age: age,
+        height: height,
+        weight: weight,
+        targetWeight: targetWeight,
+        activityLevel: activityLevel,
+        goal: goal,
+      );
 
-    final result = formula.calculate();
+      final result = formula.calculate();
 
-print(result); // 👈 add this
-    // 3️⃣ Save formula to Firestore
-    await FirebaseFirestore.instance.collection("users").doc(uid).update({
-      "dailyCalories": result["dailyCalories"],
-      "proteinTarget": result["protein"],
-      "carbsTarget": result["carbs"],
-      "fatTarget": result["fat"],
-      "estimatedWeeks": result["estimatedWeeks"],
-      "formulaCalculated": true,
-    });
+      print(result); // Debug: check timeline and macros
+      print("Current Weight: $weight");
+      print("Target Weight: ${data["targetWeight"]}");
+      print("Firestore Data: $data");
 
-    setState(() {
-      formulaResult = result;
-      isLoading = false;
-    });
+      // 3️⃣ Save formula to Firestore
+      await FirebaseFirestore.instance.collection("users").doc(uid).update({
+        "dailyCalories": result["dailyCalories"],
+        "proteinTarget": result["protein"],
+        "carbsTarget": result["carbs"],
+        "fatTarget": result["fat"],
+        "targetWeight": result["targetWeight"],
+        "estimatedWeeks": result["estimatedWeeks"],
+        "formulaCalculated": true,
+      });
+
+      setState(() {
+        formulaResult = result;
+        isLoading = false;
+      });
+    } catch (e) {
+      print("Error calculating formula: $e");
+      setState(() => isLoading = false);
+    }
   }
 
   @override
@@ -106,8 +119,6 @@ print(result); // 👈 add this
                     const SizedBox(height: 35),
 
                     /// ⏳ Timeline Card
-                    const SizedBox(height: 20),
-
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(18),
@@ -121,11 +132,9 @@ print(result); // 👈 add this
                             "Estimated Time To Reach Your Goal",
                             style: TextStyle(color: textGrey, fontSize: 14),
                           ),
-
                           const SizedBox(height: 6),
-
                           Text(
-                            "${formulaResult!["estimatedWeeks"]} Weeks",
+                            "${formulaResult?["estimatedWeeks"] ?? 0} Weeks to reach ${formulaResult?["targetWeight"] ?? 'your goal'} kg",
                             style: TextStyle(
                               color: primary,
                               fontSize: 22,
@@ -135,6 +144,8 @@ print(result); // 👈 add this
                         ],
                       ),
                     ),
+
+                    const SizedBox(height: 35),
 
                     /// 🎯 Big Calories Circle
                     Container(
@@ -149,7 +160,8 @@ print(result); // 👈 add this
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              formulaResult!["dailyCalories"].toString(),
+                              formulaResult?["dailyCalories"]?.toString() ??
+                                  "0",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 34,
@@ -171,14 +183,12 @@ print(result); // 👈 add this
                     const SizedBox(height: 40),
 
                     /// 📊 Macros Row
-
-                    /// 📊 Macros Row
                     Row(
                       children: [
                         Expanded(
                           child: _buildMacroCard(
                             "Protein",
-                            formulaResult!["protein"].toString() + " g",
+                            "${formulaResult?["protein"] ?? 0} g",
                             Icons.fitness_center,
                           ),
                         ),
@@ -186,7 +196,7 @@ print(result); // 👈 add this
                         Expanded(
                           child: _buildMacroCard(
                             "Carbs",
-                            formulaResult!["carbs"].toString() + " g",
+                            "${formulaResult?["carbs"] ?? 0} g",
                             Icons.rice_bowl,
                           ),
                         ),
@@ -197,7 +207,7 @@ print(result); // 👈 add this
 
                     _buildMacroCard(
                       "Fat",
-                      formulaResult!["fat"].toString() + " g",
+                      "${formulaResult?["fat"] ?? 0} g",
                       Icons.opacity,
                     ),
 
@@ -205,22 +215,10 @@ print(result); // 👈 add this
 
                     _buildMacroCard(
                       "Timeline",
-                      "${formulaResult!["estimatedWeeks"]} weeks",
+                      "${formulaResult?["estimatedWeeks"] ?? 0} weeks",
                       Icons.schedule,
                     ),
-                    const SizedBox(height: 12),
 
-                    // _buildMacroCard(
-                    //   "Fat",
-                    //   formulaResult!["fat"].toString() + " g",
-                    //   Icons.opacity,
-                    // ),
-                    // const SizedBox(height: 12),
-                    // _buildMacroCard(
-                    //   "Timeline",
-                    //   "${formulaResult!["estimatedWeeks"]} weeks",
-                    //   Icons.schedule,
-                    // ),
                     const SizedBox(height: 45),
 
                     /// 🚀 Finish Button
@@ -269,6 +267,7 @@ print(result); // 👈 add this
   Widget _buildMacroCard(String title, String value, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(18),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
         borderRadius: BorderRadius.circular(20),

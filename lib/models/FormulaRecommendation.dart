@@ -1,11 +1,11 @@
 class FormulaRecommendation {
   final String gender;
   final int age;
-  final double height;
-  final double weight;
-  final double targetWeight;
+  final double height; // in cm
+  final double weight; // current weight in kg
+  final double targetWeight; // target weight in kg
   final String activityLevel;
-  final String goal;
+  final String goal; // "Lose Weight", "Gain Muscle", "Maintain Weight"
 
   FormulaRecommendation({
     required this.gender,
@@ -18,57 +18,64 @@ class FormulaRecommendation {
   });
 
   Map<String, dynamic> calculate() {
-
-    /// 1️⃣ BMR Calculation
+    /// 1️ BMR Calculation (Mifflin-St Jeor)
     double bmr;
-
     if (gender == "Male") {
       bmr = 10 * weight + 6.25 * height - 5 * age + 5;
     } else {
       bmr = 10 * weight + 6.25 * height - 5 * age - 161;
     }
 
-    /// 2️⃣ Activity Multiplier
+    /// 2️ Activity Multiplier
     double activityMultiplier;
-
     switch (activityLevel) {
       case "Lightly Active":
         activityMultiplier = 1.375;
         break;
-
       case "Moderately Active":
         activityMultiplier = 1.55;
         break;
-
       case "Very Active":
         activityMultiplier = 1.725;
         break;
-
       default:
-        activityMultiplier = 1.2;
+        activityMultiplier = 1.2; // Sedentary
     }
 
     double maintenanceCalories = bmr * activityMultiplier;
 
-    /// 3️⃣ Goal Adjustment
+    /// 3️ Goal Adjustment
     double dailyCalories = maintenanceCalories;
 
     if (goal == "Lose Weight") {
-      dailyCalories = maintenanceCalories * 0.85;
+      dailyCalories = maintenanceCalories - 500; // ~0.5 kg/week
     } else if (goal == "Gain Muscle") {
-      dailyCalories = maintenanceCalories * 1.15;
+      dailyCalories = maintenanceCalories + 300; // moderate surplus
     }
 
-    /// 4️⃣ Macro Distribution
-    double protein = weight * 1.6;
-    double fat = (dailyCalories * 0.25) / 9;
-    double carbs = (dailyCalories - ((protein * 4) + (fat * 9))) / 4;
+    /// 4️ Macro Distribution
+    double protein; // g/day
+    double fat; // g/day
+    double carbs; // g/day
 
-    /// 5️⃣ Weight Timeline Calculation
-    double weightDifference = (weight - targetWeight).abs();
+    protein = weight * 1.6; // safe protein intake per kg
+    fat = (dailyCalories * 0.25) / 9; // 25% calories from fat
+    carbs = (dailyCalories - ((protein * 4) + (fat * 9))) / 4; // remaining calories to carbs
 
-    /// Safe fat loss rate ≈ 0.5kg per week
-    double estimatedWeeks = weightDifference / 0.5;
+    /// 5️ Weight Timeline Calculation
+    double weightDifference = (weight - targetWeight);
+    double weeklyChange;
+
+    if (goal == "Lose Weight") {
+      weeklyChange = 0.5; // safe loss
+    } else if (goal == "Gain Muscle") {
+      weeklyChange = 0.25; // safe gain
+    } else {
+      weeklyChange = 0.5; // maintain weight → just for timeline, can be 0
+    }
+
+    double estimatedWeeks =
+        weeklyChange > 0 ? (weightDifference.abs() / weeklyChange) : 0;
 
     return {
       "dailyCalories": dailyCalories.round(),
