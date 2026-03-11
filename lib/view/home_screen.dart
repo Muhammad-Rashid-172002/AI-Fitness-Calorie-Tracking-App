@@ -74,23 +74,34 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  String nextMealSuggestion() {
+String nextMealSuggestion() {
 
-    if (todayProtein < proteinGoal) {
-      return "Protein intake is low.\nTry eggs, chicken breast, or greek yogurt.";
-    }
+  int remainingCalories = dailyGoalCalories;
+  int remainingProtein = proteinGoal - todayProtein;
 
-    if (todayFat > fatGoal) {
-      return "Fat intake is high.\nChoose grilled or steamed food.";
-    }
-
-    if (dailyGoalCalories < 0) {
-      return "Calories are high.\nChoose vegetables or soup.";
-    }
-
-    return "Great balance today. Keep eating clean meals.";
+  // If calories almost finished
+  if (remainingCalories <= 150) {
+    return "You are close to your calorie limit.\nChoose light foods like salad, cucumber, or soup.";
   }
 
+  // If protein is low
+  if (remainingProtein >= 20) {
+    return "Your protein intake is low.\nTry foods like eggs, grilled chicken, greek yogurt, or lentils.";
+  }
+
+  // If fat is high
+  if (todayFat > fatGoal) {
+    return "Fat intake is high today.\nChoose grilled or steamed food like vegetables, boiled rice, or chicken breast.";
+  }
+
+  // If calories still high but protein good
+  if (remainingCalories > 400) {
+    return "You still have enough calories left.\nA balanced meal like rice, chicken, and vegetables would be good.";
+  }
+
+  // Normal balanced message
+  return "Great balance today.\nKeep eating clean meals and stay hydrated.";
+}
   @override
   Widget build(BuildContext context) {
 
@@ -206,29 +217,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 25),
 
                   /// ENERGY STATUS
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                  Center(
                     child: Column(
                       children: [
-
+                                        
                         Image.asset(
                           "assets/energy.png",
                           height: 120,
                         ),
-
+                                        
                         const SizedBox(height: 10),
-
+                                        
                         Text(
                           "Energy Status",
                           style: const TextStyle(color: Colors.white70),
                         ),
-
+                                        
                         const SizedBox(height: 5),
-
+                                        
                         Text(
                           energyStatus,
                           style: TextStyle(
@@ -245,13 +251,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   /// CALORIES REMAINING CARD
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       color: cardColor,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
 
                         const Text(
@@ -271,7 +278,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         const SizedBox(height: 10),
 
-                        Text(
+                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                           Text(
                           "Consumed: $calories kcal",
                           style: const TextStyle(color: Colors.white70),
                         ),
@@ -280,6 +290,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           "Goal: $dailyGoalCalories kcal",
                           style: const TextStyle(color: Colors.white70),
                         ),
+                        ],
+                       )
                       ],
                     ),
                   ),
@@ -303,6 +315,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   /// NEXT MEAL SUGGESTION
                   Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: cardColor,
@@ -401,54 +414,89 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// MACRO CIRCLE
-  Widget _macroCircle(String title, int value, int goal) {
+Widget _macroCircle(String title, int value, int goal) {
 
-    double progress = goal == 0 ? 0 : (value / goal).clamp(0.0, 1.0);
+  double progress = goal == 0 ? 0 : (value / goal).clamp(0.0, 1.0);
+  int percent = (progress * 100).toInt();
 
-    return Column(
+  return Container(
+    width: 110,
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: cardColor,
+      borderRadius: BorderRadius.circular(18),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(.3),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        )
+      ],
+    ),
+    child: Column(
       children: [
 
+        /// TITLE
+        Text(
+          title,
+          style: const TextStyle(
+            color: Colors.white70,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        /// PROGRESS RING
         SizedBox(
-          height: 90,
-          width: 90,
+          height: 70,
+          width: 70,
           child: Stack(
             alignment: Alignment.center,
             children: [
 
               CircularProgressIndicator(
                 value: progress,
-                strokeWidth: 8,
-                backgroundColor: Colors.white12,
+                strokeWidth: 7,
+                backgroundColor: Colors.white10,
                 valueColor: AlwaysStoppedAnimation(primary),
               ),
 
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-
-                  Text(
-                    "$value",
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold),
-                  ),
-
-                  Text(
-                    "/$goal g",
-                    style: const TextStyle(
-                        color: Colors.white54,
-                        fontSize: 12),
-                  ),
-                ],
+              /// PERCENT
+              Text(
+                "$percent%",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
         ),
 
-        const SizedBox(height: 6),
+        const SizedBox(height: 10),
 
-        Text(title, style: const TextStyle(color: Colors.white70))
+        /// VALUE
+        Text(
+          "$value g",
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
+
+        /// GOAL
+        Text(
+          "Goal $goal g",
+          style: const TextStyle(
+            color: Colors.white54,
+            fontSize: 12,
+          ),
+        ),
       ],
-    );
-  }
+    ),
+  );
+}
 }
