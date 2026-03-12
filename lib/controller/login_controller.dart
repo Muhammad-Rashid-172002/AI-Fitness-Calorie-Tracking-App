@@ -29,6 +29,27 @@ class LoginController {
 
     } on FirebaseAuthException catch (e) {
 
+      // 🔹 Email not registered
+      if (e.code == "user-not-found") {
+        return "Email not found";
+      }
+
+      // 🔹 Wrong password
+      if (e.code == "wrong-password") {
+        return "Incorrect password";
+      }
+
+      // 🔹 Invalid email format
+      if (e.code == "invalid-email") {
+        return "Invalid email address";
+      }
+
+      // 🔹 Too many attempts
+      if (e.code == "too-many-requests") {
+        return "Too many login attempts. Try again later.";
+      }
+
+      // 🔹 Default error
       return e.message ?? "Login failed";
 
     } catch (e) {
