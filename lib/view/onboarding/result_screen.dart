@@ -5,14 +5,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/view/buttom_bar.dart';
 
-class StepFiveScreen extends StatefulWidget {
-  const StepFiveScreen({super.key});
+class ResultScreen extends StatefulWidget {
+  const ResultScreen({super.key});
 
   @override
-  State<StepFiveScreen> createState() => _StepFiveScreenState();
+  State<ResultScreen> createState() => _ResultScreenState();
 }
 
-class _StepFiveScreenState extends State<StepFiveScreen> {
+class _ResultScreenState extends State<ResultScreen> {
   bool isLoading = true;
   Map<String, dynamic>? formulaResult;
 

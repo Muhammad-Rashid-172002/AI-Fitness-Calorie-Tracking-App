@@ -1,6 +1,6 @@
 import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/view/buttom_bar.dart';
-import 'package:fitmind_ai/view/onboarding/StepFiveScreen.dart';
+import 'package:fitmind_ai/view/onboarding/result_screen.dart';
 import 'package:flutter/material.dart';
 import '../../controller/step_four_controller.dart';
 
@@ -19,9 +19,18 @@ class _StepFourScreenState extends State<StepFourScreen> {
 
   final List<Map<String, String>> goals = [
     {"title": "Sedentary", "subtitle": "Little or no exercise"},
-    {"title": "Lightly Active", "subtitle": "Light exercise/sports 1-3 days/week"},
-    {"title": "Moderately Active", "subtitle": "Moderate exercise/sports 3-5 days/week"},
-    {"title": "Very Active", "subtitle": "Hard exercise/sports 6-7 days a week"},
+    {
+      "title": "Lightly Active",
+      "subtitle": "Light exercise/sports 1-3 days/week",
+    },
+    {
+      "title": "Moderately Active",
+      "subtitle": "Moderate exercise/sports 3-5 days/week",
+    },
+    {
+      "title": "Very Active",
+      "subtitle": "Hard exercise/sports 6-7 days a week",
+    },
   ];
 
   Future<void> _saveAndContinue() async {
@@ -30,7 +39,9 @@ class _StepFourScreenState extends State<StepFourScreen> {
     });
 
     String selectedActivity = goals[selectedIndex]["title"]!;
-    String? result = await _controller.saveStepFourData(activityLevel: selectedActivity);
+    String? result = await _controller.saveStepFourData(
+      activityLevel: selectedActivity,
+    );
 
     setState(() {
       isLoading = false;
@@ -40,13 +51,13 @@ class _StepFourScreenState extends State<StepFourScreen> {
       // Success → Go to Main View
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const StepFiveScreen()),
+        MaterialPageRoute(builder: (_) => const ResultScreen()),
       );
     } else {
       // Error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(result)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result)));
     }
   }
 
@@ -65,11 +76,27 @@ class _StepFourScreenState extends State<StepFourScreen> {
                 children: [
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 20),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
-                  Text("Step 4 of 4",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textMain)),
-                  Text("SKIP", style: TextStyle(color: textGrey, fontWeight: FontWeight.w600)),
+                  Text(
+                    "Step 4 of 4",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: textMain,
+                    ),
+                  ),
+                  Text(
+                    "SKIP",
+                    style: TextStyle(
+                      color: textGrey,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ],
               ),
 
@@ -87,9 +114,19 @@ class _StepFourScreenState extends State<StepFourScreen> {
               ),
               const SizedBox(height: 35),
 
-              Text("Activity Level", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: textMain)),
+              Text(
+                "Activity Level",
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: textMain,
+                ),
+              ),
               const SizedBox(height: 8),
-              Text("How active are you daily?", style: TextStyle(color: textGrey)),
+              Text(
+                "How active are you daily?",
+                style: TextStyle(color: textGrey),
+              ),
               const SizedBox(height: 30),
 
               /// Selectable Cards
@@ -117,8 +154,18 @@ class _StepFourScreenState extends State<StepFourScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(22),
-                      gradient: LinearGradient(colors: [primary, accent], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                      boxShadow: [BoxShadow(color: primary.withOpacity(0.45), blurRadius: 25, offset: const Offset(0, 8))],
+                      gradient: LinearGradient(
+                        colors: [primary, accent],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primary.withOpacity(0.45),
+                          blurRadius: 25,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
                     child: Center(
                       child: isLoading
@@ -126,9 +173,19 @@ class _StepFourScreenState extends State<StepFourScreen> {
                           : const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text("Continue", style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+                                Text(
+                                  "Continue",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
                                 SizedBox(width: 8),
-                                Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: Colors.white,
+                                ),
                               ],
                             ),
                     ),
@@ -144,7 +201,11 @@ class _StepFourScreenState extends State<StepFourScreen> {
   }
 
   /// Goal Card
-  Widget _goalCard({required int index, required String title, required String subtitle}) {
+  Widget _goalCard({
+    required int index,
+    required String title,
+    required String subtitle,
+  }) {
     final bool selected = selectedIndex == index;
 
     return GestureDetector(
@@ -155,12 +216,25 @@ class _StepFourScreenState extends State<StepFourScreen> {
         margin: const EdgeInsets.only(bottom: 18),
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          gradient: selected ? LinearGradient(colors: [primary.withOpacity(0.2), accent.withOpacity(0.2)]) : null,
+          gradient: selected
+              ? LinearGradient(
+                  colors: [primary.withOpacity(0.2), accent.withOpacity(0.2)],
+                )
+              : null,
           color: selected ? null : const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? primary : const Color(0xFF334155), width: 1.5),
+          border: Border.all(
+            color: selected ? primary : const Color(0xFF334155),
+            width: 1.5,
+          ),
           boxShadow: [
-            BoxShadow(color: selected ? primary.withOpacity(0.35) : Colors.black.withOpacity(0.4), blurRadius: selected ? 18 : 8, offset: const Offset(0, 6)),
+            BoxShadow(
+              color: selected
+                  ? primary.withOpacity(0.35)
+                  : Colors.black.withOpacity(0.4),
+              blurRadius: selected ? 18 : 8,
+              offset: const Offset(0, 6),
+            ),
           ],
         ),
         child: Row(
@@ -169,27 +243,50 @@ class _StepFourScreenState extends State<StepFourScreen> {
               height: 42,
               width: 42,
               decoration: BoxDecoration(
-                gradient: selected ? LinearGradient(colors: [primary, accent]) : null,
+                gradient: selected
+                    ? LinearGradient(colors: [primary, accent])
+                    : null,
                 color: selected ? null : const Color(0xFF334155),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.directions_run, color: selected ? Colors.white : textGrey, size: 22),
+              child: Icon(
+                Icons.directions_run,
+                color: selected ? Colors.white : textGrey,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 15),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: textMain)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: textMain,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(color: selected ? accent : textGrey, fontSize: 13)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: selected ? accent : textGrey,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             ),
             AnimatedOpacity(
               duration: const Duration(milliseconds: 200),
               opacity: selected ? 1 : 0,
-              child: CircleAvatar(radius: 14, backgroundColor: primary, child: const Icon(Icons.check, size: 18, color: Colors.white)),
+              child: CircleAvatar(
+                radius: 14,
+                backgroundColor: primary,
+                child: const Icon(Icons.check, size: 18, color: Colors.white),
+              ),
             ),
           ],
         ),

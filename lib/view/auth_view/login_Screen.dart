@@ -5,7 +5,7 @@ import 'package:fitmind_ai/controller/login_controller.dart';
 import 'package:fitmind_ai/view/auth_view/forgot_password.dart';
 import 'package:fitmind_ai/view/auth_view/signup_screen.dart';
 import 'package:fitmind_ai/view/buttom_bar.dart';
-import 'package:fitmind_ai/view/onboarding/step_one_screen.dart';
+import 'package:fitmind_ai/view/onboarding/gender.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
@@ -85,7 +85,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: TextButton(
                     onPressed: () {
                       // TODO: Forgot Password
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPassword()));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ForgotPassword(),
+                        ),
+                      );
                     },
                     child: const Text(
                       "Forgot Password?",
@@ -160,8 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-              
-              
+
                 const SizedBox(height: 45),
 
                 /// Divider
@@ -213,9 +217,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const StepOneScreen(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const GenderScreen()),
                         );
                       }
                       // Error

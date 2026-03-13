@@ -4,14 +4,14 @@ import 'package:fitmind_ai/view/onboarding/Step_four_screen.dart';
 
 import '../../controller/step_three_controller.dart';
 
-class StepThreeScreen extends StatefulWidget {
-  const StepThreeScreen({super.key});
+class GoalScreen extends StatefulWidget {
+  const GoalScreen({super.key});
 
   @override
-  State<StepThreeScreen> createState() => _StepThreeScreenState();
+  State<GoalScreen> createState() => _GoalScreenState();
 }
 
-class _StepThreeScreenState extends State<StepThreeScreen> {
+class _GoalScreenState extends State<GoalScreen> {
   final StepThreeController _controller = StepThreeController();
 
   int selectedIndex = 0;

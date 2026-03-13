@@ -4,7 +4,7 @@ import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:fitmind_ai/controller/google_auth_controller.dart';
 import 'package:fitmind_ai/controller/signup_controller.dart';
 import 'package:fitmind_ai/view/auth_view/login_Screen.dart';
-import 'package:fitmind_ai/view/onboarding/step_one_screen.dart';
+import 'package:fitmind_ai/view/onboarding/gender.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
@@ -138,9 +138,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         // Navigate to next screen (replace signup)
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const StepOneScreen(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const GenderScreen()),
                         );
                       }
                       // If error
@@ -210,8 +208,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       showDialog(
                         context: context,
                         barrierDismissible: false,
-                        builder: (_) =>
-                            const Center(child: CircularProgressIndicator(color: Colors.green,)),
+                        builder: (_) => const Center(
+                          child: CircularProgressIndicator(color: Colors.green),
+                        ),
                       );
 
                       // Call Google Login
@@ -226,9 +225,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const StepOneScreen(),
-                          ),
+                          MaterialPageRoute(builder: (_) => const GenderScreen()),
                         );
                       }
                       // Error
