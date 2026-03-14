@@ -97,7 +97,6 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   @override
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
@@ -114,122 +113,160 @@ class _ResultScreenState extends State<ResultScreen> {
                     /// DAILY TARGET
                     Row(
                       children: [
-                        Icon(Icons.flash_on, color: primary),
-                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: primary.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.flash_on, color: primary),
+                        ),
+                        const SizedBox(width: 10),
                         Text(
                           "DAILY TARGET",
                           style: TextStyle(
                             color: primary,
-                            letterSpacing: 1.5,
+                            letterSpacing: 1.8,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 15),
+                    const SizedBox(height: 18),
 
                     /// Title
                     Text(
-                      "Nutrition Plan",
+                      "Your Nutrition Plan",
                       style: TextStyle(
-                        fontSize: 32,
+                        fontSize: 34,
                         fontWeight: FontWeight.bold,
                         color: textMain,
                       ),
                     ),
 
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 6),
 
                     Text(
-                      "Optimized for your weight path.",
+                      "Optimized for your Diet goal",
                       style: TextStyle(color: textGrey, fontSize: 15),
                     ),
 
                     const SizedBox(height: 30),
 
-                    /// Calories Card
+                    /// CALORIES CARD
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF111827),
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: primary.withOpacity(0.25),
-                            blurRadius: 25,
-                          ),
-                        ],
+                        gradient: LinearGradient(colors: [primary, accent]),
+                        borderRadius: BorderRadius.circular(30),
                       ),
-                      child: Column(
-                        children: [
-                          Text(
-                            "DAILY CALORIES",
-                            style: TextStyle(color: textGrey, letterSpacing: 2),
-                          ),
-
-                          const SizedBox(height: 10),
-
-                          Text(
-                            "${formulaResult?["dailyCalories"] ?? 0}",
-                            style: TextStyle(
-                              fontSize: 48,
-                              fontWeight: FontWeight.bold,
-                              color: textMain,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F172A),
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              "DAILY CALORIES",
+                              style: TextStyle(
+                                color: textGrey,
+                                letterSpacing: 2,
+                              ),
                             ),
-                          ),
 
-                          Text(
-                            "KCAL / DAY",
-                            style: TextStyle(
-                              color: primary,
-                              letterSpacing: 1.5,
+                            const SizedBox(height: 12),
+
+                            Text(
+                              "${formulaResult?["dailyCalories"] ?? 0}",
+                              style: const TextStyle(
+                                fontSize: 52,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
                             ),
-                          ),
-                        ],
+
+                            const SizedBox(height: 4),
+
+                            Text(
+                              "KCAL / DAY",
+                              style: TextStyle(
+                                color: primary,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 35),
 
-                    /// Macros Circles
+                    /// MACROS
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _macroCircle("Protein", formulaResult?["protein"] ?? 0),
-
                         _macroCircle("Carbs", formulaResult?["carbs"] ?? 0),
-
                         _macroCircle("Fats", formulaResult?["fat"] ?? 0),
                       ],
                     ),
 
-                    const SizedBox(height: 25),
+                    const SizedBox(height: 30),
 
-                    /// Timeline Card (ADDED BACK)
+                    /// TIMELINE CARD
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1E293B),
                         borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: 20,
+                          ),
+                        ],
                       ),
-                      child: Column(
+                      child: Row(
                         children: [
-                          Text(
-                            "Estimated Time To Reach Your Goal",
-                            style: TextStyle(color: textGrey, fontSize: 14),
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: primary.withOpacity(0.15),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.schedule, color: primary),
                           ),
 
-                          const SizedBox(height: 6),
+                          const SizedBox(width: 14),
 
-                          Text(
-                            "${formulaResult?["estimatedWeeks"] ?? 0} Weeks to reach ${formulaResult?["targetWeight"] ?? 0} kg",
-                            style: TextStyle(
-                              color: primary,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Estimated Goal Time",
+                                  style: TextStyle(
+                                    color: textGrey,
+                                    fontSize: 13,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 3),
+
+                                Text(
+                                  "${formulaResult?["estimatedWeeks"] ?? 0} weeks to reach ${formulaResult?["targetWeight"] ?? 0} kg",
+                                  style: TextStyle(
+                                    color: textMain,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -238,8 +275,32 @@ class _ResultScreenState extends State<ResultScreen> {
 
                     const Spacer(),
 
-                    /// Start Journey Button
-                   CustomGradientButton(text: "Start Journey", onPressed: _startJourney),
+                    /// BUTTON
+                    isStartingJourney
+                        ? Container(
+                            height: 55,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [primary, accent],
+                              ),
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                            child: const Center(
+                              child: SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          )
+                        : CustomGradientButton(
+                            text: "Continue",
+                            onPressed: _startJourney,
+                          ),
 
                     const SizedBox(height: 20),
                   ],
@@ -248,76 +309,47 @@ class _ResultScreenState extends State<ResultScreen> {
       ),
     );
   }
-  // Widget _buildMacroCard(String title, String value, IconData icon) {
-  //   return Container(
-  //     padding: const EdgeInsets.all(18),
-  //     margin: const EdgeInsets.only(bottom: 12),
-  //     decoration: BoxDecoration(
-  //       color: const Color(0xFF1E293B),
-  //       borderRadius: BorderRadius.circular(20),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: Colors.black.withOpacity(0.2),
-  //           blurRadius: 12,
-  //           offset: const Offset(0, 4),
-  //         ),
-  //       ],
-  //     ),
-  //     child: Row(
-  //       children: [
-  //         Container(
-  //           padding: const EdgeInsets.all(10),
-  //           decoration: BoxDecoration(
-  //             color: primary.withOpacity(0.15),
-  //             shape: BoxShape.circle,
-  //           ),
-  //           child: Icon(icon, color: primary, size: 22),
-  //         ),
-  //         const SizedBox(width: 15),
-  //         Expanded(
-  //           child: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             children: [
-  //               Text(title, style: TextStyle(color: textGrey, fontSize: 14)),
-  //               const SizedBox(height: 4),
-  //               Text(
-  //                 value,
-  //                 style: TextStyle(
-  //                   color: textMain,
-  //                   fontSize: 16,
-  //                   fontWeight: FontWeight.bold,
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _macroCircle(String title, int value) {
     return Column(
       children: [
         Container(
-          height: 90,
-          width: 90,
+          height: 95,
+          width: 95,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            border: Border.all(color: primary, width: 6),
+            gradient: LinearGradient(colors: [primary, accent]),
+            boxShadow: [
+              BoxShadow(color: primary.withOpacity(0.4), blurRadius: 15),
+            ],
           ),
           child: Center(
-            child: Text(
-              "$value\nG",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: textMain, fontWeight: FontWeight.bold),
+            child: Container(
+              height: 82,
+              width: 82,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Color(0xFF0F172A),
+              ),
+              child: Center(
+                child: Text(
+                  "$value g",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
             ),
           ),
         ),
 
         const SizedBox(height: 10),
 
-        Text(title, style: TextStyle(color: textGrey)),
+        Text(
+          title,
+          style: TextStyle(color: textGrey, fontWeight: FontWeight.w500),
+        ),
       ],
     );
   }

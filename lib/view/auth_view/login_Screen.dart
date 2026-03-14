@@ -5,7 +5,7 @@ import 'package:fitmind_ai/controller/login_controller.dart';
 import 'package:fitmind_ai/view/auth_view/forgot_password.dart';
 import 'package:fitmind_ai/view/auth_view/signup_screen.dart';
 import 'package:fitmind_ai/view/buttom_bar.dart';
-import 'package:fitmind_ai/view/onboarding/gender.dart';
+import 'package:fitmind_ai/view/onboarding/body_info_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
@@ -186,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(
                   width: double.infinity,
                   height: 60,
-                  child: OutlinedButton.icon(
+                  child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFF334155)),
                       shape: RoundedRectangleBorder(
@@ -196,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
 
                     onPressed: () async {
-                      // Show loading
+                      /// Show loading
                       showDialog(
                         context: context,
                         barrierDismissible: false,
@@ -205,43 +205,45 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       );
 
-                      // Call Google Login
+                      /// Google Login
                       String? result = await googleController
                           .signInWithGoogle();
 
-                      Navigator.pop(context); // Remove loading
+                      Navigator.pop(context);
 
-                      // Success
+                      /// Success
                       if (result == null) {
                         showCustomSnackBar(context, "Login Successful", true);
 
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (_) => const GenderScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const BodyInfoScreen(),
+                          ),
                         );
-                      }
-                      // Error
-                      else {
+                      } else {
                         showCustomSnackBar(context, result, false);
                       }
                     },
 
-                    icon: const Icon(
-                      Icons.g_mobiledata,
-                      size: 30,
-                      color: Colors.white,
-                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset("assets/google.png", height: 28),
 
-                    label: const Text(
-                      "Continue with Google",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+                        const SizedBox(width: 12),
+
+                        const Text(
+                          "Continue with Google",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 40),
 
                 /// Sign Up

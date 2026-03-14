@@ -160,61 +160,70 @@ String nextMealSuggestion() {
                   const SizedBox(height: 20),
 
                   /// WEEK CALENDAR
-                  SizedBox(
-                    height: 70,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: 7,
-                      itemBuilder: (context, index) {
+                SizedBox(
+  height: 70,
+  child: ListView.builder(
+    scrollDirection: Axis.horizontal,
+    itemCount: 7,
+    itemBuilder: (context, index) {
 
-                        DateTime weekDay =
-                        DateTime.now()
-                            .subtract(Duration(days: DateTime.now().weekday - 1))
-                            .add(Duration(days: index));
+      DateTime startOfWeek =
+          DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
 
-                        bool isSelected =
-                            DateFormat('yyyy-MM-dd').format(weekDay) ==
-                                DateFormat('yyyy-MM-dd').format(selectedDate);
+      DateTime weekDay = startOfWeek.add(Duration(days: index));
 
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedDate = weekDay;
-                            });
-                          },
-                          child: Container(
-                            width: 60,
-                            margin: const EdgeInsets.only(right: 10),
-                            decoration: BoxDecoration(
-                              color: isSelected ? primary : cardColor,
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
+      bool isToday =
+          DateFormat('yyyy-MM-dd').format(weekDay) ==
+          DateFormat('yyyy-MM-dd').format(DateTime.now());
 
-                                Text(
-                                  DateFormat("E").format(weekDay),
-                                  style: const TextStyle(color: Colors.white70),
-                                ),
+      return Container(
+        width: 60,
+        margin: const EdgeInsets.only(right: 10),
+        decoration: BoxDecoration(
+          color: isToday ? primary : cardColor,
+          borderRadius: BorderRadius.circular(14),
 
-                                const SizedBox(height: 6),
+          /// Optional glow for today
+          boxShadow: isToday
+              ? [
+                  BoxShadow(
+                    color: primary.withOpacity(0.5),
+                    blurRadius: 12,
+                    spreadRadius: 1,
+                  )
+                ]
+              : [],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
 
-                                Text(
-                                  DateFormat("d").format(weekDay),
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+            /// Day Name
+            Text(
+              DateFormat("E").format(weekDay),
+              style: TextStyle(
+                color: isToday ? Colors.white : Colors.white70,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
 
-                  const SizedBox(height: 25),
+            const SizedBox(height: 6),
+
+            /// Date Number
+            Text(
+              DateFormat("d").format(weekDay),
+              style: TextStyle(
+                color: isToday ? Colors.white : Colors.white70,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  ),
+),
+  const SizedBox(height: 25),
 
                   /// ENERGY STATUS
                   Center(

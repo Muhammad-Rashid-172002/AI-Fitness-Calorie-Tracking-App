@@ -4,7 +4,7 @@ import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:fitmind_ai/controller/google_auth_controller.dart';
 import 'package:fitmind_ai/controller/signup_controller.dart';
 import 'package:fitmind_ai/view/auth_view/login_Screen.dart';
-import 'package:fitmind_ai/view/onboarding/gender.dart';
+import 'package:fitmind_ai/view/onboarding/body_info_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
@@ -138,7 +138,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         // Navigate to next screen (replace signup)
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (_) => const GenderScreen()),
+                          MaterialPageRoute(builder: (_) => const BodyInfoScreen()),
                         );
                       }
                       // If error
@@ -191,66 +191,67 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 45),
 
                 /// Google Login
-                SizedBox(
-                  width: double.infinity,
-                  height: 60,
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFF334155)),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      backgroundColor: const Color(0xFF020617),
-                    ),
+              SizedBox(
+  width: double.infinity,
+  height: 60,
+  child: OutlinedButton.icon(
+    style: OutlinedButton.styleFrom(
+      side: const BorderSide(color: Color(0xFF334155)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      backgroundColor: const Color(0xFF020617),
+    ),
 
-                    onPressed: () async {
-                      // Show loading
-                      showDialog(
-                        context: context,
-                        barrierDismissible: false,
-                        builder: (_) => const Center(
-                          child: CircularProgressIndicator(color: Colors.green),
-                        ),
-                      );
+    onPressed: () async {
 
-                      // Call Google Login
-                      String? result = await googleController
-                          .signInWithGoogle();
+      /// Show loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(
+          child: CircularProgressIndicator(color: Colors.green),
+        ),
+      );
 
-                      Navigator.pop(context); // Remove loading
+      /// Google Login
+      String? result = await googleController.signInWithGoogle();
 
-                      // Success
-                      if (result == null) {
-                        showCustomSnackBar(context, "Login Successful", true);
+      Navigator.pop(context); // Remove loading
 
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const GenderScreen()),
-                        );
-                      }
-                      // Error
-                      else {
-                        showCustomSnackBar(context, result, false);
-                      }
-                    },
+      /// Success
+      if (result == null) {
+        showCustomSnackBar(context, "Login Successful", true);
 
-                    icon: const Icon(
-                      Icons.g_mobiledata,
-                      size: 30,
-                      color: Colors.white,
-                    ),
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const BodyInfoScreen(),
+          ),
+        );
+      }
 
-                    label: const Text(
-                      "Continue with Google",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
+      /// Error
+      else {
+        showCustomSnackBar(context, result, false);
+      }
+    },
 
-                const SizedBox(height: 40),
+    /// Google Image
+    icon: Image.asset(
+      "assets/google.png",
+      height: 26,
+    ),
+
+    label: const Text(
+      "Continue with Google",
+      style: TextStyle(
+        color: Colors.white,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  ),
+), const SizedBox(height: 40),
 
                 /// Already Account
                 Center(

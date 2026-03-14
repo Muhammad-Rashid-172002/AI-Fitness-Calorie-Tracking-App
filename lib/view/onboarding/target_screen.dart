@@ -62,32 +62,39 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-
-              /// Step Text
-              Text(
-                "Step 5 of 7",
-                style: TextStyle(
-                  color: textGrey,
-                  fontSize: 14,
-                ),
+      
+              /// Progress
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _progress(false),
+                  const SizedBox(width: 8),
+                  _progress(true),
+                  const SizedBox(width: 8),
+                  _progress(false),
+                  const SizedBox(width: 8),
+                  _progress(false),
+                  const SizedBox(width: 8),
+                  _progress(false),
+                  const SizedBox(width: 8),
+                  _progress(false),
+                ],
               ),
               const SizedBox(height: 10),
-
-              /// Progress Bar
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: 0.71,
-                  minHeight: 6,
-                  backgroundColor: const Color(0xFF1E293B),
-                  valueColor: AlwaysStoppedAnimation(primary),
+              const Center(
+                child: Text(
+                  "Step 2 of 6",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               const SizedBox(height: 40),
-
+      
               /// Title
               Text(
-                "What is your target weight?",
+                "Set Your Target Weight",
                 style: TextStyle(
                   color: textMain,
                   fontSize: 28,
@@ -102,37 +109,52 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-
+      
               /// Target Weight Card
               Center(
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
+                      const EdgeInsets.symmetric(horizontal: 30, vertical: 25),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(30),
                     gradient: LinearGradient(
-                      colors: [primary.withOpacity(0.9), accent.withOpacity(0.9)],
+                      colors: [
+                        primary.withOpacity(0.85),
+                        accent.withOpacity(0.85),
+                      ],
                     ),
                     boxShadow: [
                       BoxShadow(
                         color: primary.withOpacity(0.4),
-                        blurRadius: 20,
+                        blurRadius: 25,
                         offset: const Offset(0, 10),
                       ),
                     ],
                   ),
-                  child: Text(
-                    "${targetWeight.toInt()} kg",
-                    style: const TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  child: Column(
+                    children: [
+                      Text(
+                        "${targetWeight.toInt()} kg",
+                        style: const TextStyle(
+                          fontSize: 44,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        "Slide to adjust your goal",
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
-
+              const SizedBox(height: 50),
+      
               /// Slider
               SliderTheme(
                 data: SliderTheme.of(context).copyWith(
@@ -141,14 +163,17 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
                   thumbColor: primary,
                   overlayColor: primary.withOpacity(0.2),
                   thumbShape:
-                      const RoundSliderThumbShape(enabledThumbRadius: 16),
+                      const RoundSliderThumbShape(enabledThumbRadius: 18),
                   trackHeight: 6,
                   valueIndicatorColor: primary,
+                  valueIndicatorTextStyle:
+                      const TextStyle(color: Colors.white),
                 ),
                 child: Slider(
                   value: targetWeight,
                   min: 30,
                   max: widget.weight,
+                  divisions: (widget.weight - 30).toInt(),
                   label: "${targetWeight.toInt()} kg",
                   onChanged: (value) {
                     setState(() => targetWeight = value);
@@ -156,7 +181,7 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
                 ),
               ),
               const Spacer(),
-
+      
               /// Continue Button
               SizedBox(
                 width: double.infinity,
@@ -166,7 +191,9 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(22),
-                      gradient: LinearGradient(colors: [primary, accent]),
+                      gradient: LinearGradient(
+                        colors: [primary, accent],
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: accent.withOpacity(0.6),
@@ -207,6 +234,28 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Progress Indicator
+  Widget _progress(bool active) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: active ? 35 : 20,
+      height: 6,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: active
+            ? const LinearGradient(
+                colors: [
+                  Color(0xFF22C55E), // Green
+                  Color(0xFF06B6D4), // Cyan
+                  Color(0xFF38BDF8), // Light Blue
+                ],
+              )
+            : null,
+        color: active ? null : Colors.white24,
       ),
     );
   }

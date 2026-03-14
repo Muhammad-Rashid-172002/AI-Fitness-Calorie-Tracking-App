@@ -7,6 +7,8 @@ class StepOneController {
   Future<String?> saveStepOneData({
     required String gender,
     required int age,
+    required double height,
+    required double weight,
   }) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -19,6 +21,8 @@ class StepOneController {
           .set({
             "gender": gender,
             "age": age,
+            "height": height,
+            "weight": weight,
           }, SetOptions(merge: true)); // merge:true → don't overwrite other fields
 
       return null; // Success

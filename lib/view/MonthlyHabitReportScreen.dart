@@ -175,9 +175,9 @@ Follow structure:
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: const Text("MyDiet - Monthly AI Habit Report"),
+        title: const Text("MyDiet Monthly AI Habit Report"),
         backgroundColor: cardColor,
         foregroundColor: textMain,
         elevation: 0,

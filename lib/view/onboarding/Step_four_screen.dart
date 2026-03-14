@@ -19,7 +19,10 @@ class _StepFourScreenState extends State<StepFourScreen> {
   final List<Map<String, String>> activities = [
     {"title": "Sedentary", "subtitle": "Little or no exercise"},
     {"title": "Lightly Active", "subtitle": "Light exercise 1-3 days/week"},
-    {"title": "Moderately Active", "subtitle": "Moderate exercise 3-5 days/week"},
+    {
+      "title": "Moderately Active",
+      "subtitle": "Moderate exercise 3-5 days/week",
+    },
     {"title": "Very Active", "subtitle": "Hard exercise 6-7 days/week"},
   ];
 
@@ -27,7 +30,9 @@ class _StepFourScreenState extends State<StepFourScreen> {
     setState(() => isLoading = true);
 
     String selectedActivity = activities[selectedIndex]["title"]!;
-    String? result = await _controller.saveStepFourData(activityLevel: selectedActivity);
+    String? result = await _controller.saveStepFourData(
+      activityLevel: selectedActivity,
+    );
 
     setState(() => isLoading = false);
 
@@ -37,7 +42,9 @@ class _StepFourScreenState extends State<StepFourScreen> {
         MaterialPageRoute(builder: (_) => const ResultScreen()),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(result)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result)));
     }
   }
 
@@ -55,45 +62,51 @@ class _StepFourScreenState extends State<StepFourScreen> {
 
               /// Top Bar
               Row(
-                mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                 
-                  Text(
-                    "Step 7 of 7",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textMain),
-                  ),
-                
+                  _progress(false),
+                  const SizedBox(width: 8),
+                  _progress(false),
+                  const SizedBox(width: 8),
+                  _progress(false),
+                  const SizedBox(width: 8),
+                  _progress(true),
                 ],
               ),
-              const SizedBox(height: 12),
 
-              /// Progress Bar
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: 1,
-                  minHeight: 6,
-                  backgroundColor: const Color(0xFF1E293B),
-                  valueColor: AlwaysStoppedAnimation(primary),
+              const SizedBox(height: 10),
+
+              const Center(
+                child: Text(
+                  "Step 4 of 4",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
+
               const SizedBox(height: 35),
 
               /// Title
               Text(
-                "Activity Level",
+                "How active are you?",
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: textMain,
                   shadows: const [
-                    Shadow(color: Colors.black38, blurRadius: 6, offset: Offset(0, 3)),
+                    Shadow(
+                      color: Colors.black38,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: 6),
               Text(
-                "How active are you daily?",
+                "Your activity level helps us calculate your daily calorie needs.",
                 style: TextStyle(color: textGrey, fontSize: 14),
               ),
               const SizedBox(height: 30),
@@ -123,8 +136,18 @@ class _StepFourScreenState extends State<StepFourScreen> {
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(22),
-                      gradient: LinearGradient(colors: [primary, accent], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                      boxShadow: [BoxShadow(color: primary.withOpacity(0.45), blurRadius: 25, offset: const Offset(0, 8))],
+                      gradient: LinearGradient(
+                        colors: [primary, accent],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primary.withOpacity(0.45),
+                          blurRadius: 25,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
                     ),
                     child: Center(
                       child: isLoading
@@ -134,10 +157,17 @@ class _StepFourScreenState extends State<StepFourScreen> {
                               children: [
                                 Text(
                                   "Continue",
-                                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                                 SizedBox(width: 8),
-                                Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                                Icon(
+                                  Icons.arrow_forward_rounded,
+                                  color: Colors.white,
+                                ),
                               ],
                             ),
                     ),
@@ -153,7 +183,11 @@ class _StepFourScreenState extends State<StepFourScreen> {
   }
 
   /// Activity Card
-  Widget _activityCard({required int index, required String title, required String subtitle}) {
+  Widget _activityCard({
+    required int index,
+    required String title,
+    required String subtitle,
+  }) {
     final bool selected = selectedIndex == index;
 
     return GestureDetector(
@@ -165,12 +199,21 @@ class _StepFourScreenState extends State<StepFourScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: selected ? null : const Color(0xFF1E293B),
-          gradient: selected ? LinearGradient(colors: [primary.withOpacity(0.2), accent.withOpacity(0.2)]) : null,
+          gradient: selected
+              ? LinearGradient(
+                  colors: [primary.withOpacity(0.2), accent.withOpacity(0.2)],
+                )
+              : null,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? primary : const Color(0xFF334155), width: 1.5),
+          border: Border.all(
+            color: selected ? primary : const Color(0xFF334155),
+            width: 1.5,
+          ),
           boxShadow: [
             BoxShadow(
-              color: selected ? primary.withOpacity(0.35) : Colors.black.withOpacity(0.3),
+              color: selected
+                  ? primary.withOpacity(0.35)
+                  : Colors.black.withOpacity(0.3),
               blurRadius: selected ? 18 : 8,
               offset: const Offset(0, 6),
             ),
@@ -184,10 +227,16 @@ class _StepFourScreenState extends State<StepFourScreen> {
               width: 46,
               decoration: BoxDecoration(
                 color: selected ? null : const Color(0xFF334155),
-                gradient: selected ? LinearGradient(colors: [primary, accent]) : null,
+                gradient: selected
+                    ? LinearGradient(colors: [primary, accent])
+                    : null,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.directions_run, color: selected ? Colors.white : textGrey, size: 24),
+              child: Icon(
+                Icons.directions_run,
+                color: selected ? Colors.white : textGrey,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 16),
 
@@ -196,9 +245,22 @@ class _StepFourScreenState extends State<StepFourScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textMain)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: textMain,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(color: selected ? accent : textGrey, fontSize: 13)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: selected ? accent : textGrey,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -215,6 +277,28 @@ class _StepFourScreenState extends State<StepFourScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Progress Indicator
+  Widget _progress(bool active) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: active ? 35 : 20,
+      height: 6,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: active
+            ? const LinearGradient(
+                colors: [
+                  Color(0xFF22C55E), // Green
+                  Color(0xFF06B6D4), // Cyan
+                  Color(0xFF38BDF8), // Light Blue
+                ],
+              )
+            : null,
+        color: active ? null : Colors.white24,
       ),
     );
   }

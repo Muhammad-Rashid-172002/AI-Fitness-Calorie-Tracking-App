@@ -1,6 +1,6 @@
-# FitMind AI
+# MyDiet
 
-FitMind AI is a Flutter-based mobile application designed to help users improve mental wellness, focus, and productivity through AI-driven personalized guidance and exercises.
+MyDiet AI is a Flutter-based mobile application designed to help users improve mental wellness, focus, and productivity through AI-driven personalized guidance and exercises.
 
 ## Features
 

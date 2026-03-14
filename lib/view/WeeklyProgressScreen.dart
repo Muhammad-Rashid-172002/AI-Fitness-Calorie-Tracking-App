@@ -83,7 +83,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text("Weekly Progress"),
         backgroundColor: cardColor,

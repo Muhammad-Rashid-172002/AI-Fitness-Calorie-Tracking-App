@@ -54,33 +54,33 @@ class _GoalScreenState extends State<GoalScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-
-              /// Top Bar
+      
+              /// Progress
               Row(
-                mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                
-                  Text(
-                    "Step 5 of 7",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textMain),
-                  ),
-                  
+                  _progress(false),
+                  const SizedBox(width: 8),
+                  _progress(false),
+                  const SizedBox(width: 8),
+                  _progress(true),
+                  const SizedBox(width: 8),
+                  _progress(false),
+                 
                 ],
               ),
-              const SizedBox(height: 12),
-
-              /// Progress Bar
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: 0.85,
-                  minHeight: 6,
-                  backgroundColor: const Color(0xFF1E293B),
-                  valueColor: AlwaysStoppedAnimation(primary),
+              const SizedBox(height: 10),
+              const Center(
+                child: Text(
+                  "Step 3 of 4",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               const SizedBox(height: 35),
-
+      
               /// Title
               Text(
                 "Your Goal",
@@ -89,7 +89,11 @@ class _GoalScreenState extends State<GoalScreen> {
                   fontWeight: FontWeight.bold,
                   color: textMain,
                   shadows: const [
-                    Shadow(color: Colors.black38, blurRadius: 6, offset: Offset(0, 3))
+                    Shadow(
+                      color: Colors.black38,
+                      blurRadius: 6,
+                      offset: Offset(0, 3),
+                    ),
                   ],
                 ),
               ),
@@ -99,7 +103,7 @@ class _GoalScreenState extends State<GoalScreen> {
                 style: TextStyle(color: textGrey, fontSize: 14),
               ),
               const SizedBox(height: 30),
-
+      
               /// Goal Cards
               ...List.generate(
                 goals.length,
@@ -109,9 +113,9 @@ class _GoalScreenState extends State<GoalScreen> {
                   subtitle: goals[index]["subtitle"]!,
                 ),
               ),
-
+      
               const Spacer(),
-
+      
               /// Continue Button
               SizedBox(
                 width: double.infinity,
@@ -124,10 +128,11 @@ class _GoalScreenState extends State<GoalScreen> {
                       gradient: LinearGradient(colors: [primary, accent]),
                       boxShadow: [
                         BoxShadow(
-                          color: primary.withOpacity(0.45),
-                          blurRadius: 25,
-                          offset: const Offset(0, 8),
-                        )
+                          color: accent.withOpacity(0.6),
+                          blurRadius: 20,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 5),
+                        ),
                       ],
                     ),
                     child: Center(
@@ -145,7 +150,8 @@ class _GoalScreenState extends State<GoalScreen> {
                                   ),
                                 ),
                                 SizedBox(width: 8),
-                                Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                                Icon(Icons.arrow_forward_rounded,
+                                    color: Colors.white),
                               ],
                             ),
                     ),
@@ -160,7 +166,9 @@ class _GoalScreenState extends State<GoalScreen> {
     );
   }
 
-  Widget _goalCard({required int index, required String title, required String subtitle}) {
+  /// Goal Card
+  Widget _goalCard(
+      {required int index, required String title, required String subtitle}) {
     final bool selected = selectedIndex == index;
 
     return GestureDetector(
@@ -172,14 +180,21 @@ class _GoalScreenState extends State<GoalScreen> {
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: selected
-              ? LinearGradient(colors: [primary.withOpacity(0.2), accent.withOpacity(0.2)])
+              ? LinearGradient(
+                  colors: [primary.withOpacity(0.3), accent.withOpacity(0.3)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
               : null,
           color: selected ? null : const Color(0xFF1E293B),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? primary : const Color(0xFF334155), width: 1.5),
+          border: Border.all(
+              color: selected ? primary : const Color(0xFF334155), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: selected ? primary.withOpacity(0.35) : Colors.black.withOpacity(0.3),
+              color: selected
+                  ? primary.withOpacity(0.35)
+                  : Colors.black.withOpacity(0.2),
               blurRadius: selected ? 18 : 8,
               offset: const Offset(0, 6),
             ),
@@ -192,11 +207,13 @@ class _GoalScreenState extends State<GoalScreen> {
               height: 46,
               width: 46,
               decoration: BoxDecoration(
-                gradient: selected ? LinearGradient(colors: [primary, accent]) : null,
+                gradient:
+                    selected ? LinearGradient(colors: [primary, accent]) : null,
                 color: selected ? null : const Color(0xFF334155),
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.fitness_center, color: selected ? Colors.white : textGrey, size: 24),
+              child: Icon(Icons.fitness_center,
+                  color: selected ? Colors.white : textGrey, size: 24),
             ),
             const SizedBox(width: 16),
 
@@ -205,9 +222,15 @@ class _GoalScreenState extends State<GoalScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textMain)),
+                  Text(title,
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: textMain)),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(color: selected ? accent : textGrey, fontSize: 13)),
+                  Text(subtitle,
+                      style: TextStyle(
+                          color: selected ? accent : textGrey, fontSize: 13)),
                 ],
               ),
             ),
@@ -224,6 +247,28 @@ class _GoalScreenState extends State<GoalScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Progress Indicator
+  Widget _progress(bool active) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: active ? 35 : 20,
+      height: 6,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        gradient: active
+            ? const LinearGradient(
+                colors: [
+                  Color(0xFF22C55E), // Green
+                  Color(0xFF06B6D4), // Cyan
+                  Color(0xFF38BDF8), // Light Blue
+                ],
+              )
+            : null,
+        color: active ? null : Colors.white24,
       ),
     );
   }
