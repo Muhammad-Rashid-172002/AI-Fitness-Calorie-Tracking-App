@@ -1,51 +1,32 @@
+import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:flutter/material.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
 import '../../controller/step_one_controller.dart';
 import 'height_screen.dart';
 
-class AgeScreen extends StatefulWidget {
-  final String gender;
-  const AgeScreen({super.key, required this.gender});
+class BodyInfoScreen extends StatefulWidget {
+  const BodyInfoScreen({super.key});
 
   @override
-  State<AgeScreen> createState() => _AgeScreenState();
+  State<BodyInfoScreen> createState() => _BodyInfoScreenState();
 }
 
-class _AgeScreenState extends State<AgeScreen>
-    with SingleTickerProviderStateMixin {
+class _BodyInfoScreenState extends State<BodyInfoScreen> {
   final StepOneController controller = StepOneController();
 
-  double age = 18;
+  final ageController = TextEditingController(text: "30");
+  final heightController = TextEditingController(text: "170");
+  final weightController = TextEditingController(text: "75");
+
+  String gender = "Male";
   bool isLoading = false;
-
-  late AnimationController _bgController;
-  late Animation<Color?> _bgAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // Background gradient animation
-    _bgController =
-        AnimationController(vsync: this, duration: const Duration(seconds: 5))
-          ..repeat(reverse: true);
-
-    _bgAnimation = ColorTween(begin: primary.withOpacity(0.7), end: accent.withOpacity(0.7))
-        .animate(_bgController);
-  }
-
-  @override
-  void dispose() {
-    _bgController.dispose();
-    super.dispose();
-  }
 
   Future<void> saveData() async {
     setState(() => isLoading = true);
 
     String? result = await controller.saveStepOneData(
-      gender: widget.gender,
-      age: age.toInt(),
+      gender: gender,
+      age: int.parse(ageController.text),
     );
 
     setState(() => isLoading = false);
@@ -56,181 +37,208 @@ class _AgeScreenState extends State<AgeScreen>
         MaterialPageRoute(builder: (_) => const HeightScreen()),
       );
     } else {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(result)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AnimatedBuilder(
-        animation: _bgAnimation,
-        builder: (context, child) => Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_bgAnimation.value!, Colors.black87],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+      backgroundColor: bgColor,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFFE6F7EF), Color(0xFFD8F5E6)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
+        ),
 
-                  /// Step Text
-                  Text(
-                    "Step 2 of 7",
-                    style: TextStyle(
-                      color: textGrey,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
 
-                  /// Progress Bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: 0.28,
-                      minHeight: 6,
-                      backgroundColor: const Color(0xFF1E293B),
-                      valueColor: AlwaysStoppedAnimation(primary),
-                    ),
-                  ),
-                  const SizedBox(height: 40),
+            child: Column(
+              children: [
+                const SizedBox(height: 20),
 
-                  /// Title
-                  Text(
-                    "How old are you?",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black38,
-                          blurRadius: 6,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 40),
+                /// Progress Indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _progress(true),
+                    const SizedBox(width: 8),
+                    _progress(true),
+                    const SizedBox(width: 8),
+                    _progress(false),
+                  ],
+                ),
 
-                  /// Age Display with frosted glass effect
-                  Center(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 30, vertical: 20),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        gradient: LinearGradient(
-                          colors: [primary.withOpacity(0.9), accent.withOpacity(0.9)],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: primary.withOpacity(0.4),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
+                const SizedBox(height: 10),
+
+                const Text(
+                  "Step 1 of 3",
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+
+                const SizedBox(height: 30),
+
+                /// Title
+                const Text(
+                  "Tell us about your body",
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 8),
+
+                const Text(
+                  "This helps calculate your metabolism.",
+                  style: TextStyle(color: Colors.grey),
+                ),
+
+                const SizedBox(height: 35),
+
+                /// Age Card
+                _inputCard(title: "Age", controller: ageController, suffix: ""),
+
+                const SizedBox(height: 16),
+
+                /// Gender Card
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: _cardDecoration(),
+
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Gender", style: TextStyle(fontSize: 16)),
+
+                      Row(
+                        children: [
+                          _genderButton("Male"),
+                          const SizedBox(width: 8),
+                          _genderButton("Female"),
                         ],
                       ),
-                      child: Text(
-                        "${age.toInt()}",
-                        style: const TextStyle(
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 40),
+                ),
 
-                  /// Slider with active color animation
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      activeTrackColor: accent,
-                      inactiveTrackColor: Colors.white24,
-                      thumbColor: primary,
-                      overlayColor: primary.withOpacity(0.2),
-                      thumbShape:
-                          const RoundSliderThumbShape(enabledThumbRadius: 16),
-                      trackHeight: 6,
-                    ),
-                    child: Slider(
-                      value: age,
-                      min: 18,
-                      max: 60,
-                      divisions: 42,
-                      label: "${age.toInt()}",
-                      onChanged: (value) {
-                        setState(() => age = value);
-                      },
-                    ),
-                  ),
-                  const Spacer(),
+                const SizedBox(height: 16),
 
-                  /// Continue Button with glowing effect
-                  SizedBox(
-                    width: double.infinity,
-                    height: 60,
-                    child: GestureDetector(
-                      onTap: isLoading ? null : saveData,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(22),
-                          gradient: LinearGradient(colors: [primary, accent]),
-                          boxShadow: [
-                            BoxShadow(
-                              color: accent.withOpacity(0.6),
-                              blurRadius: 20,
-                              spreadRadius: 1,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: isLoading
-                              ? const CircularProgressIndicator(
-                                  color: Colors.white,
-                                )
-                              : const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      "Continue",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Icon(
-                                      Icons.arrow_forward_rounded,
-                                      color: Colors.white,
-                                    )
-                                  ],
-                                ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 25),
-                ],
-              ),
+                /// Height Card
+                _inputCard(
+                  title: "Height",
+                  controller: heightController,
+                  suffix: "cm",
+                ),
+
+                const SizedBox(height: 16),
+
+                /// Weight Card
+                _inputCard(
+                  title: "Weight",
+                  controller: weightController,
+                  suffix: "kg",
+                ),
+
+                const Spacer(),
+
+                /// Next Button
+              CustomGradientButton(text: "Next", onPressed: saveData),
+
+                const SizedBox(height: 20),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// Card Input
+  Widget _inputCard({
+    required String title,
+    required TextEditingController controller,
+    required String suffix,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18),
+
+      decoration: _cardDecoration(),
+
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: const TextStyle(fontSize: 16)),
+
+          SizedBox(
+            width: 80,
+            child: TextField(
+              controller: controller,
+              textAlign: TextAlign.right,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                suffixText: suffix,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Gender Button
+  Widget _genderButton(String value) {
+    bool selected = gender == value;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          gender = value;
+        });
+      },
+
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFF18C37E) : Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(10),
+        ),
+
+        child: Text(
+          value,
+          style: TextStyle(color: selected ? Colors.white : Colors.black),
+        ),
+      ),
+    );
+  }
+
+  /// Progress bar
+  Widget _progress(bool active) {
+    return Container(
+      width: 30,
+      height: 6,
+
+      decoration: BoxDecoration(
+        color: active ? const Color(0xFF18C37E) : Colors.grey.shade300,
+        borderRadius: BorderRadius.circular(10),
+      ),
+    );
+  }
+
+  /// Card Decoration
+  BoxDecoration _cardDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(14),
+      boxShadow: [
+        BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+      ],
     );
   }
 }

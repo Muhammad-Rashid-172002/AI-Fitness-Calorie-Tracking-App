@@ -35,7 +35,6 @@ class _MonthlyHabitReportScreenState extends State<MonthlyHabitReportScreen> {
     final firstDay = DateTime(now.year, now.month, 1);
     final lastDay = DateTime(now.year, now.month + 1, 0);
 
-    // Fetch all daily logs for this month
     final logsSnap = await _firestore
         .collection('users')
         .doc(user.uid)
@@ -90,11 +89,10 @@ class _MonthlyHabitReportScreenState extends State<MonthlyHabitReportScreen> {
       }
     }
 
-    // Build AI prompt
-    double avgCalories = daysLogged == 0 ? 0 : totalCalories / daysLogged;
-    double avgProtein = daysLogged == 0 ? 0 : totalProtein / daysLogged;
-    double avgCarbs = daysLogged == 0 ? 0 : totalCarbs / daysLogged;
-    double avgFat = daysLogged == 0 ? 0 : totalFat / daysLogged;
+    double avgCalories = daysLogged > 0 ? totalCalories / daysLogged : 0;
+    double avgProtein = daysLogged > 0 ? totalProtein / daysLogged : 0;
+    double avgCarbs = daysLogged > 0 ? totalCarbs / daysLogged : 0;
+    double avgFat = daysLogged > 0 ? totalFat / daysLogged : 0;
 
     String behaviourNote = "";
     if (overCaloriesDays >= 3)
@@ -102,8 +100,7 @@ class _MonthlyHabitReportScreenState extends State<MonthlyHabitReportScreen> {
     if (skippedDays >= 3)
       behaviourNote += "User skipped logging several days. ";
     if (avgProtein < 0.6 * 150)
-      behaviourNote +=
-          "Protein intake below recommended target. "; // example target
+      behaviourNote += "Protein intake below recommended target. ";
 
     final prompt =
         """
@@ -134,7 +131,6 @@ Follow structure:
 10. Next month focus
 """;
 
-    // Generate AI response
     final model = GenerativeModel(
       model: 'gemini-3-flash-preview',
       apiKey: AppKeys.geminiApiKey,
@@ -148,12 +144,40 @@ Follow structure:
     });
   }
 
+  Widget _buildInfoCard(String title, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: inactiveColor),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+          ),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(color: Colors.white70, fontSize: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        title: const Text("Monthly AI Habit Report"),
+        title: const Text("MyDiet - Monthly AI Habit Report"),
         backgroundColor: cardColor,
         foregroundColor: textMain,
         elevation: 0,
@@ -162,17 +186,45 @@ Follow structure:
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
-              child: Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: cardColor,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: inactiveColor),
-                ),
-                child: Text(
-                  aiReport,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Welcome to MyDiet!",
+                    style: TextStyle(
+                      color: textMain,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildInfoCard(
+                    "AI Report",
+                    "Your personalized monthly habit report below",
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    "Summary",
+                    style: TextStyle(
+                      color: textMain,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: inactiveColor),
+                    ),
+                    child: Text(
+                      aiReport,
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                    ),
+                  ),
+                ],
               ),
             ),
     );

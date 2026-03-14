@@ -1,4 +1,5 @@
 import 'package:fitmind_ai/models/FormulaRecommendation.dart';
+import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,6 +15,7 @@ class ResultScreen extends StatefulWidget {
 
 class _ResultScreenState extends State<ResultScreen> {
   bool isLoading = true;
+  bool isStartingJourney = false;
   Map<String, dynamic>? formulaResult;
 
   @override
@@ -28,7 +30,6 @@ class _ResultScreenState extends State<ResultScreen> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     try {
-      // 1️⃣ Load user profile info from Firestore
       final userDoc = await FirebaseFirestore.instance
           .collection("users")
           .doc(uid)
@@ -46,7 +47,6 @@ class _ResultScreenState extends State<ResultScreen> {
       final activityLevel = data["activityLevel"] ?? "Moderately Active";
       final goal = data["goal"] ?? "Maintain Weight";
 
-      // 2️⃣ Calculate formula
       final formula = FormulaRecommendation(
         gender: gender,
         age: age,
@@ -59,12 +59,7 @@ class _ResultScreenState extends State<ResultScreen> {
 
       final result = formula.calculate();
 
-      print(result); // Debug: check timeline and macros
-      print("Current Weight: $weight");
-      print("Target Weight: ${data["targetWeight"]}");
-      print("Firestore Data: $data");
-
-      // 3️⃣ Save formula to Firestore
+      // Save results to Firestore
       await FirebaseFirestore.instance.collection("users").doc(uid).update({
         "dailyCalories": result["dailyCalories"],
         "proteinTarget": result["protein"],
@@ -85,6 +80,23 @@ class _ResultScreenState extends State<ResultScreen> {
     }
   }
 
+  /// Start Journey Button Handler with loading
+  Future<void> _startJourney() async {
+    setState(() => isStartingJourney = true);
+
+    // Simulate small delay for loading effect
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (!mounted) return;
+    setState(() => isStartingJourney = false);
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const MainView()),
+    );
+  }
+
+  @override
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,33 +104,110 @@ class _ResultScreenState extends State<ResultScreen> {
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
+            : Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 30),
 
-                    /// 🔥 Title
+                    /// DAILY TARGET
+                    Row(
+                      children: [
+                        Icon(Icons.flash_on, color: primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          "DAILY TARGET",
+                          style: TextStyle(
+                            color: primary,
+                            letterSpacing: 1.5,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    /// Title
                     Text(
-                      "You're All Set! 🎉",
+                      "Nutrition Plan",
                       style: TextStyle(
-                        color: textMain,
-                        fontSize: 28,
+                        fontSize: 32,
                         fontWeight: FontWeight.bold,
+                        color: textMain,
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 5),
 
                     Text(
-                      "Here are your personalized daily targets",
+                      "Optimized for your weight path.",
                       style: TextStyle(color: textGrey, fontSize: 15),
-                      textAlign: TextAlign.center,
                     ),
 
-                    const SizedBox(height: 35),
+                    const SizedBox(height: 30),
 
-                    /// ⏳ Timeline Card
+                    /// Calories Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF111827),
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: primary.withOpacity(0.25),
+                            blurRadius: 25,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            "DAILY CALORIES",
+                            style: TextStyle(color: textGrey, letterSpacing: 2),
+                          ),
+
+                          const SizedBox(height: 10),
+
+                          Text(
+                            "${formulaResult?["dailyCalories"] ?? 0}",
+                            style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                              color: textMain,
+                            ),
+                          ),
+
+                          Text(
+                            "KCAL / DAY",
+                            style: TextStyle(
+                              color: primary,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 30),
+
+                    /// Macros Circles
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _macroCircle("Protein", formulaResult?["protein"] ?? 0),
+
+                        _macroCircle("Carbs", formulaResult?["carbs"] ?? 0),
+
+                        _macroCircle("Fats", formulaResult?["fat"] ?? 0),
+                      ],
+                    ),
+
+                    const SizedBox(height: 25),
+
+                    /// Timeline Card (ADDED BACK)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(18),
@@ -132,12 +221,14 @@ class _ResultScreenState extends State<ResultScreen> {
                             "Estimated Time To Reach Your Goal",
                             style: TextStyle(color: textGrey, fontSize: 14),
                           ),
+
                           const SizedBox(height: 6),
+
                           Text(
-                            "${formulaResult?["estimatedWeeks"] ?? 0} Weeks to reach ${formulaResult?["targetWeight"] ?? 'your goal'} kg",
+                            "${formulaResult?["estimatedWeeks"] ?? 0} Weeks to reach ${formulaResult?["targetWeight"] ?? 0} kg",
                             style: TextStyle(
                               color: primary,
-                              fontSize: 22,
+                              fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -145,163 +236,89 @@ class _ResultScreenState extends State<ResultScreen> {
                       ),
                     ),
 
-                    const SizedBox(height: 35),
+                    const Spacer(),
 
-                    /// 🎯 Big Calories Circle
-                    Container(
-                      height: 170,
-                      width: 170,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(colors: [primary, accent]),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              formulaResult?["dailyCalories"]?.toString() ??
-                                  "0",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 34,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const Text(
-                              "kcal / day",
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                    /// Start Journey Button
+                   CustomGradientButton(text: "Start Journey", onPressed: _startJourney),
 
-                    const SizedBox(height: 40),
-
-                    /// 📊 Macros Row
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildMacroCard(
-                            "Protein",
-                            "${formulaResult?["protein"] ?? 0} g",
-                            Icons.fitness_center,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildMacroCard(
-                            "Carbs",
-                            "${formulaResult?["carbs"] ?? 0} g",
-                            Icons.rice_bowl,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _buildMacroCard(
-                      "Fat",
-                      "${formulaResult?["fat"] ?? 0} g",
-                      Icons.opacity,
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    _buildMacroCard(
-                      "Timeline",
-                      "${formulaResult?["estimatedWeeks"] ?? 0} weeks",
-                      Icons.schedule,
-                    ),
-
-                    const SizedBox(height: 45),
-
-                    /// 🚀 Finish Button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 60,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          padding: EdgeInsets.zero,
-                        ),
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(builder: (_) => const MainView()),
-                          );
-                        },
-                        child: Ink(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [primary, accent]),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              "Start My Journey 🚀",
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 20),
                   ],
                 ),
               ),
       ),
     );
   }
+  // Widget _buildMacroCard(String title, String value, IconData icon) {
+  //   return Container(
+  //     padding: const EdgeInsets.all(18),
+  //     margin: const EdgeInsets.only(bottom: 12),
+  //     decoration: BoxDecoration(
+  //       color: const Color(0xFF1E293B),
+  //       borderRadius: BorderRadius.circular(20),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.2),
+  //           blurRadius: 12,
+  //           offset: const Offset(0, 4),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         Container(
+  //           padding: const EdgeInsets.all(10),
+  //           decoration: BoxDecoration(
+  //             color: primary.withOpacity(0.15),
+  //             shape: BoxShape.circle,
+  //           ),
+  //           child: Icon(icon, color: primary, size: 22),
+  //         ),
+  //         const SizedBox(width: 15),
+  //         Expanded(
+  //           child: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             children: [
+  //               Text(title, style: TextStyle(color: textGrey, fontSize: 14)),
+  //               const SizedBox(height: 4),
+  //               Text(
+  //                 value,
+  //                 style: TextStyle(
+  //                   color: textMain,
+  //                   fontSize: 16,
+  //                   fontWeight: FontWeight.bold,
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
-  Widget _buildMacroCard(String title, String value, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E293B),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: primary.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: primary, size: 22),
+  Widget _macroCircle(String title, int value) {
+    return Column(
+      children: [
+        Container(
+          height: 90,
+          width: 90,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: primary, width: 6),
           ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: TextStyle(color: textGrey, fontSize: 14)),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: TextStyle(
-                    color: textMain,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
+          child: Center(
+            child: Text(
+              "$value\nG",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: textMain, fontWeight: FontWeight.bold),
             ),
           ),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 10),
+
+        Text(title, style: TextStyle(color: textGrey)),
+      ],
     );
   }
 }
