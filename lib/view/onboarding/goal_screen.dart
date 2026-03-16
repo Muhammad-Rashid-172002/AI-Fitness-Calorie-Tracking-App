@@ -4,7 +4,15 @@ import 'package:fitmind_ai/controller/step_three_controller.dart';
 import 'package:fitmind_ai/view/onboarding/Step_four_screen.dart';
 
 class GoalScreen extends StatefulWidget {
-  const GoalScreen({super.key});
+   final double currentWeight;
+  final double targetWeight;
+  final double height;
+  const GoalScreen({
+    super.key,
+    required this.currentWeight,
+    required this.targetWeight,
+    required this.height,
+  });
 
   @override
   State<GoalScreen> createState() => _GoalScreenState();
@@ -32,10 +40,13 @@ class _GoalScreenState extends State<GoalScreen> {
     setState(() => isLoading = false);
 
     if (result == null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const StepFourScreen()),
-      );
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (_) => StepFourScreen(
+                weight: widget.currentWeight,
+                targetWeight: widget.targetWeight,
+              )),
+            );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result)),

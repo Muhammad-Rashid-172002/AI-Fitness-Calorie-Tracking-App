@@ -80,6 +80,34 @@ class _ResultScreenState extends State<ResultScreen> {
     }
   }
 
+  String _calculateEstimatedDate(int weeks) {
+    final now = DateTime.now();
+
+    final estimatedDate = now.add(Duration(days: weeks * 7));
+
+    return "${estimatedDate.day} "
+        "${_monthName(estimatedDate.month)} "
+        "${estimatedDate.year}";
+  }
+
+  String _monthName(int month) {
+    const months = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    return months[month - 1];
+  }
+
   /// Start Journey Button Handler with loading
   Future<void> _startJourney() async {
     setState(() => isStartingJourney = true);
@@ -159,50 +187,36 @@ class _ResultScreenState extends State<ResultScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(25),
                         gradient: LinearGradient(colors: [primary, accent]),
-                        borderRadius: BorderRadius.circular(30),
                       ),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        padding: const EdgeInsets.symmetric(vertical: 30),
                         decoration: BoxDecoration(
                           color: const Color(0xFF0F172A),
-                          borderRadius: BorderRadius.circular(28),
+                          borderRadius: BorderRadius.circular(22),
                         ),
                         child: Column(
                           children: [
                             Text(
-                              "DAILY CALORIES",
-                              style: TextStyle(
-                                color: textGrey,
-                                letterSpacing: 2,
-                              ),
+                              "Daily Calories",
+                              style: TextStyle(color: textGrey, fontSize: 16),
                             ),
 
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 10),
 
                             Text(
-                              "${formulaResult?["dailyCalories"] ?? 0}",
-                              style: const TextStyle(
-                                fontSize: 52,
+                              "${formulaResult?["dailyCalories"] ?? 0} KCAL / DAY",
+                              style: TextStyle(
+                                fontSize: 34,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-
-                            const SizedBox(height: 4),
-
-                            Text(
-                              "KCAL / DAY",
-                              style: TextStyle(
                                 color: primary,
-                                letterSpacing: 1.5,
                               ),
                             ),
                           ],
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 35),
 
                     /// MACROS
@@ -218,61 +232,46 @@ class _ResultScreenState extends State<ResultScreen> {
                     const SizedBox(height: 30),
 
                     /// TIMELINE CARD
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.4),
-                            blurRadius: 20,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Your Goal Timeline",
+                          style: TextStyle(
+                            color: textMain,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: primary.withOpacity(0.15),
-                              shape: BoxShape.circle,
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            _timelineBox(
+                              "Target Weight",
+                              "${formulaResult?["targetWeight"] ?? 0} kg",
+                              Icons.gps_fixed,
                             ),
-                            child: Icon(Icons.schedule, color: primary),
-                          ),
 
-                          const SizedBox(width: 14),
-
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "Estimated Goal Time",
-                                  style: TextStyle(
-                                    color: textGrey,
-                                    fontSize: 13,
-                                  ),
-                                ),
-
-                                const SizedBox(height: 3),
-
-                                Text(
-                                  "${formulaResult?["estimatedWeeks"] ?? 0} weeks to reach ${formulaResult?["targetWeight"] ?? 0} kg",
-                                  style: TextStyle(
-                                    color: textMain,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            _timelineBox(
+                              "Duration",
+                              "${formulaResult?["estimatedWeeks"] ?? 0} Weeks",
+                              Icons.access_time,
                             ),
-                          ),
-                        ],
-                      ),
+
+                            _timelineBox(
+                              "Estimated Date",
+                              _calculateEstimatedDate(
+                                formulaResult?["estimatedWeeks"] ?? 0,
+                              ),
+                              Icons.calendar_month,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-
                     const Spacer(),
 
                     /// BUTTON
@@ -310,46 +309,63 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
+  Widget _timelineBox(String title, String value, IconData icon) {
+    return Container(
+      width: 100,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: primary.withOpacity(0.4)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: primary),
+
+          const SizedBox(height: 10),
+
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: textGrey, fontSize: 11),
+          ),
+
+          const SizedBox(height: 5),
+
+          Text(
+            value,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: textMain, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _macroCircle(String title, int value) {
     return Column(
       children: [
         Container(
-          height: 95,
-          width: 95,
+          height: 80,
+          width: 80,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(colors: [primary, accent]),
-            boxShadow: [
-              BoxShadow(color: primary.withOpacity(0.4), blurRadius: 15),
-            ],
+            border: Border.all(color: primary, width: 6),
           ),
           child: Center(
-            child: Container(
-              height: 82,
-              width: 82,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFF0F172A),
-              ),
-              child: Center(
-                child: Text(
-                  "$value g",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+            child: Text(
+              "$value g",
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
         ),
 
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
 
-        Text(
-          title,
-          style: TextStyle(color: textGrey, fontWeight: FontWeight.w500),
-        ),
+        Text(title, style: TextStyle(color: textGrey, fontSize: 13)),
       ],
     );
   }

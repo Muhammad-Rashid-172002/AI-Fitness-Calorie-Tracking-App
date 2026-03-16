@@ -53,7 +53,6 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
       final todayId =
           "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
 
-      // Save meal
       await FirebaseFirestore.instance
           .collection("users")
           .doc(uid)
@@ -69,7 +68,6 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
         "timestamp": Timestamp.now(),
       });
 
-      // Update daily log
       await FirebaseFirestore.instance
           .collection("users")
           .doc(uid)
@@ -86,19 +84,72 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
 
       showCustomSnackBar(context, "Meal Saved Successfully", true);
 
-      mealNameController.clear();
-      caloriesController.clear();
-      proteinController.clear();
-      carbsController.clear();
-      fatController.clear();
-
       Navigator.pop(context);
     } catch (e) {
-      debugPrint("Firestore Error: $e");
-      showCustomSnackBar(context, "Error saving meal: $e", false);
+      showCustomSnackBar(context, "Error saving meal", false);
     } finally {
       setState(() => isSaving = false);
     }
+  }
+
+  Widget macroCard(String title, String value, IconData icon, Color color) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            colors: [
+              color.withOpacity(0.4),
+              color.withOpacity(0.15),
+            ],
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 26),
+            const SizedBox(height: 8),
+            Text(
+              value.isEmpty ? "0g" : "$value g",
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16),
+            ),
+            Text(
+              title,
+              style: const TextStyle(color: Colors.white60, fontSize: 12),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildField(String hint, TextEditingController controller,
+      {TextInputType keyboard = TextInputType.text, IconData? icon}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: TextField(
+          controller: controller,
+          keyboardType: keyboard,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            prefixIcon: Icon(icon, color: Colors.orange),
+            hintText: hint,
+            hintStyle: const TextStyle(color: Colors.white54),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 18),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -114,79 +165,79 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          "Quick Add Meal",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            _buildField("Meal Name", mealNameController, icon: Icons.restaurant),
-            _buildField("Calories (kcal)", caloriesController,
-                keyboard: TextInputType.number, icon: Icons.local_fire_department),
-            _buildField("Protein (g)", proteinController,
-                keyboard: TextInputType.number, icon: Icons.fitness_center),
-            _buildField("Carbs (g)", carbsController,
-                keyboard: TextInputType.number, icon: Icons.rice_bowl),
-            _buildField("Fat (g)", fatController,
-                keyboard: TextInputType.number, icon: Icons.opacity),
-            const SizedBox(height: 30),
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: CustomGradientButton(
-                text: isSaving ? "Saving..." : "Save Meal",
-                onPressed: isSaving ? null : saveMeal,
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.arrow_back,
+                          color: Colors.white)),
+                  const Text(
+                    "Quick Add Meal",
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold),
+                  )
+                ],
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildField(
-    String hint,
-    TextEditingController controller, {
-    TextInputType keyboard = TextInputType.text,
-    IconData? icon,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [const Color(0xFF1E1E1E), const Color(0xFF2C2C2C)],
-          ),
-          borderRadius: BorderRadius.circular(14),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.6),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: TextField(
-          controller: controller,
-          keyboardType: keyboard,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            prefixIcon: icon != null
-                ? Icon(icon, color: const Color(0xFFFFC107))
-                : null,
-            hintText: hint,
-            hintStyle: const TextStyle(color: Colors.white54),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-            filled: true,
-            fillColor: Colors.transparent,
+      
+              const SizedBox(height: 20),
+      
+              buildField(
+                  "Meal Name", mealNameController,
+                  icon: Icons.restaurant),
+      
+              buildField(
+                  "Calories (kcal)", caloriesController,
+                  keyboard: TextInputType.number,
+                  icon: Icons.local_fire_department),
+      
+              buildField(
+                  "Protein (g)", proteinController,
+                  keyboard: TextInputType.number,
+                  icon: Icons.fitness_center),
+      
+              buildField(
+                  "Carbs (g)", carbsController,
+                  keyboard: TextInputType.number,
+                  icon: Icons.rice_bowl),
+      
+              buildField(
+                  "Fat (g)", fatController,
+                  keyboard: TextInputType.number,
+                  icon: Icons.opacity),
+      
+              const SizedBox(height: 25),
+      
+              /// Macro Preview
+              Row(
+                children: [
+                  macroCard("Protein", proteinController.text,
+                      Icons.fitness_center, Colors.blue),
+                  macroCard("Carbs", carbsController.text,
+                      Icons.rice_bowl, Colors.orange),
+                  macroCard("Fat", fatController.text,
+                      Icons.opacity, Colors.red),
+                ],
+              ),
+      
+              const Spacer(),
+      
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: CustomGradientButton(
+                  text: isSaving ? "Saving..." : "Save Meal",
+                  onPressed: isSaving ? null : saveMeal,
+                ),
+              )
+            ],
           ),
         ),
       ),

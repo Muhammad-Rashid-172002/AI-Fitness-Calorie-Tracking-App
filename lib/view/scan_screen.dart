@@ -7,7 +7,6 @@ import 'package:fitmind_ai/view/quick_add_meal_screen.dart';
 import 'package:flutter/material.dart';
 
 class ScanScreen extends StatefulWidget {
-  
   const ScanScreen({super.key});
 
   @override
@@ -16,18 +15,11 @@ class ScanScreen extends StatefulWidget {
 
 class _ScanScreenState extends State<ScanScreen> {
   final ScanController controller = ScanController();
-
   File? selectedImage;
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   /// Camera
   Future<void> _takePhoto() async {
     File? image = await controller.pickFromCamera();
-
     if (image != null) {
       _handleImage(image);
     }
@@ -36,19 +28,17 @@ class _ScanScreenState extends State<ScanScreen> {
   /// Gallery
   Future<void> _pickGallery() async {
     File? image = await controller.pickFromGallery();
-
     if (image != null) {
       _handleImage(image);
     }
   }
 
-  /// Handle after image selected
+  /// Handle Image
   void _handleImage(File image) {
     setState(() {
       selectedImage = image;
     });
 
-    // Direct analyze for ALL users
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -60,260 +50,236 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: bgColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+  /// Premium Card
+  Widget actionCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 26),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            gradient: LinearGradient(
+              colors: [
+                color.withOpacity(0.4),
+                color.withOpacity(0.1),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// Title
-              const Text(
-                "Scan Meal",
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+              Icon(icon, size: 36, color: color),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: const TextStyle(
                   color: Colors.white,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              const Text(
-                "Take a photo or pick from gallery",
-                style: TextStyle(
+                  fontWeight: FontWeight.bold,
                   fontSize: 16,
-                  color: Colors.white70,
                 ),
               ),
-
-              const SizedBox(height: 30),
-
-              /// Image / Camera Box
-              if (selectedImage != null)
-                Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Image.file(
-                      selectedImage!,
-                      width: double.infinity,
-                      height: 260,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                )
-              else
-                GestureDetector(
-                  onTap: _takePhoto,
-                  child: Container(
-                    height: 260,
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.green.shade700,
-                          Colors.teal.shade700,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      children: const [
-                        CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.white24,
-                          child: Icon(
-                            Icons.camera_alt,
-                            size: 60,
-                            color: Colors.white,
-                          ),
-                        ),
-
-                        SizedBox(height: 35),
-
-                        Text(
-                          "Take Photo",
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-
-                        SizedBox(height: 10),
-
-                        Text(
-                          "Use your camera to scan a meal",
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              const SizedBox(height: 5),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: Colors.white54,
+                  fontSize: 12,
                 ),
-
-              const SizedBox(height: 20),
-
-              /// Buttons
-              Row(
-                children: [
-                  /// Gallery
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: _pickGallery,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 25),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF1E1E1E),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Column(
-                          children: const [
-                            Icon(
-                              Icons.photo,
-                              size: 35,
-                              color: Colors.blue,
-                            ),
-
-                            SizedBox(height: 10),
-
-                            Text(
-                              "Gallery",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-
-                            SizedBox(height: 5),
-
-                            Text(
-                              "Pick from photos",
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(width: 15),
-
-               /// Quick Add
-Expanded(
-  child: GestureDetector(
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const QuickAddMealScreen(),
-        ),
-      );
-    },
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 25),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        children: const [
-          Icon(
-            Icons.flash_on,
-            size: 35,
-            color: Colors.orange,
-          ),
-
-          SizedBox(height: 10),
-
-          Text(
-            "Quick Add",
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          SizedBox(height: 5),
-
-          Text(
-            "Log a meal fast",
-            style: TextStyle(
-              color: Colors.white54,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    ),
-  ),
-),
-               
-                ],
-              ),
-
-              const SizedBox(height: 45),
-
-              /// Features
-              const FeatureItem(
-                text: "AI identifies food from photos",
-              ),
-              const FeatureItem(
-                text: "Instant calorie & nutrition data",
-              ),
-              const FeatureItem(
-                text: "Personalized feedback on meals",
-              ),
+              )
             ],
           ),
         ),
       ),
     );
   }
-}
 
-/// Feature Widget
-class FeatureItem extends StatelessWidget {
-  final String text;
-
-  const FeatureItem({
-    super.key,
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+ /// Scan Card
+Widget scanCard() {
+  return GestureDetector(
+    onTap: _takePhoto,
+    child: Container(
+      height: 260,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFFFA726), // orange
+            Color(0xFFFF6F00), // deep orange
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.orange.withOpacity(0.45),
+            blurRadius: 30,
+            spreadRadius: 2,
+          )
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: const [
+          CircleAvatar(
+            radius: 45,
+            backgroundColor: Colors.white24,
+            child: Icon(
+              Icons.camera_alt,
+              size: 50,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 20),
+          Text(
+            "Scan Your Meal",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Take a photo to analyze calories",
+            style: TextStyle(
+              color: Colors.white70,
+            ),
+          )
+        ],
+      ),
+    ),
+  );
+}  Widget featureItem(String text) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFF1E1E1E),
+      ),
       child: Row(
         children: [
-          const Icon(
-            Icons.check_circle,
-            color: Colors.green,
-            size: 22,
-          ),
+          const Icon(Icons.check_circle, color: Colors.green),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
                 color: Colors.white70,
-                fontSize: 18,
+                fontSize: 15,
               ),
             ),
-          ),
+          )
         ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// Title
+              const Text(
+                "AI Food Scanner",
+                style: TextStyle(
+                  fontSize: 30,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+      
+              const SizedBox(height: 6),
+      
+              const Text(
+                "Scan meals to track calories instantly",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 15,
+                ),
+              ),
+      
+              const SizedBox(height: 30),
+      
+              /// Image Preview
+              if (selectedImage != null)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.file(
+                    selectedImage!,
+                    height: 260,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              else
+                scanCard(),
+      
+              const SizedBox(height: 25),
+      
+              /// Buttons
+              Row(
+                children: [
+                  actionCard(
+                    icon: Icons.photo,
+                    title: "Gallery",
+                    subtitle: "Pick from photos",
+                    color: Colors.blue,
+                    onTap: _pickGallery,
+                  ),
+                  const SizedBox(width: 15),
+                  actionCard(
+                    icon: Icons.flash_on,
+                    title: "Quick Add",
+                    subtitle: "Log meal fast",
+                    color: Colors.orange,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const QuickAddMealScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+      
+              const SizedBox(height: 35),
+      
+              const Text(
+                "Features",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+      
+              const SizedBox(height: 15),
+      
+              featureItem("AI identifies food from photos"),
+              featureItem("Instant calorie & nutrition data"),
+              featureItem("Smart meal insights & feedback"),
+            ],
+          ),
+        ),
       ),
     );
   }

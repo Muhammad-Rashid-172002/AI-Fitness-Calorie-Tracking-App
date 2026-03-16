@@ -1,10 +1,13 @@
+import 'package:fitmind_ai/view/onboarding/CalculatingPlanScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/controller/step_four_controller.dart';
-import 'package:fitmind_ai/view/onboarding/result_screen.dart';
 
 class StepFourScreen extends StatefulWidget {
-  const StepFourScreen({super.key});
+  final double weight;
+  final double targetWeight;
+
+  const StepFourScreen({super.key, required this.weight, required this.targetWeight});
 
   @override
   State<StepFourScreen> createState() => _StepFourScreenState();
@@ -39,7 +42,12 @@ class _StepFourScreenState extends State<StepFourScreen> {
     if (result == null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const ResultScreen()),
+        MaterialPageRoute(
+          builder: (_) => CalculatingPlanScreen(
+            weight: widget.weight,
+            targetWeight: widget.targetWeight,
+          ),
+        ),
       );
     } else {
       ScaffoldMessenger.of(

@@ -33,7 +33,7 @@ class ScanResultScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
             child: Column(
               children: [
-                // Image Card
+                /// Image Card
                 Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(25),
@@ -55,9 +55,10 @@ class ScanResultScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 30),
 
-                // Glassmorphism Card
+                /// Glass Card
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(25),
@@ -77,7 +78,9 @@ class ScanResultScreen extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+
                       const SizedBox(height: 15),
+
                       Text(
                         result,
                         style: const TextStyle(
@@ -86,31 +89,37 @@ class ScanResultScreen extends StatelessWidget {
                           height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 20),
-
-                      if (food.calories != null)
-                        _nutritionCard("Calories", "${food.calories} kcal"),
-                      if (food.protein != null)
-                        _nutritionCard("Protein", "${food.protein} g"),
-                      if (food.fats != null)
-                        _nutritionCard("Fat", "${food.fats} g"),
-                      if (food.carbs != null)
-                        _nutritionCard("Carbs", "${food.carbs} g"),
 
                       const SizedBox(height: 25),
+
+                      /// Calories Highlight
+                      _calorieCard(food),
+
+                      const SizedBox(height: 20),
+
+                      /// Macro Circles
+                      _macroSection(food),
+
+                      const SizedBox(height: 25),
+
+                      /// Health Message
                       _healthMessageCard(food),
                     ],
                   ),
                 ),
+
                 const SizedBox(height: 30),
 
+                /// Done Button
                 CustomGradientButton(
                   text: "Done",
                   onPressed: () async {
                     final parsedFood = controller.parseFoodFromResult(result);
 
-                    /// Save scan + update daily logs
-                    await controller.saveScan(result: result, food: parsedFood);
+                    await controller.saveScan(
+                      result: result,
+                      food: parsedFood,
+                    );
 
                     showCustomSnackBar(
                       context,
@@ -118,7 +127,6 @@ class ScanResultScreen extends StatelessWidget {
                       true,
                     );
 
-                    /// Return data to HomeScreen
                     Navigator.pop(context, {
                       "calories": parsedFood.calories ?? 0,
                       "protein": parsedFood.protein ?? 0,
@@ -135,34 +143,95 @@ class ScanResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _nutritionCard(String title, String value) => Container(
-    margin: const EdgeInsets.symmetric(vertical: 5),
-    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
-    decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.25),
-      borderRadius: BorderRadius.circular(15),
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  /// Calories Big Highlight
+  Widget _calorieCard(Food food) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 25),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.25),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          const Text(
+            "Daily Calories",
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "${food.calories ?? 0}",
+            style: const TextStyle(
+              color: Colors.greenAccent,
+              fontSize: 38,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Text(
+            "kcal/day",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Macro Section (Carbs → Protein → Fat)
+  Widget _macroSection(Food food) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
+        _macroCircle("${food.carbs ?? 0} g", "Carbs"),
+        _macroCircle("${food.protein ?? 0} g", "Protein"),
+        _macroCircle("${food.fats ?? 0} g", "Fat"),
+      ],
+    );
+  }
+
+  /// Circle Widget
+  Widget _macroCircle(String value, String label) {
+    return Column(
+      children: [
+        Container(
+          width: 95,
+          height: 95,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.greenAccent,
+              width: 3,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         Text(
-          title,
+          label,
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
       ],
-    ),
-  );
+    );
+  }
 
+  /// Health Message
   Widget _healthMessageCard(Food food) {
     String message = "";
     Color color = Colors.green;

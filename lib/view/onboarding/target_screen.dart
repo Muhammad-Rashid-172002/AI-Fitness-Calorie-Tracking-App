@@ -41,10 +41,16 @@ class _TargetWeightScreenState extends State<TargetWeightScreen> {
     setState(() => isLoading = false);
 
     if (result == null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => GoalScreen()),
-      );
+    Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(
+    builder: (_) => GoalScreen(
+      currentWeight: widget.weight,
+      targetWeight: targetWeight,
+      height: widget.height,
+    ),
+  ),
+);
     } else {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(result)));
