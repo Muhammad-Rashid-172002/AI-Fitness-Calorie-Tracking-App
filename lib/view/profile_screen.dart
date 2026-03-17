@@ -234,18 +234,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     iconColor: Colors.orange,
                     textColor: Colors.white,
                     onTap: () async {
-                      final Uri emailLaunchUri = Uri(
-                        scheme: 'mailto',
-                        path:
-                            'bahagiajemali@gmail.com', // <-- replace with your client's email
-                        queryParameters: {
-                          'subject': 'Consultation Request - MyDiet App',
-                          'body':
-                              'Hello, I am ${controller.name}. I would like to book a consultation session.',
-                        },
+                      final subject = Uri.encodeComponent(
+                        'Consultation Request - MyDiet App',
                       );
 
-                      final url = emailLaunchUri.toString();
+                      final body = Uri.encodeComponent(
+                        'Hello, I am ${controller.name}. I would like to book a consultation session.',
+                      );
+
+                      final url =
+                          "mailto:bahagiajemali@gmail.com?subject=$subject&body=$body";
 
                       if (await canLaunchUrlString(url)) {
                         await launchUrlString(url);

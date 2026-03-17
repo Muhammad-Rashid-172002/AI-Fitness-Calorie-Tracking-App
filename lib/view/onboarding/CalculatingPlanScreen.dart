@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:fitmind_ai/resources/app_them.dart';
 
 class CalculatingPlanScreen extends StatefulWidget {
-
   final double weight;
   final double targetWeight;
 
@@ -18,14 +17,25 @@ class CalculatingPlanScreen extends StatefulWidget {
   State<CalculatingPlanScreen> createState() => _CalculatingPlanScreenState();
 }
 
-class _CalculatingPlanScreenState extends State<CalculatingPlanScreen> {
+class _CalculatingPlanScreenState extends State<CalculatingPlanScreen>
+    with SingleTickerProviderStateMixin {
+
+  late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
 
-    /// Wait 3 seconds then move to next screen
+    /// animation controller
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
+
+    /// navigate after 3 sec
     Future.delayed(const Duration(seconds: 3), () {
+
+      if(!mounted) return;
 
       Navigator.pushReplacement(
         context,
@@ -40,42 +50,91 @@ class _CalculatingPlanScreenState extends State<CalculatingPlanScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   Widget stepItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E293B),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: primary.withOpacity(.3)),
+      ),
       child: Row(
-        children: const [
-          Icon(Icons.check_circle, color: Colors.green),
-          SizedBox(width: 10),
+        children: [
+          const Icon(Icons.check_circle, color: Colors.green, size: 22),
+          const SizedBox(width: 12),
+
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
+            ),
+          )
         ],
       ),
     );
   }
 
-  Widget stepText(String text){
-    return Text(
-      text,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 16,
-      ),
+  Widget loadingDots(){
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+
+        int dotCount = (_controller.value * 3).floor();
+
+        return Text(
+          "." * dotCount,
+          style: TextStyle(
+            fontSize: 28,
+            color: primary,
+            fontWeight: FontWeight.bold
+          ),
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: bgColor,
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30),
+          padding: const EdgeInsets.symmetric(horizontal: 28),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
 
-              const CircularProgressIndicator(
-                strokeWidth: 5,
-                color: Colors.green,
+              /// animated progress
+              RotationTransition(
+                turns: _controller,
+                child: Container(
+                  height: 90,
+                  width: 90,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [primary, accent],
+                    ),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white,
+                      size: 32,
+                    ),
+                  ),
+                ),
               ),
 
               const SizedBox(height: 35),
@@ -85,40 +144,22 @@ class _CalculatingPlanScreenState extends State<CalculatingPlanScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 26,
                   fontWeight: FontWeight.bold,
                 ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 10),
 
-              Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.green),
-                  const SizedBox(width: 10),
-                  stepText("Analyzing your body data"),
-                ],
-              ),
+              loadingDots(),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 35),
 
-              Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.green),
-                  const SizedBox(width: 10),
-                  stepText("Estimating daily calories"),
-                ],
-              ),
+              stepItem("Analyzing your body data"),
 
-              const SizedBox(height: 14),
+              stepItem("Estimating daily calories"),
 
-              Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.green),
-                  const SizedBox(width: 10),
-                  stepText("Creating your nutrition targets"),
-                ],
-              ),
+              stepItem("Creating your nutrition targets"),
 
             ],
           ),
