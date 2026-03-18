@@ -30,8 +30,10 @@ class _ResultScreenState extends State<ResultScreen> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     try {
-      final userDoc =
-          await FirebaseFirestore.instance.collection("users").doc(uid).get();
+      final userDoc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .get();
 
       if (!userDoc.exists) return;
 
@@ -86,7 +88,7 @@ class _ResultScreenState extends State<ResultScreen> {
       "Sep",
       "Oct",
       "Nov",
-      "Dec"
+      "Dec",
     ];
 
     return "${estimatedDate.day} ${months[estimatedDate.month - 1]} ${estimatedDate.year}";
@@ -118,8 +120,9 @@ class _ResultScreenState extends State<ResultScreen> {
                 builder: (context, constraints) {
                   return SingleChildScrollView(
                     child: ConstrainedBox(
-                      constraints:
-                          BoxConstraints(minHeight: constraints.maxHeight),
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Column(
@@ -136,8 +139,7 @@ class _ResultScreenState extends State<ResultScreen> {
                                     color: primary.withOpacity(0.15),
                                     shape: BoxShape.circle,
                                   ),
-                                  child:
-                                      Icon(Icons.flash_on, color: primary),
+                                  child: Icon(Icons.flash_on, color: primary),
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
@@ -177,12 +179,14 @@ class _ResultScreenState extends State<ResultScreen> {
                               padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                    colors: [primary, accent]),
+                                  colors: [primary, accent],
+                                ),
                                 borderRadius: BorderRadius.circular(25),
                               ),
                               child: Container(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 30),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 30,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF0F172A),
                                   borderRadius: BorderRadius.circular(22),
@@ -216,15 +220,17 @@ class _ResultScreenState extends State<ResultScreen> {
 
                             /// MACROS
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 _macroCircle(
-                                    "Carbs", formulaResult?["carbs"] ?? 0),
+                                  "Carbs",
+                                  formulaResult?["carbs"] ?? 0,
+                                ),
                                 _macroCircle(
-                                    "Protein", formulaResult?["protein"] ?? 0),
-                                _macroCircle(
-                                    "Fat", formulaResult?["fat"] ?? 0),
+                                  "Protein",
+                                  formulaResult?["protein"] ?? 0,
+                                ),
+                                _macroCircle("Fat", formulaResult?["fat"] ?? 0),
                               ],
                             ),
 
@@ -243,22 +249,32 @@ class _ResultScreenState extends State<ResultScreen> {
                             const SizedBox(height: 20),
 
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
                               children: [
-                                _timelineBox(
+                                Expanded(
+                                  child: _timelineBox(
                                     "Target\nWeight",
                                     "${formulaResult?["targetWeight"] ?? 0} kg",
-                                    Icons.flag),
-                                _timelineBox(
+                                    Icons.flag,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _timelineBox(
                                     "Duration\nAchieve",
                                     "${formulaResult?["estimatedWeeks"] ?? 0} Weeks",
-                                    Icons.schedule),
-                                _timelineBox(
-                                    "Estimated\nDate",
+                                    Icons.schedule,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: _timelineBox(
+                                    "Estimated Date",
                                     _calculateEstimatedDate(
-                                        formulaResult?["estimatedWeeks"] ?? 0),
-                                    Icons.calendar_today),
+                                      formulaResult?["estimatedWeeks"] ?? 0,
+                                    ),
+                                    Icons.calendar_today,
+                                  ),
+                                ),
                               ],
                             ),
 
@@ -273,8 +289,7 @@ class _ResultScreenState extends State<ResultScreen> {
                                       gradient: LinearGradient(
                                         colors: [primary, accent],
                                       ),
-                                      borderRadius:
-                                          BorderRadius.circular(30),
+                                      borderRadius: BorderRadius.circular(30),
                                     ),
                                     child: const Center(
                                       child: SizedBox(
@@ -326,9 +341,12 @@ class _ResultScreenState extends State<ResultScreen> {
           Text(
             value,
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: textMain,
               fontWeight: FontWeight.bold,
+              fontSize: 13, // slightly smaller to fit
             ),
           ),
         ],
@@ -358,10 +376,7 @@ class _ResultScreenState extends State<ResultScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        Text(
-          title,
-          style: TextStyle(color: textGrey, fontSize: 13),
-        ),
+        Text(title, style: TextStyle(color: textGrey, fontSize: 13)),
       ],
     );
   }
