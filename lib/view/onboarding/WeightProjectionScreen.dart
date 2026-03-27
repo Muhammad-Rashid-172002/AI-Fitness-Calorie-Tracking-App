@@ -1,182 +1,265 @@
-import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:flutter/material.dart';
-import 'package:fitmind_ai/resources/app_them.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:fitmind_ai/view/onboarding/result_screen.dart';
 
 class WeightProjectionScreen extends StatelessWidget {
   final double currentWeight;
   final double targetWeight;
 
-  const WeightProjectionScreen({
+   WeightProjectionScreen({
     super.key,
     required this.currentWeight,
     required this.targetWeight,
   });
 
-  /// Generate weight timeline
-  List<Map<String, String>> generateTimeline() {
+  /// Generate realistic curve
+  List<FlSpot> generateSpots() {
     int weeks = 5;
     double diff = currentWeight - targetWeight;
     double step = diff / weeks;
 
-    List<Map<String, String>> timeline = [];
+    List<FlSpot> spots = [];
 
     for (int i = 0; i <= weeks; i++) {
-      double weight = currentWeight - (step * i);
+      double base = currentWeight - (step * i);
+      double fluctuation = (i % 2 == 0) ? 0.4 : -0.5;
 
-      String label;
+      double value = (i == weeks) ? targetWeight : base + fluctuation;
 
-      if (i == 0) {
-        label = "Today";
-      } else if (i == weeks) {
-        label = "Goal";
-        weight = targetWeight;
-      } else {
-        label = "Week ${i * 2}";
-      }
-
-      timeline.add({
-        "week": label,
-        "weight": "${weight.toStringAsFixed(1)} kg"
-      });
+      spots.add(FlSpot(i.toDouble(), value));
     }
 
-    return timeline;
+    return spots;
   }
 
-  Widget timelineItem(String week, String weight, bool isLast) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+  final List<String> labels = ["Today", "W2", "W4", "W6", "W8", "Goal"];
 
-          /// DOT + LINE
-          Column(
-            children: [
-              Container(
-                width: 14,
-                height: 14,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [primary, accent]),
-                ),
-              ),
+  Widget bottomTitles(double value, TitleMeta meta) {
+    int index = value.toInt();
+    if (index < 0 || index >= labels.length) return const SizedBox();
 
-              if (!isLast)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    color: primary.withOpacity(0.3),
-                  ),
-                ),
-            ],
-          ),
-
-          const SizedBox(width: 16),
-
-          /// CARD
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                vertical: 14,
-                horizontal: 16,
-              ),
-              margin: const EdgeInsets.only(bottom: 18),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1E293B),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: primary.withOpacity(0.2),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-
-                  Text(
-                    week,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                    ),
-                  ),
-
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [primary, accent],
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      weight,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Text(
+        labels[index],
+        style: const TextStyle(color: Colors.grey, fontSize: 11),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-
-    final timeline = generateTimeline();
+    final spots = generateSpots();
+    final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: bgColor,
+      backgroundColor: const Color(0xFF020617),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: EdgeInsets.symmetric(horizontal: size.width * 0.05),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              SizedBox(height: size.height * 0.04),
 
-              const SizedBox(height: 30),
-
+              /// TITLE
               const Text(
                 "Your Weight Journey",
                 style: TextStyle(
-                  fontSize: 30,
+                  fontSize: 26,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 6),
 
-              Text(
+              const Text(
                 "Your estimated progress based on your goal.",
-                style: TextStyle(
-                  color: textGrey,
-                  fontSize: 15,
+                style: TextStyle(color: Colors.grey),
+              ),
+
+              SizedBox(height: size.height * 0.04),
+
+              /// GRAPH CONTAINER
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: AspectRatio(
+                  aspectRatio: 1.4, // 🔥 responsive height
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      double width = constraints.maxWidth;
+                      double height = constraints.maxHeight;
+
+                      double minY = targetWeight - 2;
+                      double maxY = currentWeight + 2;
+
+                      double stepX = width / (spots.length - 1);
+
+                      return Stack(
+                        children: [
+                          /// 📈 CHART
+                          LineChart(
+                            LineChartData(
+                              minY: minY,
+                              maxY: maxY,
+
+                              gridData: FlGridData(
+                                show: true,
+                                drawVerticalLine: false,
+                                horizontalInterval: 1,
+                                getDrawingHorizontalLine: (value) {
+                                  return FlLine(
+                                    color: Colors.white.withOpacity(0.05),
+                                  );
+                                },
+                              ),
+
+                              titlesData: FlTitlesData(
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                rightTitles: AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                topTitles: AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    interval: 1,
+                                    getTitlesWidget: bottomTitles,
+                                  ),
+                                ),
+                              ),
+
+                              borderData: FlBorderData(show: false),
+
+                              lineBarsData: [
+                                /// GLOW
+                                LineChartBarData(
+                                  spots: spots,
+                                  isCurved: true,
+                                  color: Colors.greenAccent.withOpacity(0.25),
+                                  barWidth: 10,
+                                  dotData: FlDotData(show: false),
+                                ),
+
+                                /// MAIN LINE
+                                LineChartBarData(
+                                  spots: spots,
+                                  isCurved: true,
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF22C55E),
+                                      Color(0xFF4ADE80),
+                                    ],
+                                  ),
+                                  barWidth: 3,
+
+                                  dotData: FlDotData(
+                                    show: true,
+                                    getDotPainter: (spot, percent, bar, index) {
+                                      bool isGoal = index == spots.length - 1;
+
+                                      return FlDotCirclePainter(
+                                        radius: isGoal ? 7 : 4,
+                                        color: Colors.white,
+                                        strokeWidth: 3,
+                                        strokeColor: const Color(0xFF22C55E),
+                                      );
+                                    },
+                                  ),
+
+                                  belowBarData: BarAreaData(
+                                    show: true,
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        const Color(
+                                          0xFF22C55E,
+                                        ).withOpacity(0.3),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          /// 🔥 RESPONSIVE LABELS
+                          ...spots.asMap().entries.map((entry) {
+                            int i = entry.key;
+                            FlSpot spot = entry.value;
+
+                            double x = stepX * i;
+
+                            double yRatio = (spot.y - minY) / (maxY - minY);
+                            double y = height - (yRatio * height);
+
+                            /// Prevent overflow
+                            double adjustedX = x - 20;
+
+                            if (i == 0) {
+                              adjustedX = 4;
+                            } else if (i == spots.length - 1) {
+                              adjustedX = width - 55;
+                            }
+
+                            return Positioned(
+                              left: adjustedX,
+                              top: y - 35,
+                              child: Column(
+                                children: [
+                                  Text(
+                                    "${spot.y.toStringAsFixed(1)}",
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const Icon(
+                                    Icons.arrow_drop_down,
+                                    size: 14,
+                                    color: Colors.greenAccent,
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 16),
 
-              /// Dynamic timeline
-              ...List.generate(
-                timeline.length,
-                (index) => timelineItem(
-                  timeline[index]["week"]!,
-                  timeline[index]["weight"]!,
-                  index == timeline.length - 1,
-                ),
+              /// VALUES ROW
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "${currentWeight.toStringAsFixed(1)} kg",
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                  Text(
+                    "${targetWeight.toStringAsFixed(1)} kg",
+                    style: const TextStyle(color: Color(0xFF22C55E)),
+                  ),
+                ],
               ),
 
               const Spacer(),
 
+              /// BUTTON
               CustomGradientButton(
                 text: "Continue",
                 onPressed: () {
@@ -189,7 +272,7 @@ class WeightProjectionScreen extends StatelessWidget {
                 },
               ),
 
-              const SizedBox(height: 20),
+              SizedBox(height: size.height * 0.02),
             ],
           ),
         ),

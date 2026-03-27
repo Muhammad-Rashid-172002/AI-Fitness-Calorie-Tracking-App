@@ -1,9 +1,10 @@
 import 'package:fitmind_ai/resources/app_them.dart';
+import 'package:fitmind_ai/view/WeeklyProgressScreen.dart';
 import 'package:fitmind_ai/view/history_screen.dart';
 import 'package:fitmind_ai/view/home_screen.dart';
-import 'package:fitmind_ai/view/Premium_Screens/premium_screen.dart' hide bgColor;
 import 'package:fitmind_ai/view/profile_screen.dart';
 import 'package:fitmind_ai/view/scan_screen.dart';
+
 import 'package:flutter/material.dart';
 
 class MainView extends StatefulWidget {
@@ -20,7 +21,7 @@ class _MainViewState extends State<MainView> {
     HomeScreen(),
     HistoryScreen(),
     ScanScreen(),
-    PremiumScreen(),
+    WeeklyProgressScreen(),
     ProfileScreen(),
   ];
 
@@ -30,90 +31,177 @@ class _MainViewState extends State<MainView> {
       backgroundColor: bgColor,
       resizeToAvoidBottomInset: false,
 
-      /// Body
-      body: SafeArea(bottom: true, child: pages[currentIndex]),
+      body: SafeArea(child: pages[currentIndex]),
 
-      /// Floating Action Button
-      floatingActionButton: FloatingActionButton(
-        elevation: 6,
-        onPressed: () => setState(() => currentIndex = 2),
-        backgroundColor: primary,
-        child: const Icon(Icons.qr_code_scanner, color: Colors.black, size: 26),
-      ),
+      floatingActionButton: _buildFAB(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
 
-      /// Bottom Navigation Bar
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8,
-        color: const Color(0xFF1E293B),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 65,
+      bottomNavigationBar: _buildBottomBar(),
+    );
+  }
+
+  /// ================= FAB =================
+ Widget _buildFAB() {
+  return Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      SizedBox(
+        height: 95,
+        width: 95,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            /// OUTER SOFT GLOW
+            Container(
+              height: 95,
+              width: 95,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: primary.withOpacity(0.08),
+              ),
+            ),
+
+            /// NEON RING
+            Container(
+              height: 78,
+              width: 78,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: primary.withOpacity(0.9),
+                  width: 3,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: primary.withOpacity(0.6),
+                    blurRadius: 25,
+                    spreadRadius: 3,
+                  ),
+                ],
+              ),
+            ),
+
+            /// INNER BUTTON
+            GestureDetector(
+              onTap: () => setState(() => currentIndex = 2),
+              child: Container(
+                height: 62,
+                width: 62,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFF0B1220),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Image.asset(
+                    "assets/scan_icon.png",
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      const SizedBox(height: 4),
+
+      /// TEXT BELOW FAB
+      Text(
+        "Scan",
+        style: TextStyle(
+          fontSize: 12,
+          color: primary,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
+  );
+}  /// ================= BOTTOM BAR =================
+Widget _buildBottomBar() {
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    child: Container(
+      height: 88,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(40),
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFF0B1220),
+            Color(0xFF0F1A2E),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: primary.withOpacity(0.25),
+            blurRadius: 25,
+            spreadRadius: 2,
+          ),
+        ],
+        border: Border.all(
+          color: primary.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(40),
+        child: SizedBox(
+          height: 80, // 🔥 force proper height
+          child: BottomAppBar(
+            color: Colors.transparent,
+            shape: const CircularNotchedRectangle(),
+            notchMargin: 10,
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _navItem(Icons.home, "Home", 0),
+                _navItem(Icons.home_rounded, "Home", 0),
                 _navItem(Icons.history, "History", 1),
-                const Spacer(), // space for FAB
-                _navItem(Icons.workspace_premium, "Premium", 3),
-                _navItem(Icons.person, "Profile", 4),
+
+                const SizedBox(width: 65),
+
+                _navItem(Icons.bar_chart_rounded, "Progress", 3),
+                _navItem(Icons.person_outline, "Profile", 4),
               ],
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}  /// ================= NAV ITEM =================
+Widget _navItem(IconData icon, String label, int index) {
+  bool isActive = currentIndex == index;
 
-  /// Navigation Item
-  Widget _navItem(IconData icon, String label, int index) {
-    bool isActive = currentIndex == index;
-
-    return Expanded(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          double iconSize = constraints.maxHeight * 0.42; // slightly smaller
-          double fontSize = constraints.maxHeight * 0.18; // slightly smaller
-
-          return InkWell(
-            onTap: () => setState(() => currentIndex = index),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 250),
-                    padding: const EdgeInsets.all(4), // smaller padding
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? primary.withOpacity(0.2)
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: iconSize,
-                      color: isActive ? primary : inactive,
-                    ),
-                  ),
-                  const SizedBox(height: 2), // smaller spacing
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      color: isActive ? primary : inactive,
-                      fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                    ),
-                  ),
-                ],
+  return Expanded(
+    child: InkWell(
+      onTap: () => setState(() => currentIndex = index),
+      child: SizedBox(
+        height: double.infinity, // 🔥 important fix
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: 24, // 🔽 reduced a bit
+              color: isActive ? primary : Colors.grey.shade500,
+            ),
+            const SizedBox(height: 2), // 🔽 reduce spacing
+            Flexible( // 🔥 prevents overflow
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11, // 🔽 slightly smaller
+                  color: isActive ? primary : Colors.grey.shade500,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          );
-        },
+          ],
+        ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

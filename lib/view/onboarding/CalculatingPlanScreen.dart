@@ -41,6 +41,7 @@ class _CalculatingPlanScreenState extends State<CalculatingPlanScreen>
         context,
         MaterialPageRoute(
           builder: (_) => WeightProjectionScreen(
+            
             currentWeight: widget.weight,
             targetWeight: widget.targetWeight,
           ),

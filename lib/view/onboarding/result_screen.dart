@@ -268,7 +268,7 @@ class _ResultScreenState extends State<ResultScreen> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: _timelineBox(
-                                    "Estimated Date",
+                                    "Estimated \nDate",
                                     _calculateEstimatedDate(
                                       formulaResult?["estimatedWeeks"] ?? 0,
                                     ),
@@ -321,7 +321,6 @@ class _ResultScreenState extends State<ResultScreen> {
 
   Widget _timelineBox(String title, String value, IconData icon) {
     return Container(
-      width: 105,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
       decoration: BoxDecoration(
         color: const Color(0xFF1E293B),
@@ -329,6 +328,7 @@ class _ResultScreenState extends State<ResultScreen> {
         border: Border.all(color: primary.withOpacity(0.4)),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, color: primary),
           const SizedBox(height: 10),
@@ -346,7 +346,7 @@ class _ResultScreenState extends State<ResultScreen> {
             style: TextStyle(
               color: textMain,
               fontWeight: FontWeight.bold,
-              fontSize: 13, // slightly smaller to fit
+              fontSize: 13,
             ),
           ),
         ],

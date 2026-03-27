@@ -54,51 +54,104 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   String getEnergyStatus(int remaining) {
-    if (remaining > 200) {
-      return "Under Calories";
-    } else if (remaining >= -200 && remaining <= 200) {
-      return "Balanced";
-    } else {
-      return "Excess Calories";
-    }
+    if (remaining > 200) return "Under Calories";
+    if (remaining >= -200 && remaining <= 200) return "Balanced";
+    return "Excess Calories";
   }
 
   Color getEnergyColor(int remaining) {
-    if (remaining > 200) {
-      return Colors.orange;
-    } else if (remaining >= -200 && remaining <= 200) {
-      return Colors.greenAccent;
-    } else {
-      return Colors.redAccent;
-    }
+    if (remaining > 200) return Colors.orange;
+    if (remaining >= -200 && remaining <= 200) return Colors.greenAccent;
+    return Colors.redAccent;
   }
 
   String nextMealSuggestion() {
     int remainingCalories = dailyGoalCalories;
     int remainingProtein = proteinGoal - todayProtein;
 
-    // If calories almost finished
     if (remainingCalories <= 150) {
       return "You are close to your calorie limit.\nChoose light foods like salad, cucumber, or soup.";
     }
 
-    // If protein is low
     if (remainingProtein >= 20) {
       return "Your protein intake is low.\nTry foods like eggs, grilled chicken, greek yogurt, or lentils.";
     }
 
-    // If fat is high
     if (todayFat > fatGoal) {
       return "Fat intake is high today.\nChoose grilled or steamed food like vegetables, boiled rice, or chicken breast.";
     }
 
-    // If calories still high but protein good
     if (remainingCalories > 400) {
       return "You still have enough calories left.\nA balanced meal like rice, chicken, and vegetables would be good.";
     }
 
-    // Normal balanced message
     return "Great balance today.\nKeep eating clean meals and stay hydrated.";
+  }
+
+  List<DateTime> getCurrentWeek() {
+    DateTime now = DateTime.now();
+    int currentWeekday = now.weekday; // Monday = 1
+
+    DateTime startOfWeek = now.subtract(Duration(days: currentWeekday - 1));
+
+    return List.generate(7, (index) {
+      return startOfWeek.add(Duration(days: index));
+    });
+  }
+
+  Widget _calendarStrip() {
+    final weekDays = getCurrentWeek();
+
+    return SizedBox(
+      height: 90,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: weekDays.length,
+        itemBuilder: (context, index) {
+          final date = weekDays[index];
+          bool isSelected =
+              DateFormat('yyyy-MM-dd').format(date) ==
+              DateFormat('yyyy-MM-dd').format(selectedDate);
+
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedDate = date;
+              });
+            },
+            child: Container(
+              width: 65,
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                color: isSelected ? primary : cardColor,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    DateFormat('EEE').format(date), // Mon, Tue
+                    style: TextStyle(
+                      color: isSelected ? Colors.black : Colors.white70,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    DateFormat('d').format(date), // 20
+                    style: TextStyle(
+                      color: isSelected ? Colors.black : Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -119,18 +172,22 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, snapshot) {
             int calories = 0;
 
+            /// ✅ NEW FLAG
+            bool hasLoggedMeals = false;
+
             if (snapshot.hasData && snapshot.data!.exists) {
               final data = snapshot.data!.data() as Map<String, dynamic>;
 
               calories = (data['totalCalories'] ?? 0).toInt();
-
               todayProtein = (data['totalProtein'] ?? 0).toInt();
               todayCarbs = (data['totalCarbs'] ?? 0).toInt();
               todayFat = (data['totalFat'] ?? 0).toInt();
+
+              /// ✅ CHECK
+              hasLoggedMeals = calories > 0;
             }
 
             int remaining = dailyGoalCalories - calories;
-
             String energyStatus = getEnergyStatus(remaining);
 
             return SingleChildScrollView(
@@ -138,7 +195,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  /// DATE SECTION
+                  /// DATE
                   Text(
                     DateFormat("MMMM d").format(selectedDate),
                     style: const TextStyle(
@@ -147,100 +204,29 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   Text(
                     DateFormat("EEEE").format(selectedDate),
                     style: const TextStyle(color: Colors.white70),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
 
-                  /// WEEK CALENDAR
-                  SizedBox(
-                    height: 70,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: 7,
-                      itemBuilder: (context, index) {
-                        DateTime startOfWeek = DateTime.now().subtract(
-                          Duration(days: DateTime.now().weekday - 1),
-                        );
+                  /// CALENDAR STRIP
+                  _calendarStrip(),
 
-                        DateTime weekDay = startOfWeek.add(
-                          Duration(days: index),
-                        );
-
-                        bool isToday =
-                            DateFormat('yyyy-MM-dd').format(weekDay) ==
-                            DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-                        return Container(
-                          width: 60,
-                          margin: const EdgeInsets.only(right: 10),
-                          decoration: BoxDecoration(
-                            color: isToday ? primary : cardColor,
-                            borderRadius: BorderRadius.circular(14),
-
-                            /// Optional glow for today
-                            boxShadow: isToday
-                                ? [
-                                    BoxShadow(
-                                      color: primary.withOpacity(0.5),
-                                      blurRadius: 12,
-                                      spreadRadius: 1,
-                                    ),
-                                  ]
-                                : [],
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              /// Day Name
-                              Text(
-                                DateFormat("E").format(weekDay),
-                                style: TextStyle(
-                                  color: isToday
-                                      ? Colors.white
-                                      : Colors.white70,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-
-                              const SizedBox(height: 6),
-
-                              /// Date Number
-                              Text(
-                                DateFormat("d").format(weekDay),
-                                style: TextStyle(
-                                  color: isToday
-                                      ? Colors.white
-                                      : Colors.white70,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
                   const SizedBox(height: 25),
 
-                  /// ENERGY STATUS
+                  /// ENERGY
                   Center(
                     child: Column(
                       children: [
                         Image.asset("assets/energy.png", height: 120),
-
                         const SizedBox(height: 10),
-
-                        Text(
+                        const Text(
                           "Energy Status",
-                          style: const TextStyle(color: Colors.white70),
+                          style: TextStyle(color: Colors.white70),
                         ),
-
                         const SizedBox(height: 5),
-
                         Text(
                           energyStatus,
                           style: TextStyle(
@@ -255,7 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 25),
 
-                  /// CALORIES REMAINING CARD
+                  /// CALORIES CARD
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(18),
@@ -264,15 +250,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
                           "Calories Remaining",
                           style: TextStyle(color: Colors.white70),
                         ),
-
                         const SizedBox(height: 8),
-
                         Text(
                           "$remaining kcal",
                           style: const TextStyle(
@@ -281,9 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-
                         const SizedBox(height: 10),
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -291,7 +272,6 @@ class _HomeScreenState extends State<HomeScreen> {
                               "Consumed: $calories kcal",
                               style: const TextStyle(color: Colors.white70),
                             ),
-
                             Text(
                               "Goal: $dailyGoalCalories kcal",
                               style: const TextStyle(color: Colors.white70),
@@ -304,48 +284,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 25),
 
-                  /// MACRO CIRCLES
+                  /// MACROS
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _macroCircle("Protein", todayProtein, proteinGoal),
-
                       _macroCircle("Carbs", todayCarbs, carbsGoal),
-
                       _macroCircle("Fat", todayFat, fatGoal),
                     ],
                   ),
 
                   const SizedBox(height: 25),
 
-                  /// NEXT MEAL SUGGESTION
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Next Meal Suggestion",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        Text(
-                          nextMealSuggestion(),
-                          style: const TextStyle(color: Colors.white70),
-                        ),
-                      ],
-                    ),
-                  ),
+                  /// ✅ CLIENT FIX
+                  if (hasLoggedMeals)
+                    _suggestionCard(nextMealSuggestion())
+                  else
+                    _emptyCard(),
 
                   const SizedBox(height: 20),
 
@@ -373,9 +328,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-
                             const SizedBox(height: 10),
-
                             Text(
                               snapshot.data!,
                               style: const TextStyle(color: Colors.white),
@@ -388,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   const SizedBox(height: 30),
 
-                  /// SCAN BUTTON
+                  /// BUTTON
                   SizedBox(
                     width: double.infinity,
                     height: 60,
@@ -399,10 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           context,
                           MaterialPageRoute(builder: (_) => const ScanScreen()),
                         );
-
-                        if (result != null) {
-                          setState(() {});
-                        }
+                        if (result != null) setState(() {});
                       },
                     ),
                   ),
@@ -413,6 +363,45 @@ class _HomeScreenState extends State<HomeScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  /// SUGGESTION CARD
+  Widget _suggestionCard(String text) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Next Meal Suggestion",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          Text(text, style: const TextStyle(color: Colors.white70)),
+        ],
+      ),
+    );
+  }
+
+  /// EMPTY STATE
+  Widget _emptyCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Text(
+        "Log your first meal to get personalized suggestions 🍽️",
+        style: TextStyle(color: Colors.white70),
       ),
     );
   }
@@ -428,28 +417,11 @@ class _HomeScreenState extends State<HomeScreen> {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         children: [
-          /// TITLE
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-
+          Text(title, style: const TextStyle(color: Colors.white70)),
           const SizedBox(height: 12),
-
-          /// PROGRESS RING
           SizedBox(
             height: 70,
             width: 70,
@@ -462,33 +434,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   backgroundColor: Colors.white10,
                   valueColor: AlwaysStoppedAnimation(primary),
                 ),
-
-                /// PERCENT
-                Text(
-                  "$percent%",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
+                Text("$percent%", style: const TextStyle(color: Colors.white)),
               ],
             ),
           ),
-
           const SizedBox(height: 10),
-
-          /// VALUE
           Text(
             "$value g",
             style: const TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 16,
             ),
           ),
-
-          /// GOAL
           Text(
             "Goal $goal g",
             style: const TextStyle(color: Colors.white54, fontSize: 12),
