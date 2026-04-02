@@ -297,4 +297,52 @@ class ScanController {
       ),
     );
   }
+//
+Future<Map<String, dynamic>> calculateTodayWeightChange() async {
+  final user = _auth.currentUser;
+  if (user == null) return {"change": 0.0, "deficit": 0};
+
+  String todayDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+
+  /// 1️⃣ Get today's calories
+  final dailyDoc = await _firestore
+      .collection('users')
+      .doc(user.uid)
+      .collection('dailyLogs')
+      .doc(todayDate)
+      .get();
+
+  int consumedCalories = dailyDoc.data()?['totalCalories'] ?? 0;
+
+  /// 2️⃣ Get user target calories
+  final userDoc =
+      await _firestore.collection('users').doc(user.uid).get();
+
+  int targetCalories = userDoc.data()?['dailyCalories'] ?? 2000;
+
+  /// 3️⃣ Calculate deficit
+  int deficit = targetCalories - consumedCalories;
+
+  /// 4️⃣ Convert to weight
+  double weightChange = deficit / 7700;
+
+  /// 5️⃣ Save (optional but PRO feature)
+  await _firestore
+      .collection('users')
+      .doc(user.uid)
+      .collection('dailyLogs')
+      .doc(todayDate)
+      .set({
+        "deficit": deficit,
+        "weightChange": weightChange,
+      }, SetOptions(merge: true));
+
+  return {
+    "change": weightChange,
+    "deficit": deficit,
+    "consumed": consumedCalories,
+    "target": targetCalories,
+  };
+}
+
 }

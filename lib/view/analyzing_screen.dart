@@ -36,6 +36,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen> {
       context,
       MaterialPageRoute(
         builder: (_) => ScanResultScreen(
+      
           food: Food(name: result, shortMsg: result),
           image: widget.image,
           result: result, // <-- Use the string returned by ScanController

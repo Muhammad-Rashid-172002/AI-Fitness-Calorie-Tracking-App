@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 
 class CustomGradientButton extends StatelessWidget {
   final String text;
- final VoidCallback? onPressed;
- 
+  final VoidCallback? onPressed;
+  final bool isLoading; // NEW
 
   const CustomGradientButton({
     super.key,
     required this.text,
     required this.onPressed,
+    this.isLoading = false, // default false
   });
 
   @override
@@ -19,12 +20,10 @@ class CustomGradientButton extends StatelessWidget {
         width: double.infinity,
         height: 62,
         child: GestureDetector(
-          onTap: onPressed,
+          onTap: isLoading ? null : onPressed, // Disable tap while loading
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(22),
-
-              // Gradient Background
               gradient: const LinearGradient(
                 colors: [
                   Color(0xFF22C55E), // Green
@@ -34,8 +33,6 @@ class CustomGradientButton extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-
-              // Glow Shadow
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF22C55E).withOpacity(0.45),
@@ -46,26 +43,36 @@ class CustomGradientButton extends StatelessWidget {
               ],
             ),
             child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    text,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                      letterSpacing: 0.8,
+              child: isLoading
+                  ? const SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.white),
+                        strokeWidth: 3,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          text,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ],
-              ),
             ),
           ),
         ),

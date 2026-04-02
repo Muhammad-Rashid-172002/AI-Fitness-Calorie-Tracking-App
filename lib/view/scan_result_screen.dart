@@ -6,11 +6,10 @@ import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:flutter/material.dart';
 import 'package:fitmind_ai/controller/scan_controller.dart';
 
-class ScanResultScreen extends StatelessWidget {
+class ScanResultScreen extends StatefulWidget {
   final File image;
   final String result;
   final Food food;
-  final ScanController controller = ScanController();
 
   ScanResultScreen({
     super.key,
@@ -20,12 +19,20 @@ class ScanResultScreen extends StatelessWidget {
   });
 
   @override
+  State<ScanResultScreen> createState() => _ScanResultScreenState();
+}
+
+class _ScanResultScreenState extends State<ScanResultScreen> {
+  final ScanController controller = ScanController();
+  bool isSaving = false;
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: Stack(
         children: [
-          Positioned.fill(child: Image.file(image, fit: BoxFit.cover)),
+          Positioned.fill(child: Image.file(widget.image, fit: BoxFit.cover)),
           Positioned.fill(
             child: Container(color: Colors.black.withOpacity(0.35)),
           ),
@@ -48,7 +55,7 @@ class ScanResultScreen extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(25),
                     child: Image.file(
-                      image,
+                      widget.image,
                       height: 280,
                       width: double.infinity,
                       fit: BoxFit.cover,
@@ -79,7 +86,7 @@ class ScanResultScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 15),
                       Text(
-                        result,
+                        widget.result,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
@@ -88,45 +95,48 @@ class ScanResultScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
 
-                      if (food.calories != null)
-                        _nutritionCard("Calories", "${food.calories} kcal"),
-                      if (food.protein != null)
-                        _nutritionCard("Protein", "${food.protein} g"),
-                      if (food.fats != null)
-                        _nutritionCard("Fat", "${food.fats} g"),
-                      if (food.carbs != null)
-                        _nutritionCard("Carbs", "${food.carbs} g"),
+                      if (widget.food.calories != null)
+                        _nutritionCard("Calories", "${widget.food.calories} kcal"),
+                      if (widget.food.protein != null)
+                        _nutritionCard("Protein", "${widget.food.protein} g"),
+                      if (widget.food.fats != null)
+                        _nutritionCard("Fat", "${widget.food.fats} g"),
+                      if (widget.food.carbs != null)
+                        _nutritionCard("Carbs", "${widget.food.carbs} g"),
 
                       const SizedBox(height: 25),
-                      _healthMessageCard(food),
+                      _healthMessageCard(widget.food),
                     ],
                   ),
                 ),
                 const SizedBox(height: 30),
 
                 CustomGradientButton(
-                  text: "Done",
+                  text: isSaving ? "Saving..." : "Save Food",
                   onPressed: () async {
-                    final parsedFood = controller.parseFoodFromResult(result);
-
-                    /// Save scan + update daily logs
-                    await controller.saveScan(result: result, food: parsedFood);
-
-                    showCustomSnackBar(
-                      context,
-                      "Scan Saved Successfully",
-                      true,
-                    );
-
-                    /// Return data to HomeScreen
-                    Navigator.pop(context, {
-                      "calories": parsedFood.calories ?? 0,
-                      "protein": parsedFood.protein ?? 0,
-                      "carbs": parsedFood.carbs ?? 0,
-                      "fat": parsedFood.fats ?? 0,
+                    setState(() {
+                      isSaving = true;
                     });
-                  },
-                ),
+                    final parsedFood = controller.parseFoodFromResult(widget.result);
+
+                      /// Save scan + update daily logs
+                      await controller.saveScan(result: widget.result, food: parsedFood);
+
+                      showCustomSnackBar(
+                        context,
+                        "Scan Saved Successfully",
+                        true,
+                      );
+
+                      /// Return data to HomeScreen
+                      Navigator.pop(context, {
+                        "calories": parsedFood.calories ?? 0,
+                        "protein": parsedFood.protein ?? 0,
+                        "carbs": parsedFood.carbs ?? 0,
+                        "fat": parsedFood.fats ?? 0,
+                      });
+                    },
+                  ),
               ],
             ),
           ),

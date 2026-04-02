@@ -53,36 +53,79 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
       final todayId =
           "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
 
+      /// ================= SAVE MEAL =================
       await FirebaseFirestore.instance
           .collection("users")
           .doc(uid)
           .collection("scans")
           .add({
-        "result": mealName,
-        "calories": calories,
-        "protein": protein,
-        "carbs": carbs,
-        "fat": fat,
-        "imagePath": null,
-        "type": "manual",
-        "timestamp": Timestamp.now(),
-      });
+            "result": mealName,
+            "calories": calories,
+            "protein": protein,
+            "carbs": carbs,
+            "fat": fat,
+            "imagePath": null,
+            "type": "manual",
+            "timestamp": Timestamp.now(),
+          });
 
-      await FirebaseFirestore.instance
+      /// ================= UPDATE DAILY LOG =================
+      final dailyRef = FirebaseFirestore.instance
           .collection("users")
           .doc(uid)
           .collection("dailyLogs")
-          .doc(todayId)
-          .set({
+          .doc(todayId);
+
+      await dailyRef.set({
         "totalCalories": FieldValue.increment(calories),
         "totalProtein": FieldValue.increment(protein),
         "totalCarbs": FieldValue.increment(carbs),
         "totalFat": FieldValue.increment(fat),
         "mealCount": FieldValue.increment(1),
-        "createdAt": Timestamp.now()
+        "createdAt": Timestamp.now(),
       }, SetOptions(merge: true));
 
-      showCustomSnackBar(context, "Meal Saved Successfully", true);
+      /// ================= 🔥 CALCULATE WEIGHT =================
+
+      /// Get updated daily calories
+      final updatedDoc = await dailyRef.get();
+      double consumedCalories = (updatedDoc.data()?["totalCalories"] ?? 0)
+          .toDouble();
+
+      /// Get user target calories
+      final userDoc = await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .get();
+
+      double targetCalories = (userDoc.data()?["dailyCalories"] ?? 2000)
+          .toDouble();
+
+      /// Calculate deficit
+      double deficit = targetCalories - consumedCalories;
+
+      /// Calculate weight change
+      double weightChange = deficit / 7700;
+
+      /// Save in Firestore (PRO FEATURE)
+      await dailyRef.set({
+        "deficit": deficit,
+        "weightChange": weightChange,
+      }, SetOptions(merge: true));
+
+      /// ================= SHOW RESULT =================
+
+      String msg;
+
+      if (weightChange < 0) {
+        msg =
+            "🔥 Losing ${weightChange.abs().toStringAsFixed(2)} kg today\nDeficit: ${deficit.toStringAsFixed(0)} kcal";
+      } else {
+        msg =
+            "⚠️ Gaining ${weightChange.toStringAsFixed(2)} kg today\nExtra: ${deficit.abs().toStringAsFixed(0)} kcal";
+      }
+
+      showCustomSnackBar(context, msg, true);
 
       Navigator.pop(context);
     } catch (e) {
@@ -100,10 +143,7 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           gradient: LinearGradient(
-            colors: [
-              color.withOpacity(0.4),
-              color.withOpacity(0.15),
-            ],
+            colors: [color.withOpacity(0.4), color.withOpacity(0.15)],
           ),
         ),
         child: Column(
@@ -113,22 +153,27 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
             Text(
               value.isEmpty ? "0g" : "$value g",
               style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16),
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
             Text(
               title,
               style: const TextStyle(color: Colors.white60, fontSize: 12),
-            )
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget buildField(String hint, TextEditingController controller,
-      {TextInputType keyboard = TextInputType.text, IconData? icon}) {
+  Widget buildField(
+    String hint,
+    TextEditingController controller, {
+    TextInputType keyboard = TextInputType.text,
+    IconData? icon,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Container(
@@ -174,61 +219,84 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
               Row(
                 children: [
                   IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back,
-                          color: Colors.white)),
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  ),
                   const Text(
                     "Quick Add Meal",
                     style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold),
-                  )
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
-      
+
               const SizedBox(height: 20),
-      
+
               buildField(
-                  "Meal Name", mealNameController,
-                  icon: Icons.restaurant),
-      
+                "Meal Name",
+                mealNameController,
+                icon: Icons.restaurant,
+              ),
+
               buildField(
-                  "Calories (kcal)", caloriesController,
-                  keyboard: TextInputType.number,
-                  icon: Icons.local_fire_department),
-      
+                "Calories (kcal)",
+                caloriesController,
+                keyboard: TextInputType.number,
+                icon: Icons.local_fire_department,
+              ),
+
               buildField(
-                  "Protein (g)", proteinController,
-                  keyboard: TextInputType.number,
-                  icon: Icons.fitness_center),
-      
+                "Protein (g)",
+                proteinController,
+                keyboard: TextInputType.number,
+                icon: Icons.fitness_center,
+              ),
+
               buildField(
-                  "Carbs (g)", carbsController,
-                  keyboard: TextInputType.number,
-                  icon: Icons.rice_bowl),
-      
+                "Carbs (g)",
+                carbsController,
+                keyboard: TextInputType.number,
+                icon: Icons.rice_bowl,
+              ),
+
               buildField(
-                  "Fat (g)", fatController,
-                  keyboard: TextInputType.number,
-                  icon: Icons.opacity),
-      
+                "Fat (g)",
+                fatController,
+                keyboard: TextInputType.number,
+                icon: Icons.opacity,
+              ),
+
               const SizedBox(height: 25),
-      
+
               /// Macro Preview
               Row(
                 children: [
-                  macroCard("Protein", proteinController.text,
-                      Icons.fitness_center, Colors.blue),
-                  macroCard("Carbs", carbsController.text,
-                      Icons.rice_bowl, Colors.orange),
-                  macroCard("Fat", fatController.text,
-                      Icons.opacity, Colors.red),
+                  macroCard(
+                    "Protein",
+                    proteinController.text,
+                    Icons.fitness_center,
+                    Colors.blue,
+                  ),
+                  macroCard(
+                    "Carbs",
+                    carbsController.text,
+                    Icons.rice_bowl,
+                    Colors.orange,
+                  ),
+                  macroCard(
+                    "Fat",
+                    fatController.text,
+                    Icons.opacity,
+                    Colors.red,
+                  ),
                 ],
               ),
-      
+
               const Spacer(),
-      
+
               SizedBox(
                 width: double.infinity,
                 height: 55,
@@ -236,7 +304,7 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
                   text: isSaving ? "Saving..." : "Save Meal",
                   onPressed: isSaving ? null : saveMeal,
                 ),
-              )
+              ),
             ],
           ),
         ),
