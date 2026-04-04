@@ -275,28 +275,47 @@ class ScanController {
   /// =========================
   /// PARSE FOOD FROM AI RESULT STRING
   /// =========================
-  Food parseFoodFromResult(String result) {
-    final caloriesRegex = RegExp(
-      r'Calories:\s*(\d+)\s*kcal',
-      caseSensitive: false,
-    );
-    final fatsRegex = RegExp(r'Fats:\s*(\d+)\s*g', caseSensitive: false);
-    final carbsRegex = RegExp(r'Carbs:\s*(\d+)\s*g', caseSensitive: false);
-    final proteinRegex = RegExp(r'Protein:\s*(\d+)\s*g', caseSensitive: false);
-
-    return Food(
-      name: result.split("Calories").first.replaceAll("Food:", "").trim(),
-      shortMsg: '',
-      calories: double.tryParse(
-        caloriesRegex.firstMatch(result)?.group(1) ?? '0',
-      ),
-      fats: double.tryParse(fatsRegex.firstMatch(result)?.group(1) ?? '0'),
-      carbs: double.tryParse(carbsRegex.firstMatch(result)?.group(1) ?? '0'),
-      protein: double.tryParse(
-        proteinRegex.firstMatch(result)?.group(1) ?? '0',
-      ),
-    );
+Food parseFoodFromResult(String result) {
+  double extract(List<String> keys) {
+    for (var key in keys) {
+      final regex = RegExp(
+        "$key[: ]*([0-9]+\\.?[0-9]*)",
+        caseSensitive: false,
+      );
+      final match = regex.firstMatch(result);
+      if (match != null) {
+        return double.tryParse(match.group(1)!) ?? 0;
+      }
+    }
+    return 0;
   }
+
+  return Food(
+    name: result.split("\n").first.replaceAll("Food:", "").trim(),
+
+    calories: extract([
+      "calories",
+      "kcal",
+    ]),
+
+    protein: extract([
+      "protein",
+    ]),
+
+    carbs: extract([
+      "carbs",
+      "carbohydrates",
+    ]),
+
+    fats: extract([
+      "fat",
+      "fats",
+    ]),
+
+    grams: 100,
+    shortMsg: '',
+  );
+}
 //
 Future<Map<String, dynamic>> calculateTodayWeightChange() async {
   final user = _auth.currentUser;
