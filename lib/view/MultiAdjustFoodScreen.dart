@@ -1,5 +1,3 @@
-// multi_adjust_food_screen.dart
-
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/food_model.dart';
@@ -34,7 +32,14 @@ class _MultiAdjustFoodScreenState extends State<MultiAdjustFoodScreen> {
     final protein = ((f.protein ?? 0) / 100) * (f.grams ?? 0);
     final fats = ((f.fats ?? 0) / 100) * (f.grams ?? 0);
 
-    return (carbs * 4) + (protein * 4) + (fats * 9);
+    final macroCalories = (carbs * 4) + (protein * 4) + (fats * 9);
+
+    /// Fallback if macros missing
+    if (macroCalories == 0) {
+      return ((f.calories ?? 0) / 100) * (f.grams ?? 0);
+    }
+
+    return macroCalories;
   }
 
   double totalCalories() {
@@ -62,6 +67,8 @@ class _MultiAdjustFoodScreenState extends State<MultiAdjustFoodScreen> {
     return grams / getFactor(unit);
   }
 
+  /// ---------------- UI ----------------
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,7 +89,18 @@ class _MultiAdjustFoodScreenState extends State<MultiAdjustFoodScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                
+
+                  const SizedBox(height: 10),
+
+                  /// TOTAL CALORIES (LIVE 🔥)
+                  Text(
+                    "${totalCalories().toStringAsFixed(0)} kcal",
+                    style: const TextStyle(
+                      color: Colors.greenAccent,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -96,7 +114,7 @@ class _MultiAdjustFoodScreenState extends State<MultiAdjustFoodScreen> {
               ),
             ),
 
-            /// BUTTON
+            /// SAVE BUTTON
             Padding(
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
@@ -113,15 +131,12 @@ class _MultiAdjustFoodScreenState extends State<MultiAdjustFoodScreen> {
                     color: Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
-                  
                 ),
               ),
             ),
-            
           ],
         ),
       ),
-      
     );
   }
 
@@ -131,16 +146,10 @@ class _MultiAdjustFoodScreenState extends State<MultiAdjustFoodScreen> {
     final food = foods[index];
     final unit = units[index];
 
-    /// UNIT RANGE
-    double min = 10;
-    double max = 500;
+    /// LIMITS
+    double min = unit == Unit.grams ? 10 : 0.1;
+    double max = unit == Unit.grams ? 500 : 5;
 
-    if (unit == Unit.cup || unit == Unit.piece) {
-      min = 0.1;
-      max = 5;
-    }
-
-    /// DISPLAY VALUE
     double displayValue =
         fromGrams(food.grams ?? 100, unit).clamp(min, max);
 
@@ -154,7 +163,7 @@ class _MultiAdjustFoodScreenState extends State<MultiAdjustFoodScreen> {
       ),
       child: Column(
         children: [
-          /// TOP ROW
+          /// TOP
           Row(
             children: [
               ClipRRect(
@@ -193,7 +202,7 @@ class _MultiAdjustFoodScreenState extends State<MultiAdjustFoodScreen> {
 
           const SizedBox(height: 10),
 
-          /// CALORIES
+          /// KCAL (LIVE 🔥)
           Text(
             "${calcCalories(food).toStringAsFixed(0)} kcal",
             style: const TextStyle(
@@ -204,17 +213,17 @@ class _MultiAdjustFoodScreenState extends State<MultiAdjustFoodScreen> {
 
           const SizedBox(height: 10),
 
-          /// BIG PORTION
+          /// BIG PORTION (CENTER FOCUS)
           Text(
             "${displayValue.toStringAsFixed(1)} ${_unitLabel(unit)}",
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 26,
+              fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
           ),
 
-          /// SLIDER ✅ FIXED
+          /// SLIDER (SMOOTH 🔥)
           Slider(
             value: displayValue,
             min: min,
@@ -229,29 +238,25 @@ class _MultiAdjustFoodScreenState extends State<MultiAdjustFoodScreen> {
             },
           ),
 
-          /// UNIT SELECTOR
+          /// UNIT SWITCH
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: Unit.values.map((u) {
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 5),
-                child: ChoiceChip(
-                  label: Text(_unitLabel(u)),
-                  selected: unit == u,
-                  onSelected: (_) {
-                    setState(() {
-                      units[index] = u;
-                    });
-                  },
-                ),
+              return ChoiceChip(
+                label: Text(_unitLabel(u)),
+                selected: unit == u,
+                onSelected: (_) {
+                  setState(() {
+                    units[index] = u;
+                  });
+                },
               );
             }).toList(),
           ),
 
           const SizedBox(height: 10),
 
-          /// MACROS
+          /// MACROS (LIVE 🔥)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [

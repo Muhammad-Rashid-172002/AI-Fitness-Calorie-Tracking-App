@@ -31,9 +31,7 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
   void initState() {
     super.initState();
 
-    foods = widget.foods.isNotEmpty
-        ? widget.foods
-        : _parseFoods(widget.result);
+    foods = widget.foods.isNotEmpty ? widget.foods : _parseFoods(widget.result);
   }
 
   /// ---------------- PARSER ----------------
@@ -48,16 +46,15 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
 
       if (parts.length >= 2) {
         final name = parts[0].trim();
-        final kcal = double.tryParse(
-                parts[1].toLowerCase().replaceAll('kcal', '').trim()) ??
+        final kcal =
+            double.tryParse(
+              parts[1].toLowerCase().replaceAll('kcal', '').trim(),
+            ) ??
             100;
 
-        parsed.add(Food(
-          name: name,
-          shortMsg: name,
-          calories: kcal,
-          grams: 100,
-        ));
+        parsed.add(
+          Food(name: name, shortMsg: name, calories: kcal, grams: 100),
+        );
       }
     }
 
@@ -150,8 +147,7 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
                 onPressed: () async {
                   final newFood = await Navigator.push(
                     context,
-                    MaterialPageRoute(
-                        builder: (_) => const AddFoodScreen()),
+                    MaterialPageRoute(builder: (_) => const AddFoodScreen()),
                   );
 
                   if (newFood != null) {
@@ -207,22 +203,25 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
       child: Row(
         children: [
           ClipRRect(
-  borderRadius: BorderRadius.circular(10),
-  child: food.imagePath != null
-      ? Image.file(
-          File(food.imagePath!),
-          width: 45,
-          height: 45,
-          fit: BoxFit.cover,
-        )
-      : Container(
-          width: 45,
-          height: 45,
-          color: Colors.greenAccent.withOpacity(0.1),
-          child: const Icon(Icons.fastfood,
-             color: Colors.greenAccent, size: 20),
-        ),
-),
+            borderRadius: BorderRadius.circular(10),
+            child: food.imagePath != null
+                ? Image.file(
+                    File(food.imagePath!),
+                    width: 45,
+                    height: 45,
+                    fit: BoxFit.cover,
+                  )
+                : Container(
+                    width: 45,
+                    height: 45,
+                    color: Colors.greenAccent.withOpacity(0.1),
+                    child: const Icon(
+                      Icons.fastfood,
+                      color: Colors.greenAccent,
+                      size: 20,
+                    ),
+                  ),
+          ),
           const SizedBox(width: 10),
 
           /// INFO
@@ -258,17 +257,16 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             onPressed: () async {
-             final updatedFoods = await Navigator.push(
-  context,
-  MaterialPageRoute(
-    builder: (_) => MultiAdjustFoodScreen(foods: foods,),
-  ),
-);
+              final updatedFoods = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MultiAdjustFoodScreen(foods: foods),
+                ),
+              );
 
-if (updatedFoods != null) {
-  setState(() => foods = updatedFoods);
-}
-
+              if (updatedFoods != null) {
+                setState(() => foods = updatedFoods);
+              }
             },
           ),
 
