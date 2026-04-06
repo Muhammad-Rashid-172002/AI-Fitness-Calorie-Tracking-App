@@ -1,8 +1,6 @@
-// food_detected_screen.dart
-
 import 'dart:io';
-import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:flutter/material.dart';
+import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/models/food_model.dart';
 import 'package:fitmind_ai/view/AddFoodScreen.dart';
 import 'package:fitmind_ai/view/MultiAdjustFoodScreen.dart';
@@ -25,43 +23,64 @@ class FoodDetectedScreen extends StatefulWidget {
 }
 
 class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
-  late List<Food> foods;
+  List<Food> foods = [];
 
   @override
   void initState() {
     super.initState();
 
-    foods = widget.foods.isNotEmpty ? widget.foods : _parseFoods(widget.result);
+    if (widget.foods.isNotEmpty) {
+      foods = widget.foods;
+    } else {
+      foods = _parseFoods(widget.result);
+    }
+
+    if (foods.isEmpty) {
+      foods = [
+        Food(
+          name: "Unknown Food",
+          shortMsg: "Unknown",
+          calories: 100,
+          grams: 100,
+        ),
+      ];
+    }
   }
 
-  /// ---------------- PARSER ----------------
+  /// ✅ SMART PARSER (FIXED)
   List<Food> _parseFoods(String result) {
-    final lines = result.split('\n');
     List<Food> parsed = [];
 
+    String foodName = "Unknown Food";
+    double calories = 100;
+
+    final lines = result.split('\n');
+
     for (var line in lines) {
-      if (line.trim().isEmpty) continue;
+      line = line.trim().toLowerCase();
 
-      final parts = line.split('-');
+      if (line.startsWith("food:")) {
+        foodName = line.replaceFirst("food:", "").trim();
+      }
 
-      if (parts.length >= 2) {
-        final name = parts[0].trim();
-        final kcal =
-            double.tryParse(
-              parts[1].toLowerCase().replaceAll('kcal', '').trim(),
-            ) ??
-            100;
+      if (line.startsWith("calories:")) {
+        final kcalText = line
+            .replaceFirst("calories:", "")
+            .replaceAll("kcal", "")
+            .trim();
 
-        parsed.add(
-          Food(name: name, shortMsg: name, calories: kcal, grams: 100),
-        );
+        calories = double.tryParse(kcalText) ?? 100;
       }
     }
+
+    parsed.add(
+      Food(name: foodName, shortMsg: foodName, calories: calories, grams: 100),
+    );
 
     return parsed;
   }
 
-  /// ---------------- CALCULATIONS ----------------
+  /// CALCULATIONS
   double _calcCalories(Food f) {
     return ((f.calories ?? 0) / 100) * (f.grams ?? 100);
   }
@@ -70,7 +89,7 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
     return foods.fold(0, (sum, f) => sum + _calcCalories(f));
   }
 
-  /// ---------------- UI ----------------
+  /// UI
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,7 +97,7 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            /// -------- HEADER --------
+            /// HEADER
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -107,12 +126,12 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
 
                   const SizedBox(height: 15),
 
-                  /// TOTAL CALORIES
+                  /// TOTAL KCAL
                   Text(
                     "${_totalCalories().toStringAsFixed(0)} kcal",
                     style: const TextStyle(
                       color: Colors.greenAccent,
-                      fontSize: 24,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -120,29 +139,22 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
               ),
             ),
 
-            /// -------- FOOD LIST --------
+            /// FOOD LIST
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 itemCount: foods.length,
-                itemBuilder: (_, i) {
-                  final food = foods[i];
-
-                  return _foodCard(food, i);
-                },
+                itemBuilder: (_, i) => _foodCard(foods[i], i),
               ),
             ),
 
-            /// -------- ADD FOOD --------
+            /// ADD FOOD BUTTON
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Colors.greenAccent),
                   minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
                 ),
                 onPressed: () async {
                   final newFood = await Navigator.push(
@@ -163,18 +175,15 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
 
             const SizedBox(height: 10),
 
-            /// -------- SAVE BUTTON --------
+            /// SAVE BUTTON
             Padding(
               padding: const EdgeInsets.all(16),
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.greenAccent,
                   minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
                 ),
-                onPressed: foods.isEmpty ? null : _onSave,
+                onPressed: _onSave,
                 child: const Text(
                   "Save Meal",
                   style: TextStyle(
@@ -190,7 +199,7 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
     );
   }
 
-  /// ---------------- FOOD CARD ----------------
+  /// ✅ FOOD CARD (UPDATED UI + EDIT FLOW)
   Widget _foodCard(Food food, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -202,9 +211,10 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
       ),
       child: Row(
         children: [
+          /// ICON
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
-            child: food.imagePath != null
+            child: food.imagePath != null && food.imagePath!.isNotEmpty
                 ? Image.file(
                     File(food.imagePath!),
                     width: 45,
@@ -214,17 +224,20 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
                 : Container(
                     width: 45,
                     height: 45,
-                    color: Colors.greenAccent.withOpacity(0.1),
+                    decoration: BoxDecoration(
+                      color: Colors.greenAccent.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     child: const Icon(
                       Icons.fastfood,
                       color: Colors.greenAccent,
-                      size: 20,
                     ),
                   ),
           ),
+
           const SizedBox(width: 10),
 
-          /// INFO
+          /// NAME + GRAMS
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,7 +257,7 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
             ),
           ),
 
-          /// CALORIES
+          /// KCAL
           Text(
             "${_calcCalories(food).toStringAsFixed(0)} kcal",
             style: const TextStyle(
@@ -253,7 +266,7 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
             ),
           ),
 
-          /// EDIT
+          /// EDIT BUTTON 👉 GO TO MultiAdjustFoodScreen
           IconButton(
             icon: const Icon(Icons.edit, color: Colors.white),
             onPressed: () async {
@@ -282,7 +295,7 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
     );
   }
 
-  /// ---------------- SAVE ----------------
+  /// SAVE
   void _onSave() {
     Navigator.push(
       context,
@@ -290,7 +303,7 @@ class _FoodDetectedScreenState extends State<FoodDetectedScreen> {
         builder: (_) => ScanResultScreen(
           image: widget.image,
           result: widget.result,
-          food: foods.first, // backward compatible
+          food: foods.first,
         ),
       ),
     );
