@@ -235,7 +235,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _trendCard(List<Map<String, dynamic>> data) {
     List<FlSpot> spots = _generateSpots(data);
     if (spots.isEmpty) return const SizedBox();
-    double currentWeight = spots.last.y;
+    //double currentWeight = spots.last.y;
     double change = spots.last.y - spots.first.y;
 
     return _simpleChartCard(

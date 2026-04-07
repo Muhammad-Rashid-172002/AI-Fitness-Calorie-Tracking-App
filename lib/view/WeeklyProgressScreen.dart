@@ -1,6 +1,8 @@
-import 'package:fitmind_ai/models/GuidanceModel.dart';
 import 'package:fitmind_ai/models/MilestoneModel.dart';
+import 'package:fitmind_ai/resources/MotivationHelper.dart';
+import 'package:fitmind_ai/resources/WeightProgressCard.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,6 +20,30 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String userId = FirebaseAuth.instance.currentUser!.uid;
+  int dailyCalories = 0;
+  bool isLoadingCalories = true;
+
+  Future<void> fetchCalories() async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .get();
+
+    if (doc.exists) {
+      final data = doc.data()!;
+
+      print("🔥 Firestore Data: $data"); //  DEBUG
+
+      setState(() {
+        dailyCalories = (data["dailyCalories"] ?? 0).toInt();
+        isLoadingCalories = false;
+      });
+    } else {
+      print("❌ Document not found");
+    }
+  }
 
   Map<int, int> weeklyCalories = {};
 
@@ -37,6 +63,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
   @override
   void initState() {
     super.initState();
+    fetchCalories();
   }
 
   Future<void> fetchWeeklyData() async {
@@ -85,6 +112,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
     if (progressPercent >= 25) return "Slightly Behind";
     return "Behind";
   }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -161,329 +189,349 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
 
           /// 📦 BODY CONTENT
           SliverToBoxAdapter(
-       child: StreamBuilder<DocumentSnapshot>(
-  stream: getUserData(),
-  builder: (context, userSnap) {
-    if (!userSnap.hasData) {
-      return SizedBox(
-        height: MediaQuery.of(context).size.height * 0.7,
-        child: Center(
-          child: CircularProgressIndicator(color: primary),
-        ),
-      );
-    }
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: getUserData(),
+              builder: (context, userSnap) {
+                if (!userSnap.hasData) {
+                  return SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.7,
+                    child: Center(
+                      child: CircularProgressIndicator(color: primary),
+                    ),
+                  );
+                }
 
-    var userData =
-        userSnap.data!.data() as Map<String, dynamic>;
+                var userData = userSnap.data!.data() as Map<String, dynamic>;
 
-    double start =
-        (userData['startWeight'] ?? userData['weight'] ?? 70)
-            .toDouble();
+                double start =
+                    (userData['startWeight'] ?? userData['weight'] ?? 70)
+                        .toDouble();
 
-    double current =
-        (userData['weight'] ?? 70).toDouble();
+                double current = (userData['weight'] ?? 70).toDouble();
 
-    double target =
-        (userData['targetWeight'] ?? 60).toDouble();
+                double target = (userData['targetWeight'] ?? 60).toDouble();
 
-    /// 🔥 UPDATE STATE VARIABLES
-    startWeight = start;
-    currentWeight = current;
-    targetWeight = target;
+                /// 🔥 UPDATE STATE VARIABLES
+                startWeight = start;
+                currentWeight = current;
+                targetWeight = target;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          /// GOAL CARD
-          FutureBuilder<Widget>(
-            future: goalCardPremium(
-              start: start,
-              current: current,
-              target: target,
+                return Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      /// GOAL CARD
+                      FutureBuilder<Widget>(
+                        future: goalCardDynamicReal(
+                          start: start,
+                          current: current,
+                          target: target,
+                        ),
+                        builder: (context, snap) {
+                          if (!snap.hasData) return const SizedBox();
+                          return snap.data!;
+                        },
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// ETA
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection("users")
+                            .doc(FirebaseAuth.instance.currentUser!.uid)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const SizedBox();
+                          }
+
+                          final data =
+                              snapshot.data!.data() as Map<String, dynamic>;
+
+                          final current = (data["weight"] ?? 0).toDouble();
+                          final target = (data["targetWeight"] ?? 0).toDouble();
+                          final weeks = (data["estimatedWeeks"] ?? 0)
+                              .toDouble();
+
+                          return buildEtaCardFromFirebase(
+                            current: current,
+                            target: target,
+                            etaWeeks: weeks,
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 10),
+
+                      /// STATUS
+                      _buildStatusCard(
+                        actualProgress: current,
+                        expectedProgress: target,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// 🔥 REALTIME CHART
+                      StreamBuilder<Map<int, int>>(
+                        stream: weeklyCaloriesStream(),
+                        builder: (context, snap) {
+                          if (!snap.hasData) return const SizedBox();
+
+                          final weeklyData = snap.data!;
+
+                          return _buildLineChartReal(weeklyData);
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      _buildGuidance(),
+
+                      const SizedBox(height: 20),
+
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection("users")
+                            .doc(FirebaseAuth.instance.currentUser!.uid)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const SizedBox();
+                          }
+
+                          final data =
+                              snapshot.data!.data() as Map<String, dynamic>;
+
+                          double startWeight = (data["weight"] ?? 0).toDouble();
+                          double currentWeight =
+                              (data["currentWeight"] ?? startWeight).toDouble();
+                          double targetWeight = (data["targetWeight"] ?? 0)
+                              .toDouble();
+
+                          return _buildMilestonesRealtime(
+                            startWeight,
+                            currentWeight,
+                            targetWeight,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
-            builder: (context, snap) {
-              if (!snap.hasData) return const SizedBox();
-              return snap.data!;
-            },
           ),
-
-          const SizedBox(height: 20),
-
-          /// ETA
-          buildEtaCardPremium(
-            current: current,
-            target: target,
-            todayChange: (target - current) / 7700,
-          ),
-
-          const SizedBox(height: 20),
-
-          /// STATUS
-          _buildStatusCard(
-            actualProgress: current,
-            expectedProgress: target,
-          ),
-
-          const SizedBox(height: 20),
-
-          /// 🔥 REALTIME CHART
-          StreamBuilder<Map<int, int>>(
-            stream: weeklyCaloriesStream(),
-            builder: (context, snap) {
-              if (!snap.hasData) return const SizedBox();
-
-              final weeklyData = snap.data!;
-
-              return _buildLineChartReal(weeklyData);
-            },
-          ),
-
-          const SizedBox(height: 20),
-
-          _buildGuidance(),
-
-          const SizedBox(height: 20),
-
-          _buildMilestones(),
-        ],
-      ),
-    );
-  },
-),  ),
         ],
       ),
     );
   }
 
   /// ---------------- GOAL CARD ----------------
-  Future<Widget> goalCardPremium({
-    required double start,
-    required double current,
-    required double target,
-  }) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return const SizedBox();
+ 
+Future<Widget> goalCardDynamicReal({
+  required double start,
+  required double current,
+  required double target,
+}) async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return const SizedBox();
 
-    final uid = user.uid;
+  final uid = user.uid;
 
-    /// ================= FETCH DATA =================
-    final today = DateTime.now();
-    final todayId =
-        "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+  /// ================= FETCH TODAY =================
+  final today = DateTime.now();
+  final todayId =
+      "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
 
-    final dailyDoc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(uid)
-        .collection("dailyLogs")
-        .doc(todayId)
-        .get();
+  final dailyDoc = await FirebaseFirestore.instance
+      .collection("users")
+      .doc(uid)
+      .collection("dailyLogs")
+      .doc(todayId)
+      .get();
 
-    final userDoc = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(uid)
-        .get();
+  final userDoc = await FirebaseFirestore.instance
+      .collection("users")
+      .doc(uid)
+      .get();
 
-    final latestLog = await FirebaseFirestore.instance
-        .collection("users")
-        .doc(uid)
-        .collection("dailyLogs")
-        .orderBy("timestamp", descending: true)
-        .limit(1)
-        .get();
+  /// 🔥 IMPORTANT: GET LATEST WEIGHT
+  final latestLog = await FirebaseFirestore.instance
+      .collection("users")
+      .doc(uid)
+      .collection("dailyLogs")
+      .orderBy("timestamp", descending: true)
+      .limit(1)
+      .get();
 
-    if (latestLog.docs.isNotEmpty) {
-      final data = latestLog.docs.first.data();
-      current = (data['weight'] ?? current).toDouble();
-    }
+  if (latestLog.docs.isNotEmpty) {
+    final data = latestLog.docs.first.data();
+    current = (data['weight'] ?? current).toDouble();
+  }
 
-    double consumedCalories = (dailyDoc.data()?["totalCalories"] ?? 0)
-        .toDouble();
+  double consumedCalories =
+      (dailyDoc.data()?["totalCalories"] ?? 0).toDouble();
 
-    double targetCalories = (userDoc.data()?["dailyCalories"] ?? 2000)
-        .toDouble();
+  double targetCalories =
+      (userDoc.data()?["dailyCalories"] ?? 2000).toDouble();
 
-    /// ================= CALC =================
-    double deficit = targetCalories - consumedCalories;
-    double todayChange = deficit / 7700;
+  /// ================= CALC =================
+  double deficit = targetCalories - consumedCalories;
+  double todayChange = deficit / 7700;
 
-    bool isLosing = target < start;
 
-    double progress;
 
-    if (isLosing) {
-      progress = ((start - current) / (start - target)) * 100;
-    } else {
-      progress = ((current - start) / (target - start)) * 100;
-    }
 
-    progress = progress.isNaN ? 0 : progress.clamp(0, 100);
+  /// 🔥 FIXED PROGRESS
+  double progress;
 
-    double remaining = (target - current).abs();
+  if (target < start) {
+    progress = ((start - current) / (start - target)) * 100;
+  } else {
+    progress = ((current - start) / (target - start)) * 100;
+  }
 
-    /// ETA
-    double weeklyChange = todayChange * 7;
-    double etaWeeks = weeklyChange != 0 ? (remaining / weeklyChange).abs() : 0;
+  progress = progress.isNaN ? 0 : progress.clamp(0, 100);
 
-    String etaText = etaWeeks.isFinite
-        ? "${etaWeeks.toStringAsFixed(1)} weeks"
-        : "--";
+  /// 🔥 UX BOOST (if still 0 but effort exists)
+  if (progress == 0 && todayChange != 0) {
+    progress = 2;
+  }
 
-    /// MOTIVATION TEXT
-    String motivation;
-    if (progress < 25) {
-      motivation = "Great start 💪 Keep going!";
-    } else if (progress < 60) {
-      motivation = "You're doing amazing 🚀";
-    } else if (progress < 90) {
-      motivation = "Almost there 🔥";
-    } else {
-      motivation = "You're crushing it 🎯";
-    }
+  double remaining = (target - current);
 
-    /// ================= UI =================
-    return Container(
-      margin: const EdgeInsets.all(18),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.greenAccent.withOpacity(0.15), Colors.black],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+
+  print("START: $start | CURRENT: $current | TARGET: $target");
+
+  /// ================= UI =================
+ return Container(
+  margin: const EdgeInsets.all(18),
+  padding: const EdgeInsets.all(20),
+  decoration: BoxDecoration(
+    borderRadius: BorderRadius.circular(24),
+    gradient: const LinearGradient(
+      colors: [Color(0xFF0D1B2A), Color(0xFF1B263B)],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+  ),
+  child: Column(
+    children: [
+      /// TITLE
+      const Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          "CURRENT WEIGHT",
+          style: TextStyle(color: Colors.white54, fontSize: 12),
         ),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.greenAccent.withOpacity(0.2),
-            blurRadius: 20,
-            spreadRadius: 2,
-          ),
-        ],
       ),
-      child: Column(
-        children: [
-          /// HEADER
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "GOAL PROGRESS",
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.bold,
-                ),
+
+      const SizedBox(height: 6),
+
+      /// CURRENT WEIGHT (HERO)
+      Text(
+        "${current.toStringAsFixed(1)} KG",
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 34,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+
+      const SizedBox(height: 4),
+
+      /// TARGET
+      Text(
+        "Target weight: ${target.toStringAsFixed(1)} KG",
+        style: TextStyle(
+          color: Colors.greenAccent.shade200,
+          fontSize: 13,
+        ),
+      ),
+
+      const SizedBox(height: 30),
+
+      /// HALF CIRCLE PROGRESS
+      SizedBox(
+        height: 140,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            CustomPaint(
+              size: const Size(220, 140),
+              painter: HalfCirclePainter(
+                progress: progress / 100,
+              //  isLosing: isLosing,
               ),
-              Text(
-                "$current kg",
-                style: const TextStyle(
-                  color: Colors.greenAccent,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          /// CIRCULAR PROGRESS
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                height: 160,
-                width: 160,
-                child: CircularProgressIndicator(
-                  value: progress / 100,
-                  strokeWidth: 12,
-                  backgroundColor: Colors.white10,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.greenAccent),
-                ),
-              ),
-
-              Column(
-                children: [
-                  Text(
-                    "${progress.toStringAsFixed(0)}%",
-                    style: const TextStyle(
-                      fontSize: 28,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Text(
-                    "COMPLETED",
-                    style: TextStyle(color: Colors.white54),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 20),
-
-          /// TARGET
-          Text(
-            "Target: $target kg",
-            style: const TextStyle(color: Colors.white54),
-          ),
-
-          const SizedBox(height: 8),
-
-          /// REMAINING
-          Text(
-            "${remaining.toStringAsFixed(1)} kg remaining",
-            style: const TextStyle(
-              color: Colors.greenAccent,
-              fontWeight: FontWeight.bold,
             ),
-          ),
 
-          const SizedBox(height: 6),
-
-          /// MOTIVATION
-          Text(
-            motivation,
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-
-          const SizedBox(height: 18),
-
-          /// ETA
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white10,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
+            /// CENTER TEXT
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.timer, size: 16, color: Colors.greenAccent),
-                const SizedBox(width: 6),
                 Text(
-                  "ETA: $etaText",
-                  style: const TextStyle(color: Colors.greenAccent),
+                  "${progress.toStringAsFixed(0)}%",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Text(
+                  "COMPLETED",
+                  style: TextStyle(
+                    color: Colors.white54,
+                    fontSize: 11,
+                  ),
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
 
-  /// ---------------- ETA ----------------
-  Widget buildEtaCardPremium({
+      const SizedBox(height: 16),
+
+      /// REMAINING
+      Text(
+        "${remaining.abs().toStringAsFixed(1)} kg remaining",
+        style: const TextStyle(
+          color: Colors.greenAccent,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+
+      const SizedBox(height: 6),
+
+      /// MOTIVATION
+     Text(
+  MotivationHelper.getMotivation(progress),
+  textAlign: TextAlign.center,
+  style: const TextStyle(
+    color: Colors.white70,
+    fontSize: 13,
+  ),
+),
+
+      const SizedBox(height: 20),
+      
+
+    ],
+  ),
+  
+);
+
+
+}
+/// ================= MOTIVATION =================
+  Widget buildEtaCardFromFirebase({
     required double current,
     required double target,
-    required double todayChange, // from your calc (deficit / 7700)
+    required double etaWeeks,
   }) {
-    /// ================= CALC =================
-    double remaining = (target - current).abs();
-
-    double weeklyChange = todayChange * 7;
-
-    double etaWeeks = weeklyChange != 0 ? (remaining / weeklyChange).abs() : 0;
+    /// Remaining weight
+    // double remaining = (target - current).abs();
 
     /// Estimated DATE
     DateTime now = DateTime.now();
@@ -491,50 +539,21 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
 
     String dateText = "${estimatedDate.day} ${_monthName(estimatedDate.month)}";
 
-    String weeksText = etaWeeks.isFinite
+    String weeksText = etaWeeks > 0
         ? "~${etaWeeks.toStringAsFixed(1)} weeks remaining"
         : "--";
 
-    /// STATUS (On Track / Slow / Off Track)
-    String status;
-    Color statusColor;
-
-    if (etaWeeks == 0 || !etaWeeks.isFinite) {
-      status = "No progress data";
-      statusColor = Colors.white54;
-    } else if (etaWeeks < 6) {
-      status = "On Track 🔥";
-      statusColor = Colors.greenAccent;
-    } else if (etaWeeks < 12) {
-      status = "Keep Going 💪";
-      statusColor = Colors.orange;
-    } else {
-      status = "Needs Focus ⚡";
-      statusColor = Colors.redAccent;
-    }
-
-    /// ================= UI =================
+    /// UI (same as yours)
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.greenAccent.withOpacity(0.15), Colors.black],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: bgColor,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.greenAccent.withOpacity(0.15),
-            blurRadius: 20,
-            spreadRadius: 1,
-          ),
-        ],
+        border: Border.all(color: Colors.greenAccent.withOpacity(0.6)),
       ),
       child: Row(
         children: [
-          /// ICON CIRCLE
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -546,61 +565,46 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
 
           const SizedBox(width: 14),
 
-          /// TEXTS
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "ESTIMATED TIME",
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
-                ),
-
-                const SizedBox(height: 6),
-
-                /// DATE
-                Text(
-                  dateText,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    const Text(
+                      "ESTIMATED:",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      dateText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 2),
 
-                /// WEEKS
                 Text(
-                  weeksText,
+                  weeksText, // e.g., "10 weeks"
                   style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
             ),
           ),
-
-          /// STATUS BADGE
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              status,
-              style: TextStyle(
-                color: statusColor,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ),
         ],
       ),
     );
-  }
+  } //
 
-  //
   String _monthName(int month) {
     const months = [
       "Jan",
@@ -651,11 +655,7 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [color.withOpacity(0.25), Colors.black.withOpacity(0.8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: bgColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: color.withOpacity(0.6)),
         boxShadow: [
@@ -686,6 +686,11 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
+                  "ON TRACK STATUS",
+                  style: TextStyle(color: Colors.white, fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Text(
                   status.toUpperCase(),
                   style: TextStyle(
                     color: color,
@@ -707,11 +712,8 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
     );
   }
 
-
   /// ---------------- GUIDANCE ----------------
   Widget _buildGuidance() {
-    final guidance = _calculateGuidance();
-
     return _card(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -730,38 +732,90 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
           Row(
             children: [
               Expanded(
-                child: _guidanceCard(
-                  icon: Icons.fitness_center,
-                  title: "TARGET",
-                  value: "${guidance.weeklyGoal} kg/week",
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection("users")
+                      .doc(FirebaseAuth.instance.currentUser!.uid)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    /// 🔄 Loading state
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return _guidanceCard(
+                        icon: Icons.fitness_center,
+                        title: "TARGET\nLose",
+                        value: "Loading...",
+                      );
+                    }
+
+                    /// ❌ No data
+                    if (!snapshot.hasData || !snapshot.data!.exists) {
+                      return _guidanceCard(
+                        icon: Icons.fitness_center,
+                        title: "TARGET\nLose",
+                        value: "No Data",
+                      );
+                    }
+
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+
+                    /// ✅ Safe parsing (VERY IMPORTANT)
+                    final weight = (data["weight"] ?? 0).toDouble();
+                    final targetWeight = (data["targetWeight"] ?? 0).toDouble();
+                    final weeks = (data["estimatedWeeks"] ?? 0).toDouble();
+
+                    /// 🧠 Calculation
+                    double weeklyGoal = 0;
+
+                    if (weeks > 0 && weight > targetWeight) {
+                      weeklyGoal = (weight - targetWeight) / weeks;
+                    }
+
+                    /// 🛡️ Prevent weird values
+                    if (weeklyGoal.isNaN || weeklyGoal.isInfinite) {
+                      weeklyGoal = 0;
+                    }
+
+                    return _guidanceCard(
+                      icon: Icons.fitness_center,
+                      title: "TARGET\nLose",
+                      value: "${weeklyGoal.toStringAsFixed(2)} kg/week",
+                    );
+                  },
                 ),
               ),
-
               const SizedBox(width: 12),
 
               Expanded(
-                child: _guidanceCard(
-                  icon: Icons.local_fire_department,
-                  title: "TODAY",
-                  value: "${guidance.calories} kcal",
+                child: StreamBuilder<DocumentSnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection("users")
+                      .doc(FirebaseAuth.instance.currentUser!.uid)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData) {
+                      return _guidanceCard(
+                        icon: Icons.local_fire_department,
+                        title: "Daily Calories",
+                        value: "...",
+                      );
+                    }
+
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+
+                    final calories = (data["dailyCalories"] ?? 0).toString();
+
+                    return _guidanceCard(
+                      icon: Icons.local_fire_department,
+                      title: "Daily Calories target",
+                      value: "$calories kcal",
+                    );
+                  },
                 ),
               ),
             ],
           ),
 
           const SizedBox(height: 12),
-
-          /// 🔥 SMART MESSAGE
-          Text(
-            guidance.message,
-            style: TextStyle(
-              color: guidance.isOnTrack
-                  ? Colors.greenAccent
-                  : Colors.orangeAccent,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
         ],
       ),
     );
@@ -771,15 +825,14 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
     required IconData icon,
     required String title,
     required String value,
+    String? subValue, // 👈 NEW
   }) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         color: Colors.white.withOpacity(0.03),
-
         border: Border.all(color: Colors.white.withOpacity(0.08)),
-
         boxShadow: [
           BoxShadow(
             color: activeColor.withOpacity(0.25),
@@ -790,7 +843,6 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
       ),
       child: Row(
         children: [
-          /// 🔥 ICON
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
@@ -802,7 +854,6 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
 
           const SizedBox(width: 10),
 
-          /// 🔥 TEXT
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -812,6 +863,8 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
                   style: const TextStyle(color: Colors.white54, fontSize: 10),
                 ),
                 const SizedBox(height: 4),
+
+                /// Main Value
                 Text(
                   value,
                   style: const TextStyle(
@@ -820,6 +873,13 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+
+                /// 👇 Sub Value (Goal)
+                if (subValue != null)
+                  Text(
+                    subValue,
+                    style: const TextStyle(color: Colors.white54, fontSize: 10),
+                  ),
               ],
             ),
           ),
@@ -828,45 +888,17 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
     );
   }
 
-  GuidanceModel _calculateGuidance() {
-    double weeklyGoal = -0.5; // kg/week target
-
-    double expectedWeightToday =
-        startWeight + (weeklyGoal / 7) * DateTime.now().weekday;
-
-    double difference = currentWeight - expectedWeightToday;
-
-    int baseCalories = 1800;
-    int adjustedCalories = baseCalories;
-
-    String message;
-    bool isOnTrack = true;
-
-    if (difference > 0.3) {
-      /// ❌ behind
-      adjustedCalories = baseCalories - 200;
-      message = "You're slightly behind. Reduce ~200 kcal today.";
-      isOnTrack = false;
-    } else if (difference < -0.3) {
-      /// 🚀 ahead
-      adjustedCalories = baseCalories + 150;
-      message = "Great! You're ahead. You can eat a bit more today.";
-    } else {
-      /// ✅ on track
-      message = "Perfect! You're on track. Keep going!";
-    }
-
-    return GuidanceModel(
-      weeklyGoal: weeklyGoal,
-      calories: adjustedCalories,
-      message: message,
-      isOnTrack: isOnTrack,
-    );
-  }
-
   /// ---------------- MILESTONES ----------------
-  Widget _buildMilestones() {
-    final milestone = _calculateMilestone();
+  Widget _buildMilestonesRealtime(
+    double startWeight,
+    double currentWeight,
+    double targetWeight,
+  ) {
+    final milestone = _calculateMilestone(
+      startWeight,
+      currentWeight,
+      targetWeight,
+    );
 
     return _card(
       child: Column(
@@ -880,12 +912,10 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
               fontWeight: FontWeight.w600,
             ),
           ),
-
           const SizedBox(height: 14),
 
           Row(
             children: [
-              /// ✅ COMPLETED
               Expanded(
                 child: _milestoneCard(
                   title: milestone.completedTitle,
@@ -894,15 +924,12 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
                   isCompleted: true,
                 ),
               ),
-
               const SizedBox(width: 12),
-
-              /// ⏳ UPCOMING
               Expanded(
                 child: _milestoneCard(
                   title: milestone.nextTitle,
-                  subtitle: "Coming soon",
-                  icon: Icons.directions_run,
+                  subtitle: milestone.nextSubtitle,
+                  icon: Icons.flag,
                   isCompleted: false,
                 ),
               ),
@@ -913,35 +940,50 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
     );
   }
 
-  MilestoneModel _calculateMilestone() {
-    double weightLost = startWeight - currentWeight;
+  MilestoneModel _calculateMilestone(
+    double startWeight,
+    double currentWeight,
+    double targetWeight,
+  ) {
+    double totalLoss = startWeight - targetWeight;
+    double lost = startWeight - currentWeight;
 
-    String completedTitle = "Start Journey";
+    /// Default
+    String completedTitle = "Start Journey 🚀";
     String completedDate = "";
     String nextTitle = "Lose 2kg";
+    String nextSubtitle = "Keep going";
 
-    if (weightLost >= 2) {
-      completedTitle = "First 2kg Lost";
-      completedDate = _formatDate(DateTime.now());
-      nextTitle = "Halfway There";
+    /// ✅ First milestone
+    if (lost >= 2) {
+      completedTitle = "First 2kg Lost 💪";
+      completedDate = "Great start!";
+      nextTitle = "Lose 5kg";
+      nextSubtitle = "Next milestone";
     }
 
-    if (weightLost >= ((startWeight - targetWeight) / 2)) {
-      completedTitle = "Halfway There";
-      completedDate = _formatDate(DateTime.now());
-      nextTitle = "Target قريب 🔥";
+    /// ✅ Halfway
+    if (lost >= totalLoss / 2) {
+      completedTitle = "Halfway There 🔥";
+      completedDate = "You're doing amazing!";
+      nextTitle = "Reach Target";
+      nextSubtitle =
+          "${(currentWeight - targetWeight).toStringAsFixed(1)} kg left";
     }
 
+    /// ✅ Goal Achieved
     if (currentWeight <= targetWeight) {
       completedTitle = "Goal Achieved 🎉";
-      completedDate = _formatDate(DateTime.now());
-      nextTitle = "Maintain وزن";
+      completedDate = "You did it!";
+      nextTitle = "Maintain Weight";
+      nextSubtitle = "Stay consistent";
     }
 
     return MilestoneModel(
       completedTitle: completedTitle,
       completedDate: completedDate,
       nextTitle: nextTitle,
+      nextSubtitle: nextSubtitle,
     );
   }
 
@@ -1036,10 +1078,6 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return "${date.day} ${_monthName(date.month)}";
-  }
-
   /// ---------------- CARD WRAPPER ----------------
   Widget _card({required Widget child}) {
     return Container(
@@ -1051,104 +1089,116 @@ class _WeeklyProgressScreenState extends State<WeeklyProgressScreen> {
       child: child,
     );
   }
+
   Stream<Map<int, int>> weeklyCaloriesStream() {
-  final user = _auth.currentUser;
-  if (user == null) return const Stream.empty();
+    final user = _auth.currentUser;
+    if (user == null) return const Stream.empty();
 
-  DateTime now = DateTime.now();
-  final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    DateTime now = DateTime.now();
 
-  return _firestore
-      .collection('users')
-      .doc(user.uid)
-      .collection('dailyLogs')
-      .snapshots()
-      .map((snapshot) {
-    Map<int, int> data = {for (int i = 1; i <= 7; i++) i: 0};
+    /// Week start (Monday)
+    final startOfWeek = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    ).subtract(Duration(days: now.weekday - 1));
 
-    for (var doc in snapshot.docs) {
-      final docId = doc.id; // yyyy-MM-dd
-      final date = DateTime.parse(docId);
+    /// Week end (Sunday)
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
 
-      if (date.isAfter(startOfWeek.subtract(const Duration(days: 1)))) {
-        data[date.weekday] =
-            (doc.data()['totalCalories'] ?? 0).toInt();
-      }
-    }
+    return _firestore
+        .collection('users')
+        .doc(user.uid)
+        .collection('dailyLogs')
+        .snapshots()
+        .map((snapshot) {
+          Map<int, int> data = {for (int i = 1; i <= 7; i++) i: 0};
 
-    return data;
-  });
-}
-Widget _buildLineChartReal(Map<int, int> weeklyData) {
-  final spots = weeklyData.entries.map((e) {
-    return FlSpot(e.key.toDouble(), e.value.toDouble());
-  }).toList();
+          for (var doc in snapshot.docs) {
+            final date = DateTime.parse(doc.id); // yyyy-MM-dd
 
-  return _card(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "WEEKLY CALORIES",
-          style: TextStyle(color: Colors.white70),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 180,
-          child: LineChart(
-            LineChartData(
-              minX: 1,
-              maxX: 7,
-              gridData: FlGridData(show: true),
-              borderData: FlBorderData(show: false),
+            /// ✅ Only current week data
+            if (!date.isBefore(startOfWeek) && !date.isAfter(endOfWeek)) {
+              data[date.weekday] = (doc.data()['totalCalories'] ?? 0).toInt();
+            }
+          }
 
-              titlesData: FlTitlesData(
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      const days = [
-                        "",
-                        "Mon",
-                        "Tue",
-                        "Wed",
-                        "Thu",
-                        "Fri",
-                        "Sat",
-                        "Sun"
-                      ];
-                      return Text(
-                        days[value.toInt()],
-                        style: const TextStyle(
-                            color: Colors.white38, fontSize: 10),
-                      );
-                    },
+          return data;
+        });
+  }
+
+  Widget _buildLineChartReal(Map<int, int> weeklyData) {
+    final spots = weeklyData.entries.map((e) {
+      return FlSpot(e.key.toDouble(), e.value.toDouble());
+    }).toList();
+
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "WEEKLY CALORIES",
+            style: TextStyle(color: Colors.white70),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 180,
+            child: LineChart(
+              LineChartData(
+                minX: 1,
+                maxX: 7,
+                gridData: FlGridData(show: true),
+                borderData: FlBorderData(show: false),
+
+                titlesData: FlTitlesData(
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      getTitlesWidget: (value, meta) {
+                        const days = [
+                          "",
+                          "Mon",
+                          "Tue",
+                          "Wed",
+                          "Thu",
+                          "Fri",
+                          "Sat",
+                          "Sun",
+                        ];
+                        return Text(
+                          days[value.toInt()],
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
                   ),
                 ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: false),
-                ),
+
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    barWidth: 3,
+                    gradient: LinearGradient(
+                      colors: [activeColor.withOpacity(0.5), activeColor],
+                    ),
+                    dotData: FlDotData(show: true),
+                  ),
+                ],
               ),
-
-              lineBarsData: [
-                LineChartBarData(
-                  spots: spots,
-                  isCurved: true,
-                  barWidth: 3,
-                  gradient: LinearGradient(
-                    colors: [
-                      activeColor.withOpacity(0.5),
-                      activeColor,
-                    ],
-                  ),
-                  dotData: FlDotData(show: true),
-                ),
-              ],
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  
+  
+  
+  }
 }
