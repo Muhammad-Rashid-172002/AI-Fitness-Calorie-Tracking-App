@@ -59,7 +59,7 @@ class AICoachController {
 
     // Protein feedback
     if (avgProtein < proteinGoal) {
-      double deficit = proteinGoal - avgProtein.toDouble();
+     // double deficit = proteinGoal - avgProtein.toDouble();
       message +=
           "⚠ Protein intake is slightly low (avg ${avgProtein}g/day, target ${proteinGoal}g/day).\n"
           "Try adding more lean protein like eggs, chicken, lentils, yogurt, or tofu.\n\n";

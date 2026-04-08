@@ -524,7 +524,7 @@ Future<Widget> goalCardDynamicReal({
 
 
 }
-/// ================= MOTIVATION =================
+
   Widget buildEtaCardFromFirebase({
     required double current,
     required double target,
