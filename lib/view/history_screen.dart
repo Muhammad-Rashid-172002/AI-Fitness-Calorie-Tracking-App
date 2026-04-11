@@ -1,3 +1,4 @@
+import 'package:fitmind_ai/view/add_weight_screen.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -31,6 +32,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
   final String userId = FirebaseAuth.instance.currentUser!.uid;
   final List<String> filters = ["Today", "Week", "Month"];
   int selectedIndex = 0;
+  Stream<QuerySnapshot> getBodyMetrics() {
+    return FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .collection("body_metrics_log")
+        .orderBy("timestamp")
+        .snapshots();
+  }
 
   Stream<DocumentSnapshot> getUserData() {
     return FirebaseFirestore.instance
@@ -43,42 +52,68 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bgColor,
-     appBar: AppBar(
-  backgroundColor: bgColor, // dark background
-  elevation: 0,
-  leadingWidth: 120,
-  leading: const Padding(
-    padding: EdgeInsets.only(left: 16),
-    child: Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        'MYDiet',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          color: Colors.green, // green text
-          fontSize: 22,
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(40),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.greenAccent.withOpacity(0.4),
+              blurRadius: 20,
+              spreadRadius: 2,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddWeightScreen()),
+            );
+          },
+          backgroundColor: Colors.greenAccent,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: const Icon(Icons.add, color: Colors.black, size: 30),
         ),
       ),
-    ),
-  ),
-  title: const Text(
-    "History",
-    style: TextStyle(
-      color: Colors.white, // white text
-      fontWeight: FontWeight.w500,
-      fontSize: 18
-    ),
-  ),
-  centerTitle: true,
-),
+      appBar: AppBar(
+        backgroundColor: bgColor, // dark background
+        elevation: 0,
+        leadingWidth: 120,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'MYDiet',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.green, // green text
+                fontSize: 22,
+              ),
+            ),
+          ),
+        ),
+        title: const Text(
+          "History",
+          style: TextStyle(
+            color: Colors.white, // white text
+            fontWeight: FontWeight.w500,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: Column(
         children: [
-         
           const SizedBox(height: 12),
           _filter(),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: controller.getScanHistory(),
+              stream: getBodyMetrics(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -99,66 +134,34 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 List<Map<String, dynamic>> filtered = _filterData(items);
                 if (filtered.isEmpty) return _emptyView();
 
-                // CALCULATIONS
-                double totalCalories = 0,
-                    totalProtein = 0,
-                    totalCarbs = 0,
-                    totalFat = 0;
-                for (var item in filtered) {
-                  totalCalories += (item['calories'] ?? 0).toDouble();
-                  totalProtein += (item['protein'] ?? 0).toDouble();
-                  totalCarbs += (item['carbs'] ?? 0).toDouble();
-                  totalFat += (item['fat'] ?? 0).toDouble();
-                }
-
-                double score = totalCalories == 0
-                    ? 0
-                    : (totalProtein / totalCalories) * 100;
-                Map<String, dynamic> insight = generateInsight(
-                  weightChange: score,
-                  fatChange: totalFat > 70 ? 1 : -1,
-                  muscleChange: totalProtein > 50 ? 1 : -1,
-                );
-
                 return ListView(
                   padding: const EdgeInsets.only(bottom: 20),
                   children: [
-                    _weeklySummaryPremium(score),
+                    _weeklySummaryPremium(75), // Mocked score for demo
                     _trendCard(filtered),
                     StreamBuilder<DocumentSnapshot>(
                       stream: getUserData(),
                       builder: (context, userSnap) {
                         if (!userSnap.hasData) return const SizedBox();
+
                         var data =
                             userSnap.data!.data() as Map<String, dynamic>;
+
                         double start =
                             (data['startWeight'] ?? data['weight'] ?? 70)
                                 .toDouble();
+
                         double current = (data['weight'] ?? 70).toDouble();
+
                         double target = (data['targetWeight'] ?? 60).toDouble();
-                        return FutureBuilder<Widget>(
-                          future: goalCardDynamicReal(
-                            start: start,
-                            current: current,
-                            target: target,
-                          ),
-                          builder: (context, snap) {
-                            if (snap.connectionState ==
-                                ConnectionState.waiting) {
-                              return const SizedBox();
-                            }
-                            if (snap.hasError || !snap.hasData) {
-                              return const SizedBox();
-                            }
-                            return snap.data!;
-                          },
-                        );
+
+                        return goalCardRealtime(start: start, target: target);
                       },
                     ),
                     _bodyFatCard(filtered),
                     _muscleCard(filtered),
                     _whrCard(filtered),
-                    _insightCard(insight),
+                    _insightCard(generateInsightFromBody(filtered)),
                     const SizedBox(height: 10),
                   ],
                 );
@@ -170,7 +173,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-   // FILTER
+  // FILTER
   Widget _filter() {
     return SizedBox(
       height: 46,
@@ -217,25 +220,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   // TREND CHART
-  List<FlSpot> _generateSpots(List<Map<String, dynamic>> data) {
+  List<FlSpot> _generateWeightSpots(List<Map<String, dynamic>> data) {
     List<FlSpot> spots = [];
+
     data.sort(
       (a, b) => (a['timestamp'] as Timestamp).toDate().compareTo(
         (b['timestamp'] as Timestamp).toDate(),
       ),
     );
+
     for (int i = 0; i < data.length; i++) {
       double weight = (data[i]['weight'] ?? 0).toDouble();
-      if (weight == 0) weight = ((data[i]['calories'] ?? 0) / 50).toDouble();
-      spots.add(FlSpot(i.toDouble(), weight));
+
+      if (weight > 0) {
+        spots.add(FlSpot(i.toDouble(), weight));
+      }
     }
+
     return spots;
   }
 
   Widget _trendCard(List<Map<String, dynamic>> data) {
-    List<FlSpot> spots = _generateSpots(data);
+    List<FlSpot> spots = _generateWeightSpots(data);
+
     if (spots.isEmpty) return const SizedBox();
-    //double currentWeight = spots.last.y;
+
     double change = spots.last.y - spots.first.y;
 
     return _simpleChartCard(
@@ -245,14 +254,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       extraTop: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          // Text(
-          //   "${currentWeight.toStringAsFixed(1)} kg",
-          //   style: TextStyle(
-          //     fontSize: 26,
-          //     fontWeight: FontWeight.bold,
-          //     color: activeColor,
-          //   ),
-          // ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -372,211 +373,103 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-Future<Widget> goalCardDynamicReal({
-  required double start,
-  required double current,
-  required double target,
-}) async {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return const SizedBox();
+  Widget goalCardRealtime({required double start, required double target}) {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
 
-  final uid = user.uid;
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .snapshots(),
+      builder: (context, userSnap) {
+        if (!userSnap.hasData || !userSnap.data!.exists) {
+          return const SizedBox();
+        }
 
-  /// ================= FETCH TODAY =================
-  final today = DateTime.now();
-  final todayId =
-      "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+        final userData = userSnap.data!.data() as Map<String, dynamic>;
 
-  final dailyDoc = await FirebaseFirestore.instance
-      .collection("users")
-      .doc(uid)
-      .collection("dailyLogs")
-      .doc(todayId)
-      .get();
+        double current = (userData['weight'] ?? start).toDouble();
+        double startWeight = (userData['startWeight'] ?? start).toDouble();
 
-  final userDoc = await FirebaseFirestore.instance
-      .collection("users")
-      .doc(uid)
-      .get();
+        double remaining = (target - current);
 
-  /// 🔥 IMPORTANT: GET LATEST WEIGHT
-  final latestLog = await FirebaseFirestore.instance
-      .collection("users")
-      .doc(uid)
-      .collection("dailyLogs")
-      .orderBy("timestamp", descending: true)
-      .limit(1)
-      .get();
+        double progress = 0;
 
-  if (latestLog.docs.isNotEmpty) {
-    final data = latestLog.docs.first.data();
-    current = (data['weight'] ?? current).toDouble();
-  }
+        if (startWeight != target) {
+          if (target < startWeight) {
+            progress = ((startWeight - current) / (startWeight - target)) * 100;
+          } else {
+            progress = ((current - startWeight) / (target - startWeight)) * 100;
+          }
+        }
 
-  double consumedCalories =
-      (dailyDoc.data()?["totalCalories"] ?? 0).toDouble();
+        progress = progress.clamp(0, 100);
 
-  double targetCalories =
-      (userDoc.data()?["dailyCalories"] ?? 2000).toDouble();
-
-  /// ================= CALC =================
-  double deficit = targetCalories - consumedCalories;
-  double todayChange = deficit / 7700;
-
-  bool isLosing = target < start;
-  bool isGaining = target > start;
-
-  double totalChange = (target - start).abs();
-
-  /// 🔥 FIXED PROGRESS
-  double progress;
-
-  if (target < start) {
-    progress = ((start - current) / (start - target)) * 100;
-  } else {
-    progress = ((current - start) / (target - start)) * 100;
-  }
-
-  progress = progress.isNaN ? 0 : progress.clamp(0, 100);
-
-  /// 🔥 UX BOOST (if still 0 but effort exists)
-  if (progress == 0 && todayChange != 0) {
-    progress = 2;
-  }
-
-  double remaining = (target - current);
-
-  /// ================= ETA =================
-  double weeklyChange = todayChange * 7;
-  double etaWeeks =
-      weeklyChange != 0 ? (remaining / weeklyChange).abs() : 0;
-
-  String etaText =
-      etaWeeks.isFinite ? "${etaWeeks.toStringAsFixed(1)} weeks left" : "--";
-
-  /// ================= COLOR =================
-  Color changeColor;
-  if (todayChange < 0) {
-    changeColor = Colors.green;
-  } else if (todayChange > 0) {
-    changeColor = Colors.orange;
-  } else {
-    changeColor = Colors.white70;
-  }
-
-  print("START: $start | CURRENT: $current | TARGET: $target");
-
-  /// ================= UI =================
-  return Container(
-    margin: const EdgeInsets.all(18),
-    padding: const EdgeInsets.all(18),
-    decoration: _cardDecoration(),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "GOAL PROGRESS",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-
-        const SizedBox(height: 18),
-
-        /// WEIGHTS
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            _weightItem("Start", start),
-            _weightItem("Current", current),
-            _weightItem("Target", target),
-          ],
-        ),
-
-        const SizedBox(height: 20),
-
-        /// PROGRESS BAR
-        Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: LinearProgressIndicator(
-                value: progress / 100,
-                minHeight: 14,
-                backgroundColor: Colors.white12,
-                color: isLosing
-                    ? Colors.green
-                    : (isGaining ? Colors.orange : activeColor),
-              ),
-            ),
-
-            Positioned.fill(
-              child: FractionallySizedBox(
-                alignment: todayChange < 0
-                    ? Alignment.centerLeft
-                    : Alignment.centerRight,
-                widthFactor: totalChange == 0
-                    ? 0
-                    : (todayChange.abs() / totalChange).clamp(0, 1),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: changeColor.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-
-        const SizedBox(height: 14),
-
-        /// CENTER TEXT
-        Center(
+        return Container(
+          margin: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(18),
+          decoration: _cardDecoration(),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "${progress.toStringAsFixed(0)}% completed",
-                style: const TextStyle(
+              const Text(
+                "GOAL PROGRESS",
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 4),
-              Text(
-                "${remaining.abs().toStringAsFixed(1)} kg remaining to reach goal",
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 13,
+
+              const SizedBox(height: 18),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _weightItem("Start", startWeight),
+                  _weightItem("Current", current),
+                  _weightItem("Target", target),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              LinearProgressIndicator(
+                value: progress / 100,
+                minHeight: 14,
+                backgroundColor: Colors.white12,
+                color: activeColor,
+              ),
+
+              const SizedBox(height: 14),
+
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      "${progress.toStringAsFixed(0)}% completed",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "${remaining.abs().toStringAsFixed(1)} kg remaining",
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ),
-
-        
-   
-
-        const SizedBox(height: 10),
-
-        /// ETA
-        Row(
-          children: [
-            Icon(Icons.timer, color: activeColor, size: 18),
-            const SizedBox(width: 6),
-            Text(
-              "ETA: $etaText",
-              style: TextStyle(
-                color: activeColor,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
+        );
+      },
+    );
+  }
 
   Widget _weightItem(String title, double value) {
     return Column(
@@ -599,36 +492,43 @@ Future<Widget> goalCardDynamicReal({
   }
 
   Widget _bodyFatCard(List<Map<String, dynamic>> data) {
-    List<FlSpot> spots = data
-        .asMap()
-        .entries
-        .map((e) => FlSpot(e.key.toDouble(), (e.value['fat'] ?? 0).toDouble()))
-        .toList();
+    List<FlSpot> spots = [];
+
+    for (int i = 0; i < data.length; i++) {
+      double value = (data[i]['bodyFat'] ?? 0).toDouble();
+      if (value > 0) {
+        spots.add(FlSpot(i.toDouble(), value));
+      }
+    }
+
     if (spots.isEmpty) return const SizedBox();
     return _simpleChartCard("BODY FAT PROGRESS", spots, "%");
   }
 
   Widget _muscleCard(List<Map<String, dynamic>> data) {
-    List<FlSpot> spots = data
-        .asMap()
-        .entries
-        .map(
-          (e) => FlSpot(e.key.toDouble(), (e.value['protein'] ?? 0).toDouble()),
-        )
-        .toList();
+    List<FlSpot> spots = [];
+
+    for (int i = 0; i < data.length; i++) {
+      double value = (data[i]['muscle'] ?? 0).toDouble();
+      if (value > 0) {
+        spots.add(FlSpot(i.toDouble(), value));
+      }
+    }
+
     if (spots.isEmpty) return const SizedBox();
-    return _simpleChartCard("MUSCLE MASS", spots, "g");
+    return _simpleChartCard("MUSCLE MASS", spots, "kg");
   }
 
   Widget _whrCard(List<Map<String, dynamic>> data) {
-    List<FlSpot> spots = data.asMap().entries.map((e) {
-      double whr = 0.8;
-      if (e.value.containsKey('whr'))
-        whr = (e.value['whr'] ?? 0.8).toDouble();
-      else if (e.value.containsKey('fat'))
-        whr = 0.7 + ((e.value['fat'] ?? 0) / 100);
-      return FlSpot(e.key.toDouble(), whr);
-    }).toList();
+    List<FlSpot> spots = [];
+
+    for (int i = 0; i < data.length; i++) {
+      double value = (data[i]['whr'] ?? 0).toDouble();
+      if (value > 0) {
+        spots.add(FlSpot(i.toDouble(), value));
+      }
+    }
+
     if (spots.isEmpty) return const SizedBox();
     return _simpleChartCard("WHR PROGRESS", spots, "");
   }
@@ -657,35 +557,39 @@ Future<Widget> goalCardDynamicReal({
     );
   }
 
-  Map<String, dynamic> generateInsight({
-    required double weightChange,
-    required double fatChange,
-    required double muscleChange,
-  }) {
-    if (fatChange < 0 && muscleChange > 0)
+  Map<String, dynamic> generateInsightFromBody(
+    List<Map<String, dynamic>> data,
+  ) {
+    if (data.length < 2) {
+      return {
+        "text": "Not enough data yet",
+        "color": Colors.white70,
+        "icon": Icons.info,
+      };
+    }
+
+    double fatStart = (data.first['bodyFat'] ?? 0).toDouble();
+    double fatEnd = (data.last['bodyFat'] ?? 0).toDouble();
+
+    double muscleStart = (data.first['muscle'] ?? 0).toDouble();
+    double muscleEnd = (data.last['muscle'] ?? 0).toDouble();
+
+    if (fatEnd < fatStart && muscleEnd > muscleStart) {
       return {
         "text": "Excellent recomposition: losing fat & gaining muscle",
         "color": Colors.greenAccent,
         "icon": Icons.local_fire_department,
       };
-    if (fatChange < 0 && muscleChange < 0)
-      return {
-        "text": "Warning: possible muscle loss. Increase protein",
-        "color": Colors.orangeAccent,
-        "icon": Icons.warning_amber_rounded,
-      };
-    if (weightChange < 0 && fatChange == 0)
-      return {
-        "text": "Weight dropped but fat unchanged (water loss)",
-        "color": Colors.blueAccent,
-        "icon": Icons.opacity,
-      };
-    if (fatChange > 0)
+    }
+
+    if (fatEnd > fatStart) {
       return {
         "text": "Fat gain detected. Review diet",
         "color": Colors.redAccent,
         "icon": Icons.trending_up,
       };
+    }
+
     return {
       "text": "Keep tracking progress",
       "color": Colors.white70,
@@ -737,8 +641,9 @@ Future<Widget> goalCardDynamicReal({
         ],
       ),
     );
-  } 
-   Widget _weeklySummaryPremium(double score) {
+  }
+
+  Widget _weeklySummaryPremium(double score) {
     String status = score >= 80
         ? "Excellent"
         : score >= 60
@@ -798,7 +703,6 @@ Future<Widget> goalCardDynamicReal({
                   ),
                 ],
               ),
-        
             ],
           ),
           const SizedBox(height: 6),
@@ -819,6 +723,4 @@ Future<Widget> goalCardDynamicReal({
       ),
     );
   }
-
-
 }

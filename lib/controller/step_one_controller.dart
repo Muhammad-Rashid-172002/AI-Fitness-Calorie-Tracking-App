@@ -2,8 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class StepOneController {
-
-  /// Save Step 1 Data (Gender + Age) to Firestore
   Future<String?> saveStepOneData({
     required String gender,
     required int age,
@@ -15,18 +13,26 @@ class StepOneController {
 
       if (user == null) return "User not logged in";
 
-      await FirebaseFirestore.instance
-          .collection("users")
-          .doc(user.uid)
-          .set({
-            "gender": gender,
-            "age": age,
-            "height": height,
-            "weight": weight,
-          }, SetOptions(merge: true)); // merge:true → don't overwrite other fields
+      final docRef =
+          FirebaseFirestore.instance.collection("users").doc(user.uid);
 
-      return null; // Success
+      final doc = await docRef.get();
 
+      Map<String, dynamic> data = {
+        "gender": gender,
+        "age": age,
+        "height": height,
+        "weight": weight, // ✅ current weight
+      };
+
+      /// 🔥 ONLY SET startWeight FIRST TIME
+      if (!doc.exists || !(doc.data()?.containsKey("startWeight") ?? false)) {
+        data["startWeight"] = weight;
+      }
+
+      await docRef.set(data, SetOptions(merge: true));
+
+      return null;
     } catch (e) {
       return e.toString();
     }
