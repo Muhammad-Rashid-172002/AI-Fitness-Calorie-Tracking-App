@@ -1,3 +1,4 @@
+import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -80,20 +81,11 @@ Future<void> saveData() async {
   setState(() => isLoading = false);
 }
 
-showCustomSnackBar(BuildContext context, String message, bool isSuccess) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(message),
-      backgroundColor: isSuccess ? Colors.green : Colors.red,
-    ),
-  );
-  }
-
-  /// 🔥 INPUT FIELD
-  Widget inputField(
-    String label,
-    TextEditingController controller, {
-    String hint = "",
+/// 🔥 INPUT FIELD
+Widget inputField(
+  String label,
+  TextEditingController controller, {
+  String hint = "",
     IconData icon = Icons.edit,
   }) {
     return Column(
