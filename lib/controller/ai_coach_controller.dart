@@ -101,4 +101,49 @@ class AICoachController {
 
     return message;
   }
+
+  // ai feedback
+Future<String> generateDailyTip(int proteinGoal) async {
+  final uid = FirebaseAuth.instance.currentUser!.uid;
+  final now = DateTime.now();
+
+  int totalProtein = 0;
+  int daysLogged = 0;
+
+  for (int i = 0; i < 3; i++) {
+    final date = DateFormat(
+      'yyyy-MM-dd',
+    ).format(now.subtract(Duration(days: i)));
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('dailyLogs')
+        .doc(date)
+        .get();
+
+    if (doc.exists) {
+      daysLogged++;
+      final data = doc.data()!;
+      totalProtein += ((data['totalProtein'] ?? 0) as num).toInt();
+    }
+  }
+
+  if (daysLogged == 0) {
+    return "Start logging meals to unlock personalized tips.";
+  }
+
+  int avgProtein = totalProtein ~/ daysLogged;
+
+  if (avgProtein < proteinGoal) {
+    return "Increase protein intake today (eggs, chicken, yogurt).";
+  } else if (avgProtein > (proteinGoal * 1.3).toInt()) {
+    return "Balance protein with carbs and healthy fats.";
+  } else if (avgProtein > proteinGoal) {
+    return "Focus on protein intake in the morning to boost metabolism.";
+  } else {
+    return "Great job! Maintain your current diet balance.";
+  }
+}
+
 }

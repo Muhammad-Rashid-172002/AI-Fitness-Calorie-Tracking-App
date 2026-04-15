@@ -4,7 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AddWeightScreen extends StatefulWidget {
-  const AddWeightScreen({super.key});
+  final bool isEdit;
+  const AddWeightScreen({super.key, this.isEdit = false});
 
   @override
   State<AddWeightScreen> createState() => _AddWeightScreenState();
@@ -58,22 +59,22 @@ Future<void> saveData() async {
   try {
     final data = buildData();
 
+    /// ✅ Update main user doc
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .update(data);
+
+    /// ✅ ALSO add new log (IMPORTANT 🔥)
     await FirebaseFirestore.instance
         .collection('users')
         .doc(uid)
         .collection('body_metrics_log')
         .add(data);
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(uid)
-        .update({
-      "weight": data["weight"],
-    });
-
-    showCustomSnackBar(context, "Saved successfully ✅", true);
-
+    showCustomSnackBar(context, "Updated successfully ✅", true);
     Navigator.pop(context);
+
   } catch (e) {
     showCustomSnackBar(context, e.toString(), false);
   }
@@ -81,11 +82,11 @@ Future<void> saveData() async {
   setState(() => isLoading = false);
 }
 
-/// 🔥 INPUT FIELD
-Widget inputField(
-  String label,
-  TextEditingController controller, {
-  String hint = "",
+  /// 🔥 INPUT FIELD
+  Widget inputField(
+    String label,
+    TextEditingController controller, {
+    String hint = "",
     IconData icon = Icons.edit,
   }) {
     return Column(
@@ -228,9 +229,9 @@ Widget inputField(
                 child: Center(
                   child: isLoading
                       ? const CircularProgressIndicator(color: Colors.black)
-                      : const Text(
-                          "SAVE DATA",
-                          style: TextStyle(
+                      : Text(
+                          widget.isEdit ? "UPDATE DATA" : "SAVE DATA",
+                          style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1,

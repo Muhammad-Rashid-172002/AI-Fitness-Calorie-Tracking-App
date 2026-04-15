@@ -40,11 +40,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     await controller.fetchUserData();
 
     // Set controllers
-    nameController.text = controller.name;
-    weightController.text = controller.weight;
-    heightController.text = controller.height;
-    ageController.text = controller.age;
-    kcalController.text = controller.kcal;
+    // nameController.text = controller.name;
+    // weightController.text = controller.weight;
+    // heightController.text = controller.height;
+    // ageController.text = controller.age;
+    // kcalController.text = controller.kcal;
 
     // Safe weight goal assignment
     if (weightOptions.contains(controller.weightGoal)) {

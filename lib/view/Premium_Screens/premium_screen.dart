@@ -50,6 +50,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      
       backgroundColor: bgColor,
       body: SafeArea(
         child: isPremium == null
