@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:fitmind_ai/services/StripePaymentProvider.dart';
@@ -18,6 +20,20 @@ class TrialScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Future<void> startTrial() async {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final now = DateTime.now();
+      final trialEnd = now.add(const Duration(days: 14));
+
+      await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+        "isPremium": false,
+        "trialStart": now.toIso8601String(),
+        "trialEnd": trialEnd.toIso8601String(),
+      }, SetOptions(merge: true));
+    }
+
     return Scaffold(
       body: Consumer<StripePaymentProvider>(
         builder: (context, stripeProvider, child) {
@@ -154,7 +170,6 @@ class TrialScreen extends StatelessWidget {
                         //     ),
                         //   ),
                         // ),
-
                         const SizedBox(height: 20),
 
                         /// Continue Button
@@ -164,7 +179,10 @@ class TrialScreen extends StatelessWidget {
                             text: 'Continue to payment',
                             onPressed: () async {
                               try {
-                                // Call Stripe payment and wait for result
+                                // 1️⃣ START 14-DAY TRIAL (SAVE IN FIRESTORE)
+                                await startTrial();
+
+                                // 2️⃣ PROCESS PAYMENT
                                 final bool paymentSuccess = await context
                                     .read<StripePaymentProvider>()
                                     .makePayment(
@@ -172,34 +190,30 @@ class TrialScreen extends StatelessWidget {
                                     );
 
                                 if (paymentSuccess) {
-                                  // Payment succeeded
                                   showCustomSnackBar(
                                     context,
                                     "Payment Successful 🎉",
                                     true,
                                   );
 
-                                  // Navigate to premium screen
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) =>
-                                          const MainView(),
+                                      builder: (context) => const MainView(),
                                     ),
                                   );
                                 } else {
-                                  // Payment failed
                                   showCustomSnackBar(
                                     context,
                                     "Payment Failed ❌",
-                                    true,
+                                    false,
                                   );
                                 }
                               } catch (e) {
                                 showCustomSnackBar(
                                   context,
-                                  "Payment Failed ❌",
-                                  true,
+                                  "Payment Error ❌",
+                                  false,
                                 );
                               }
                             },
@@ -269,6 +283,20 @@ class TimelineTile extends StatelessWidget {
       ],
     );
   }
+
+  Future<void> startTrial() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final now = DateTime.now();
+    final trialEnd = now.add(const Duration(days: 14));
+
+    await FirebaseFirestore.instance.collection("users").doc(user.uid).set({
+      "isPremium": false,
+      "trialStart": now.toIso8601String(),
+      "trialEnd": trialEnd.toIso8601String(),
+    }, SetOptions(merge: true));
+  }
 }
 
 class TimelineDivider extends StatelessWidget {
@@ -285,5 +313,27 @@ class TimelineDivider extends StatelessWidget {
         color: Colors.white24,
       ),
     );
+  }
+
+  Future<bool> isTrialActive() async {
+    final user = FirebaseAuth.instance.currentUser;
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user!.uid)
+        .get();
+
+    final data = doc.data();
+
+    if (data == null) return false;
+
+    final isPremium = data["isPremium"] ?? false;
+    if (isPremium) return true;
+
+    final trialEnd = data["trialEnd"];
+
+    if (trialEnd == null) return false;
+
+    DateTime end = DateTime.parse(trialEnd);
+    return DateTime.now().isBefore(end);
   }
 }

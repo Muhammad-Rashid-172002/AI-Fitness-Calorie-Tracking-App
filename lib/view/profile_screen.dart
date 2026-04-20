@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fitmind_ai/components/showCustomSnackBar.dart';
 import 'package:fitmind_ai/controller/ai_coach_controller.dart';
 import 'package:fitmind_ai/controller/profile_controller.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
@@ -39,10 +40,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
     return FirebaseFirestore.instance
-        .collection('body_metrics_log')
-        .where('uid', isEqualTo: uid)
+        .collection('users')
+        .doc(uid)
+        .collection('dailyLogs') // ✅ correct path
         .orderBy('createdAt', descending: true)
         .snapshots();
+  }
+
+  Stream<QuerySnapshot> getScanLogs() {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('scans')
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+  }
+
+  Stream<QuerySnapshot> getStreakSource() {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('scans')
+        .snapshots();
+  }
+
+  Future<List<DateTime>> getAllActivityDates() async {
+    final scans = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('scans')
+        .get();
+
+    final dailyLogs = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('dailyLogs')
+        .get();
+
+    List<DateTime> dates = [];
+
+    for (var doc in scans.docs) {
+      final t = doc['timestamp'];
+      if (t != null) dates.add((t as Timestamp).toDate());
+    }
+
+    for (var doc in dailyLogs.docs) {
+      final t = doc['timestamp'];
+      if (t != null) dates.add((t as Timestamp).toDate());
+    }
+
+    return dates;
   }
 
   Stream<QuerySnapshot> getMetricsStream() {
@@ -142,58 +189,110 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           int weeklyScore = (progress * 100).toInt();
 
                           return StreamBuilder<QuerySnapshot>(
-                            stream: getWeightLogs(),
-                            builder: (context, logSnap) {
-                              int streak = 0;
+                            stream: FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(uid)
+                                .collection('dailyLogs')
+                                .snapshots(),
 
-                              if (logSnap.hasData) {
-                                streak = calculateStreak(logSnap.data!.docs);
+                            builder: (context, weightSnap) {
+                              if (!weightSnap.hasData) {
+                                return const CircularProgressIndicator();
                               }
 
-                              return Row(
-                                children: [
-                                  // ✅ Card 1
-                                  Expanded(
-                                    child: _buildStatCard(
-                                      label: "Current Weight",
-                                      value:
-                                          "${currentWeight.toStringAsFixed(0)} kg",
-                                      subtext: subtext,
-                                      iconWidget: const Icon(
-                                        Icons.monitor_weight_outlined,
-                                        color: Colors.green,
-                                      ),
-                                    ),
-                                  ),
+                              return StreamBuilder<QuerySnapshot>(
+                                stream: FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(uid)
+                                    .collection('dailyLogs')
+                                    .snapshots(),
+                                builder: (context, weightSnap) {
+                                  if (weightSnap.connectionState ==
+                                      ConnectionState.waiting) {
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  }
 
-                                  const SizedBox(width: 8),
+                                  return StreamBuilder<QuerySnapshot>(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(uid)
+                                        .collection('scans')
+                                        .snapshots(),
+                                    builder: (context, scanSnap) {
+                                      if (scanSnap.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
+                                        );
+                                      }
 
-                                  // ✅ Card 2
-                                  Expanded(
-                                    child: _buildStatCard(
-                                      label: "Weekly Score",
-                                      value: "$weeklyScore",
-                                      hasProgress: true,
-                                      progressValue: progress,
-                                      iconWidget: const Icon(
-                                        Icons.bar_chart,
-                                        color: Colors.green,
-                                      ),
-                                    ),
-                                  ),
+                                      final weightDocs =
+                                          weightSnap.data?.docs ?? [];
+                                      final scanDocs =
+                                          scanSnap.data?.docs ?? [];
 
-                                  const SizedBox(width: 8),
+                                      print(
+                                        "📊 Weight Docs: ${weightDocs.length}",
+                                      );
+                                      print("📊 Scan Docs: ${scanDocs.length}");
 
-                                  // ✅ Card 3
-                                  Expanded(
-                                    child: _buildStatCard(
-                                      label: "Streak",
-                                      value: "$streak Days",
-                                      iconWidget: const FirePulseIcon(),
-                                      iconColor: Colors.orange,
-                                    ),
-                                  ),
-                                ],
+                                      final allDocs = [
+                                        ...weightDocs,
+                                        ...scanDocs,
+                                      ];
+
+                                      final streak = calculateStreak(allDocs);
+
+                                      print("🔥 FINAL STREAK: $streak");
+                                      print("🔥 SAVED SCAN TIME: ${Timestamp.now()}");
+
+                                      return Row(
+                                        children: [
+                                          Expanded(
+                                            child: _buildStatCard(
+                                              label: "Current Weight",
+                                              value:
+                                                  "${currentWeight.toStringAsFixed(0)} kg",
+                                              subtext: subtext,
+                                              iconWidget: const Icon(
+                                                Icons.monitor_weight_outlined,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ),
+
+                                          const SizedBox(width: 8),
+
+                                          Expanded(
+                                            child: _buildStatCard(
+                                              label: "Weekly Score",
+                                              value: "$weeklyScore",
+                                              hasProgress: true,
+                                              progressValue: progress,
+                                              iconWidget: const Icon(
+                                                Icons.bar_chart,
+                                                color: Colors.green,
+                                              ),
+                                            ),
+                                          ),
+
+                                          const SizedBox(width: 8),
+
+                                          Expanded(
+                                            child: _buildStatCard(
+                                              label: "Streak",
+                                              value: "$streak Days",
+                                              iconWidget: const FirePulseIcon(),
+                                              iconColor: Colors.orange,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
                               );
                             },
                           );
@@ -556,73 +655,250 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            const Text(
-                              "Free Plan",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
+                            StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection("users")
+                                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return const Text("Loading...");
+                                }
+
+                                final data =
+                                    snapshot.data!.data()
+                                        as Map<String, dynamic>;
+
+                                bool isPremium = data["isPremium"] ?? false;
+
+                                String trialEndStr = data["trialEnd"] ?? "";
+                                DateTime? trialEnd = trialEndStr.isNotEmpty
+                                    ? DateTime.parse(trialEndStr)
+                                    : null;
+
+                                bool isTrialActive =
+                                    trialEnd != null &&
+                                    DateTime.now().isBefore(trialEnd);
+
+                                String text;
+
+                                if (isPremium) {
+                                  text = "Premium Plan";
+                                } else if (isTrialActive) {
+                                  text = "Free Trial";
+                                } else {
+                                  text = "Free Plan";
+                                }
+
+                                return Text(
+                                  text,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                );
+                              },
                             ),
                             const SizedBox(height: 8),
 
                             // Usage Tracking Text
-                            const Text(
-                              "3/3 scans used today",
-                              style: TextStyle(
-                                color: Colors.white38,
-                                fontSize: 13,
-                              ),
+                            StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection("users")
+                                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) return SizedBox();
+
+                                final data =
+                                    snapshot.data!.data()
+                                        as Map<String, dynamic>;
+
+                                int scans = data["scans"] ?? 0;
+                                bool isPremium = data["isPremium"] ?? false;
+
+                                return Text(
+                                  isPremium
+                                      ? "Unlimited scans"
+                                      : "${scans.clamp(0, 3)}/3 scans used today",
+                                  style: TextStyle(
+                                    color: Colors.white38,
+                                    fontSize: 13,
+                                  ),
+                                );
+                              },
                             ),
 
                             const SizedBox(height: 20),
 
                             // Upgrade Button with Gradient Effect
-                            Container(
-                              width: double.infinity,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(24),
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF4ADE80),
-                                    Color(0xFF22C55E),
-                                  ],
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(
-                                      0xFF4ADE80,
-                                    ).withOpacity(0.3),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => PremiumScreen(),
-                                    ),
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
+                            StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection("users")
+                                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return const SizedBox();
+                                }
+
+                                final data =
+                                    snapshot.data!.data()
+                                        as Map<String, dynamic>;
+                                bool isPremium = data["premium"] ?? false;
+
+                                return Container(
+                                  width: double.infinity,
+                                  height: 48,
+                                  decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(24),
+                                    gradient: LinearGradient(
+                                      colors: isPremium
+                                          ? [Colors.redAccent, Colors.red]
+                                          : [
+                                              const Color(0xFF4ADE80),
+                                              const Color(0xFF22C55E),
+                                            ],
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color:
+                                            (isPremium
+                                                    ? Colors.red
+                                                    : const Color(0xFF4ADE80))
+                                                .withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                child: const Text(
-                                  "Upgrade to Premium",
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
+                                  child: ElevatedButton(
+                                    onPressed: () {
+                                      if (isPremium) {
+                                        // 🔥 CANCEL PREMIUM FLOW
+                                        showDialog(
+                                          context: context,
+                                          builder: (dialogContext) => AlertDialog(
+                                            backgroundColor: const Color(
+                                              0xFF0F172A,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            title: const Text(
+                                              "Cancel Subscription",
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            content: const Text(
+                                              "Are you sure you want to cancel your premium subscription?",
+                                              style: TextStyle(
+                                                color: Colors.white70,
+                                              ),
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.pop(
+                                                  dialogContext,
+                                                ),
+                                                child: const Text(
+                                                  "No",
+                                                  style: TextStyle(
+                                                    color: Colors.grey,
+                                                  ),
+                                                ),
+                                              ),
+
+                                              TextButton(
+                                                onPressed: () async {
+                                                  final user = FirebaseAuth
+                                                      .instance
+                                                      .currentUser;
+
+                                                  if (user == null) return;
+
+                                                  try {
+                                                    // 🔥 CLOSE DIALOG FIRST
+                                                    Navigator.pop(
+                                                      dialogContext,
+                                                    );
+
+                                                    // 🔥 UPDATE FIREBASE (CANCEL PREMIUM)
+                                                    await FirebaseFirestore
+                                                        .instance
+                                                        .collection("users")
+                                                        .doc(user.uid)
+                                                        .set(
+                                                          {
+                                                            "premium": false,
+                                                            "premiumPlan": null,
+                                                            "premiumStart":
+                                                                null,
+                                                            "trialStart": null,
+                                                            "trialEnd": null,
+                                                          },
+                                                          SetOptions(
+                                                            merge: true,
+                                                          ),
+                                                        );
+
+                                                    // 🔥 SUCCESS MESSAGE
+                                                    showCustomSnackBar(
+                                                      context,
+                                                      "Subscription cancelled successfully",
+                                                      true,
+                                                    );
+                                                  } catch (e) {
+                                                    showCustomSnackBar(
+                                                      context,
+                                                      "Failed to cancel subscription",
+                                                      false,
+                                                    );
+                                                  }
+                                                },
+                                                child: const Text(
+                                                  "Yes",
+                                                  style: TextStyle(
+                                                    color: Colors.redAccent,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      } else {
+                                        // 🔥 GO TO PREMIUM SCREEN
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                const PremiumScreen(),
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      shadowColor: Colors.transparent,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(24),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      isPremium
+                                          ? "Cancel Subscription"
+                                          : "Upgrade to Premium",
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ),
+                                );
+                              },
                             ),
                           ],
                         ),
@@ -643,36 +919,119 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
+//============/// premium section
+
+Future<bool> canUserScan() async {
+  final user = FirebaseAuth.instance.currentUser;
+  final doc = await FirebaseFirestore.instance
+      .collection("users")
+      .doc(user!.uid)
+      .get();
+
+  final data = doc.data()!;
+
+  bool isPremium = data["isPremium"] ?? false;
+
+  // Trial check
+  String trialEndStr = data["trialEnd"] ?? "";
+  DateTime? trialEnd = trialEndStr.isNotEmpty
+      ? DateTime.parse(trialEndStr)
+      : null;
+
+  bool isTrialActive = trialEnd != null && DateTime.now().isBefore(trialEnd);
+
+  int scans = data["scans"] ?? 0;
+  String lastDate = data["lastScanDate"] ?? "";
+
+  String today = DateTime.now().toString().substring(0, 10);
+
+  // reset daily
+  if (lastDate != today) {
+    await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
+      "scans": 0,
+      "lastScanDate": today,
+    });
+    scans = 0;
+  }
+
+  // PREMIUM = unlimited
+  if (isPremium) return true;
+
+  // TRIAL = unlimited (IMPORTANT 🔥)
+  if (isTrialActive) return true;
+
+  // FREE = limit 3
+  if (scans >= 3) return false;
+
+  await FirebaseFirestore.instance.collection("users").doc(user.uid).update({
+    "scans": FieldValue.increment(1),
+  });
+
+  return true;
+}
+
 int calculateStreak(List<QueryDocumentSnapshot> docs) {
   if (docs.isEmpty) return 0;
 
-  int streak = 0;
+  List<DateTime> dates = [];
+
+  for (var doc in docs) {
+    try {
+      final data = doc.data() as Map<String, dynamic>;
+
+    final ts = data['createdAt'] ?? data['timestamp'];
+if (ts == null) continue;
+
+      DateTime d;
+
+      // 🔥 handle both Timestamp & String
+      if (ts is Timestamp) {
+        d = ts.toDate();
+      } else if (ts is String) {
+        d = DateTime.parse(ts);
+      } else {
+        continue;
+      }
+
+      dates.add(DateTime(d.year, d.month, d.day));
+    } catch (e) {
+      print("Error parsing doc: $e");
+    }
+  }
+
+  if (dates.isEmpty) return 0;
+
+  // 🔥 remove duplicates (same day)
+  dates = dates.toSet().toList();
+
+  // 🔥 sort latest first
+  dates.sort((a, b) => b.compareTo(a));
+
+  print("📅 ALL DATES:");
+  for (var d in dates) {
+    print(d);
+  }
 
   DateTime today = DateTime.now();
-  DateTime normalizedToday =
-      DateTime(today.year, today.month, today.day);
+  DateTime normalizedToday = DateTime(today.year, today.month, today.day);
 
-  for (int i = 0; i < docs.length; i++) {
-    DateTime rawDate = (docs[i]['createdAt'] as Timestamp).toDate();
+  int streak = 0;
 
-    DateTime current =
-        DateTime(rawDate.year, rawDate.month, rawDate.day);
-
+  for (int i = 0; i < dates.length; i++) {
     if (i == 0) {
-      // first entry must be today or yesterday
-      if (normalizedToday.difference(current).inDays <= 1) {
-        streak++;
+      int diff = normalizedToday.difference(dates[i]).inDays;
+
+      print("🧠 FIRST DIFF: $diff");
+
+      if (diff <= 1) {
+        streak = 1;
       } else {
-        break;
+        return 0; // 🔥 no recent activity
       }
     } else {
-      DateTime prevRaw =
-          (docs[i - 1]['createdAt'] as Timestamp).toDate();
+      int diff = dates[i - 1].difference(dates[i]).inDays;
 
-      DateTime prev =
-          DateTime(prevRaw.year, prevRaw.month, prevRaw.day);
-
-      if (prev.difference(current).inDays == 1) {
+      if (diff == 1) {
         streak++;
       } else {
         break;
@@ -682,6 +1041,7 @@ int calculateStreak(List<QueryDocumentSnapshot> docs) {
 
   return streak;
 }
+
 // Example logic
 // String displayTip = (userProteinIntake < 50)
 //     ? "Low protein detected! Try adding eggs to your breakfast."

@@ -50,153 +50,183 @@ class _PremiumScreenState extends State<PremiumScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      
       backgroundColor: bgColor,
       body: SafeArea(
         child: isPremium == null
             ? const Center(child: CircularProgressIndicator())
-            : isPremium!
-                ? _premiumCongratsUI()
-                : _goPremiumUI(),
+            : Column(
+                children: [
+                  // 🔙 Back Button
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.white.withOpacity(0.8),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // 📱 Main Content
+                  Expanded(
+                    child: isPremium! ? _premiumCongratsUI() : _goPremiumUI(),
+                  ),
+                ],
+              ),
       ),
     );
   }
 
   /// Show this UI if user is premium
-Widget _premiumCongratsUI() {
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [Colors.greenAccent, Colors.transparent],
+  Widget _premiumCongratsUI() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: RadialGradient(
+                colors: [Colors.greenAccent, Colors.transparent],
+              ),
+            ),
+            padding: const EdgeInsets.all(40),
+            child: const Icon(
+              Icons.emoji_events,
+              size: 100,
+              color: Colors.amber,
             ),
           ),
-          padding: const EdgeInsets.all(40),
-          child: const Icon(Icons.emoji_events, size: 100, color: Colors.amber),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          "Congratulations!",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
+          const SizedBox(height: 20),
+          const Text(
+            "Congratulations!",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          "You are already a Premium user",
-          style: TextStyle(color: Colors.white70, fontSize: 18),
-        ),
-        const SizedBox(height: 30),
-
-        // Explore Premium Features
-        CustomGradientButton(
-          text: "Explore Premium Features",
-          onPressed: () {
-            // Navigate to premium features screen
-          },
-        ),
-
-        const SizedBox(height: 15),
-
-        // Cancel Premium Button
-        CustomGradientButton(
-          text: "Cancel Premium",
-          onPressed: () async {
-            final user = FirebaseAuth.instance.currentUser;
-            if (user == null) return;
-
-            // Show confirmation dialog
-            final confirm = await showDialog<bool>(
-  context: context,
-  builder: (context) => AlertDialog(
-    backgroundColor: bgColor, // app dark background
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(20),
-    ),
-    title: const Text(
-      "Cancel Premium",
-      style: TextStyle(
-        color: Colors.white, // title text color
-        fontWeight: FontWeight.bold,
-      ),
-    ),
-    content: const Text(
-      "Are you sure you want to cancel your Premium subscription?",
-      style: TextStyle(
-        color: Colors.white70, // softer content text
-      ),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context, false),
-        style: TextButton.styleFrom(
-          foregroundColor: Colors.grey[400], // No button color
-        ),
-        child: const Text(
-          "No",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
+          const SizedBox(height: 10),
+          const Text(
+            "You are already a Premium user",
+            style: TextStyle(color: Colors.white70, fontSize: 18),
           ),
-        ),
-      ),
-      TextButton(
-        onPressed: () => Navigator.pop(context, true),
-        style: TextButton.styleFrom(
-          foregroundColor: activeColor, // premium accent color
-        ),
-        child: const Text(
-          "Yes",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
+          const SizedBox(height: 30),
+
+          // Explore Premium Features
+          CustomGradientButton(
+            text: "Explore Premium Features",
+            onPressed: () {
+              // Navigate to premium features screen
+            },
           ),
-        ),
+
+          const SizedBox(height: 15),
+
+          // Cancel Premium Button
+          CustomGradientButton(
+            text: "Cancel Premium",
+            onPressed: () async {
+              final user = FirebaseAuth.instance.currentUser;
+              if (user == null) return;
+
+              // Show confirmation dialog
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: bgColor, // app dark background
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  title: const Text(
+                    "Cancel Premium",
+                    style: TextStyle(
+                      color: Colors.white, // title text color
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  content: const Text(
+                    "Are you sure you want to cancel your Premium subscription?",
+                    style: TextStyle(
+                      color: Colors.white70, // softer content text
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.grey[400], // No button color
+                      ),
+                      child: const Text(
+                        "No",
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: TextButton.styleFrom(
+                        foregroundColor: activeColor, // premium accent color
+                      ),
+                      child: const Text(
+                        "Yes",
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm != true) return;
+
+              try {
+                // 1️⃣ Cancel subscription in Stripe
+                // Make sure you have a function in your StripePaymentProvider to cancel
+                // await context.read<StripePaymentProvider>().cancelSubscription();
+
+                // 2️⃣ Update Firebase
+                await FirebaseFirestore.instance
+                    .collection("users")
+                    .doc(user.uid)
+                    .set({
+                      "premium": false,
+                      "premiumPlan": null,
+                      "premiumStart": null,
+                      "trialEnds": null,
+                    }, SetOptions(merge: true));
+
+                // 3️⃣ Update local state
+                setState(() {
+                  isPremium = false;
+                });
+
+                // 4️⃣ Show success message
+                showCustomSnackBar(
+                  context,
+                  "Premium subscription canceled.",
+                  true,
+                );
+              } catch (e) {
+                showCustomSnackBar(
+                  context,
+                  "Failed to cancel premium. Please try again.",
+                  false,
+                );
+                debugPrint("Cancel Premium Error: $e");
+              }
+            },
+          ),
+        ],
       ),
-    ],
-  ),
-);
-            if (confirm != true) return;
+    );
+  }
 
-            try {
-              // 1️⃣ Cancel subscription in Stripe
-              // Make sure you have a function in your StripePaymentProvider to cancel
-              // await context.read<StripePaymentProvider>().cancelSubscription();
-
-              // 2️⃣ Update Firebase
-              await FirebaseFirestore.instance
-                  .collection("users")
-                  .doc(user.uid)
-                  .set({
-                "premium": false,
-                "premiumPlan": null,
-                "premiumStart": null,
-                "trialEnds": null,
-              }, SetOptions(merge: true));
-
-              // 3️⃣ Update local state
-              setState(() {
-                isPremium = false;
-              });
-
-              // 4️⃣ Show success message
-              showCustomSnackBar(
-                  context, "Premium subscription canceled.", true);
-            } catch (e) {
-              showCustomSnackBar(context,
-                  "Failed to cancel premium. Please try again.", false);
-              debugPrint("Cancel Premium Error: $e");
-            }
-          },
-        ),
-      ],
-    ),
-  );
-}/// Show this UI if user is NOT premium
+  /// Show this UI if user is NOT premium
   Widget _goPremiumUI() {
     return Stack(
       children: [
