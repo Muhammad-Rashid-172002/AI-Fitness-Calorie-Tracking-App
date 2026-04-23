@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:fitmind_ai/controller/scan_controller.dart';
 import 'package:fitmind_ai/resources/app_them.dart';
+import 'package:fitmind_ai/view/Premium_Screens/premium_screen.dart';
 import 'package:fitmind_ai/view/analyzing_screen.dart';
+import 'package:fitmind_ai/view/profile_screen.dart';
 import 'package:fitmind_ai/view/quick_add_meal_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -19,6 +21,71 @@ class _ScanScreenState extends State<ScanScreen> {
 
   /// Camera
   Future<void> _takePhoto() async {
+    bool allowed = await canUserScan(); 
+
+    if (!allowed) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: const Color(0xFF0F172A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
+              SizedBox(width: 10),
+              Text(
+                "Limit Reached",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            "You have used all 3 scans today. Upgrade to continue using AI scanner.",
+            style: TextStyle(color: Colors.white70, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Colors.white54),
+              ),
+            ),
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4ADE80),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PremiumScreen()),
+                );
+              },
+              child: const Text(
+                "Upgrade",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      return; //  IMPORTANT
+    }
+
     File? image = await controller.pickFromCamera();
     if (image != null) {
       _handleImage(image);
@@ -27,6 +94,71 @@ class _ScanScreenState extends State<ScanScreen> {
 
   /// Gallery
   Future<void> _pickGallery() async {
+    bool allowed = await canUserScan(); // 👈 ADD
+
+    if (!allowed) {
+      showDialog(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: const Color(0xFF0F172A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Row(
+            children: const [
+              Icon(Icons.warning_amber_rounded, color: Colors.orangeAccent),
+              SizedBox(width: 10),
+              Text(
+                "Limit Reached",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            "You have used all 3 scans today. Upgrade to continue using AI scanner.",
+            style: TextStyle(color: Colors.white70, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Colors.white54),
+              ),
+            ),
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4ADE80),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(dialogContext);
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PremiumScreen()),
+                );
+              },
+              child: const Text(
+                "Upgrade",
+                style: TextStyle(
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     File? image = await controller.pickFromGallery();
     if (image != null) {
       _handleImage(image);
@@ -66,10 +198,7 @@ class _ScanScreenState extends State<ScanScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             gradient: LinearGradient(
-              colors: [
-                color.withOpacity(0.4),
-                color.withOpacity(0.1),
-              ],
+              colors: [color.withOpacity(0.4), color.withOpacity(0.1)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -90,11 +219,8 @@ class _ScanScreenState extends State<ScanScreen> {
               const SizedBox(height: 5),
               Text(
                 subtitle,
-                style: const TextStyle(
-                  color: Colors.white54,
-                  fontSize: 12,
-                ),
-              )
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
+              ),
             ],
           ),
         ),
@@ -102,64 +228,60 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
- /// Scan Card
-Widget scanCard() {
-  return GestureDetector(
-    onTap: _takePhoto,
-    child: Container(
-      height: 260,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFFFFA726), // orange
-            Color(0xFFFF6F00), // deep orange
+  /// Scan Card
+  Widget scanCard() {
+    return GestureDetector(
+      onTap: _takePhoto,
+      child: Container(
+        height: 260,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: const LinearGradient(
+            colors: [
+              Color(0xFFFFA726), 
+              Color(0xFFFF6F00), 
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.withOpacity(0.45),
+              blurRadius: 30,
+              spreadRadius: 2,
+            ),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.orange.withOpacity(0.45),
-            blurRadius: 30,
-            spreadRadius: 2,
-          )
-        ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            CircleAvatar(
+              radius: 45,
+              backgroundColor: Colors.white24,
+              child: Icon(Icons.camera_alt, size: 50, color: Colors.white),
+            ),
+            SizedBox(height: 20),
+            Text(
+              "Scan Your Meal",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "Take a photo to analyze calories",
+              style: TextStyle(color: Colors.white70),
+            ),
+          ],
+        ),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          CircleAvatar(
-            radius: 45,
-            backgroundColor: Colors.white24,
-            child: Icon(
-              Icons.camera_alt,
-              size: 50,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 20),
-          Text(
-            "Scan Your Meal",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            "Take a photo to analyze calories",
-            style: TextStyle(
-              color: Colors.white70,
-            ),
-          )
-        ],
-      ),
-    ),
-  );
-}  Widget featureItem(String text) {
+    );
+  }
+
+  Widget featureItem(String text) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(14),
@@ -174,12 +296,9 @@ Widget scanCard() {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 15,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 15),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -204,19 +323,16 @@ Widget scanCard() {
                   color: Colors.white,
                 ),
               ),
-      
+
               const SizedBox(height: 6),
-      
+
               const Text(
                 "Scan meals to track calories instantly",
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 15,
-                ),
+                style: TextStyle(color: Colors.white70, fontSize: 15),
               ),
-      
+
               const SizedBox(height: 30),
-      
+
               /// Image Preview
               if (selectedImage != null)
                 ClipRRect(
@@ -230,9 +346,9 @@ Widget scanCard() {
                 )
               else
                 scanCard(),
-      
+
               const SizedBox(height: 25),
-      
+
               /// Buttons
               Row(
                 children: [
@@ -260,9 +376,9 @@ Widget scanCard() {
                   ),
                 ],
               ),
-      
+
               const SizedBox(height: 35),
-      
+
               const Text(
                 "Features",
                 style: TextStyle(
@@ -271,9 +387,9 @@ Widget scanCard() {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-      
+
               const SizedBox(height: 15),
-      
+
               featureItem("AI identifies food from photos"),
               featureItem("Instant calorie & nutrition data"),
               featureItem("Smart meal insights & feedback"),
