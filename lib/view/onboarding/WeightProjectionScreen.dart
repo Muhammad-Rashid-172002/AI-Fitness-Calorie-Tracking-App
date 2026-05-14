@@ -13,37 +13,33 @@ class WeightProjectionScreen extends StatelessWidget {
     required this.targetWeight,
   });
 
-  /// Generate realistic curve
   List<FlSpot> generateSpots() {
     int weeks = 5;
     double diff = currentWeight - targetWeight;
     double step = diff / weeks;
 
-    List<FlSpot> spots = [];
-
-    for (int i = 0; i <= weeks; i++) {
+    return List.generate(weeks + 1, (i) {
       double base = currentWeight - (step * i);
-      double fluctuation = (i % 2 == 0) ? 0.4 : -0.5;
-
-      double value = (i == weeks) ? targetWeight : base + fluctuation;
-
-      spots.add(FlSpot(i.toDouble(), value));
-    }
-
-    return spots;
+      double noise = (i % 2 == 0) ? 0.3 : -0.4;
+      double value = (i == weeks) ? targetWeight : base + noise;
+      return FlSpot(i.toDouble(), value);
+    });
   }
 
-  final List<String> labels = ["Today", "W2", "W4", "W6", "W8", "Goal"];
+  final List<String> labels = ["Start", "W2", "W4", "W6", "Goal"];
 
   Widget bottomTitles(double value, TitleMeta meta) {
     int index = value.toInt();
     if (index < 0 || index >= labels.length) return const SizedBox();
 
     return Padding(
-      padding: const EdgeInsets.only(top: 6),
+      padding: const EdgeInsets.only(top: 8),
       child: Text(
         labels[index],
-        style: const TextStyle(color: Colors.grey, fontSize: 11),
+        style: TextStyle(
+          color: Colors.white.withOpacity(0.6),
+          fontSize: 11,
+        ),
       ),
     );
   }
@@ -55,227 +51,263 @@ class WeightProjectionScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFF020617),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: size.width * 0.05),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(height: size.height * 0.04),
-
-              /// TITLE
-              const Text(
-                "Your Weight Journey",
-                style: TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+      body: Stack(
+        children: [
+          /// 🌈 BACKGROUND GLOW
+          Positioned(
+            top: -120,
+            left: -80,
+            child: Container(
+              height: 260,
+              width: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF22C55E).withOpacity(0.08),
               ),
+            ),
+          ),
 
-              const SizedBox(height: 6),
-
-              const Text(
-                "Your estimated progress based on your goal.",
-                style: TextStyle(color: Colors.grey),
+          Positioned(
+            bottom: -140,
+            right: -100,
+            child: Container(
+              height: 300,
+              width: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF06B6D4).withOpacity(0.06),
               ),
+            ),
+          ),
 
-              SizedBox(height: size.height * 0.04),
+          SafeArea(
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: size.width * 0.05),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 20),
 
-              /// GRAPH CONTAINER
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: AspectRatio(
-                  aspectRatio: 1.4, // 🔥 responsive height
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      double width = constraints.maxWidth;
-                      double height = constraints.maxHeight;
+                  /// 🔙 TOP BAR
+                  Row(
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: Colors.white12),
+                          ),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Text(
+                          "Progress AI",
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
 
-                      double minY = targetWeight - 2;
-                      double maxY = currentWeight + 2;
+                  const SizedBox(height: 25),
 
-                      double stepX = width / (spots.length - 1);
+                  /// TITLE
+                  const Text(
+                    "Your Transformation",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
 
-                      return Stack(
-                        children: [
-                          /// 📈 CHART
-                          LineChart(
-                            LineChartData(
-                              minY: minY,
-                              maxY: maxY,
+                  const SizedBox(height: 6),
 
-                              gridData: FlGridData(
-                                show: true,
-                                drawVerticalLine: false,
-                                horizontalInterval: 1,
-                                getDrawingHorizontalLine: (value) {
-                                  return FlLine(
-                                    color: Colors.white.withOpacity(0.05),
-                                  );
-                                },
-                              ),
+                  Text(
+                    "AI predicted weight journey based on your goal",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 14,
+                    ),
+                  ),
 
-                              titlesData: FlTitlesData(
-                                leftTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                rightTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                topTitles: AxisTitles(
-                                  sideTitles: SideTitles(showTitles: false),
-                                ),
-                                bottomTitles: AxisTitles(
-                                  sideTitles: SideTitles(
-                                    showTitles: true,
-                                    interval: 1,
-                                    getTitlesWidget: bottomTitles,
-                                  ),
-                                ),
-                              ),
+                  const SizedBox(height: 30),
 
-                              borderData: FlBorderData(show: false),
+                  /// CARD WRAPPER (GLASS)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      color: Colors.white.withOpacity(0.04),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                    child: AspectRatio(
+                      aspectRatio: 1.5,
+                      child: LineChart(
+                        LineChartData(
+                          minY: targetWeight - 2,
+                          maxY: currentWeight + 2,
 
-                              lineBarsData: [
-                                /// GLOW
-                                LineChartBarData(
-                                  spots: spots,
-                                  isCurved: true,
-                                  color: Colors.greenAccent.withOpacity(0.25),
-                                  barWidth: 10,
-                                  dotData: FlDotData(show: false),
-                                ),
-
-                                /// MAIN LINE
-                                LineChartBarData(
-                                  spots: spots,
-                                  isCurved: true,
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF22C55E),
-                                      Color(0xFF4ADE80),
-                                    ],
-                                  ),
-                                  barWidth: 3,
-
-                                  dotData: FlDotData(
-                                    show: true,
-                                    getDotPainter: (spot, percent, bar, index) {
-                                      bool isGoal = index == spots.length - 1;
-
-                                      return FlDotCirclePainter(
-                                        radius: isGoal ? 7 : 4,
-                                        color: Colors.white,
-                                        strokeWidth: 3,
-                                        strokeColor: const Color(0xFF22C55E),
-                                      );
-                                    },
-                                  ),
-
-                                  belowBarData: BarAreaData(
-                                    show: true,
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        const Color(
-                                          0xFF22C55E,
-                                        ).withOpacity(0.3),
-                                        Colors.transparent,
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
+                          gridData: FlGridData(
+                            show: true,
+                            drawVerticalLine: false,
+                            getDrawingHorizontalLine: (v) => FlLine(
+                              color: Colors.white.withOpacity(0.05),
+                              strokeWidth: 1,
                             ),
                           ),
 
-                          /// 🔥 RESPONSIVE LABELS
-                          ...spots.asMap().entries.map((entry) {
-                            int i = entry.key;
-                            FlSpot spot = entry.value;
+                          titlesData: FlTitlesData(
+                            leftTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            rightTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            topTitles: const AxisTitles(
+                              sideTitles: SideTitles(showTitles: false),
+                            ),
+                            bottomTitles: AxisTitles(
+                              sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: bottomTitles,
+                              ),
+                            ),
+                          ),
 
-                            double x = stepX * i;
+                          borderData: FlBorderData(show: false),
 
-                            double yRatio = (spot.y - minY) / (maxY - minY);
-                            double y = height - (yRatio * height);
+                          lineBarsData: [
+                            /// GLOW LINE
+                            LineChartBarData(
+                              spots: spots,
+                              isCurved: true,
+                              barWidth: 8,
+                              color: const Color(0xFF22C55E).withOpacity(0.15),
+                              dotData: const FlDotData(show: false),
+                            ),
 
-                            /// Prevent overflow
-                            double adjustedX = x - 20;
-
-                            if (i == 0) {
-                              adjustedX = 4;
-                            } else if (i == spots.length - 1) {
-                              adjustedX = width - 55;
-                            }
-
-                            return Positioned(
-                              left: adjustedX,
-                              top: y - 35,
-                              child: Column(
-                                children: [
-                                  Text(
-                                    "${spot.y.toStringAsFixed(1)}",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const Icon(
-                                    Icons.arrow_drop_down,
-                                    size: 14,
-                                    color: Colors.greenAccent,
-                                  ),
+                            /// MAIN LINE
+                            LineChartBarData(
+                              spots: spots,
+                              isCurved: true,
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFF22C55E),
+                                  Color(0xFF06B6D4),
                                 ],
                               ),
-                            );
-                          }).toList(),
-                        ],
+                              barWidth: 3,
+                              dotData: FlDotData(
+                                show: true,
+                                getDotPainter: (spot, percent, bar, index) {
+                                  final isLast = index == spots.length - 1;
+
+                                  return FlDotCirclePainter(
+                                    radius: isLast ? 6 : 4,
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                    strokeColor: const Color(0xFF22C55E),
+                                  );
+                                },
+                              ),
+                              belowBarData: BarAreaData(
+                                show: true,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFF22C55E).withOpacity(0.25),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 18),
+
+                  /// WEIGHT INFO CARDS
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _miniCard("Start", currentWeight, Colors.white),
+                      _miniCard("Goal", targetWeight, const Color(0xFF22C55E)),
+                    ],
+                  ),
+
+                  const Spacer(),
+
+                  /// BUTTON
+                  CustomGradientButton(
+                    text: "Continue",
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ResultScreen(),
+                        ),
                       );
                     },
                   ),
-                ),
-              ),
 
-              const SizedBox(height: 16),
-
-              /// VALUES ROW
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "${currentWeight.toStringAsFixed(1)} kg",
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  Text(
-                    "${targetWeight.toStringAsFixed(1)} kg",
-                    style: const TextStyle(color: Color(0xFF22C55E)),
-                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
-
-              const Spacer(),
-
-              /// BUTTON
-              CustomGradientButton(
-                text: "Continue",
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const ResultScreen(),
-                    ),
-                  );
-                },
-              ),
-
-              SizedBox(height: size.height * 0.02),
-            ],
+            ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniCard(String title, double value, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 12),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            "${value.toStringAsFixed(1)} kg",
+            style: TextStyle(
+              color: color,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -55,7 +55,7 @@ class AICoachController {
     /// ==============================
     /// REALISTIC COACHING MESSAGES
     /// ==============================
-    String message = "💡 Your weekly summary:\n\n";
+    String message = "Your weekly summary:\n\n";
 
     // Protein feedback
     if (avgProtein < proteinGoal) {
@@ -69,7 +69,7 @@ class AICoachController {
           "Balance it with enough carbs and healthy fats.\n\n";
     } else {
       message +=
-          "✅ Protein intake is on point (avg ${avgProtein}g/day). Keep it consistent!\n\n";
+          "Protein intake is on point (avg ${avgProtein}g/day). Keep it consistent!\n\n";
     }
 
     // Calories feedback
@@ -83,7 +83,7 @@ class AICoachController {
           "Make sure you’re eating enough to meet your energy needs.\n\n";
     } else {
       message +=
-          "✅ Your calorie intake is balanced (avg ${avgCalories} kcal/day). Nice work managing portions!\n\n";
+          " Your calorie intake is balanced (avg ${avgCalories} kcal/day). Nice work managing portions!\n\n";
     }
 
     // Logging consistency
@@ -124,26 +124,65 @@ Future<String> generateDailyTip(int proteinGoal) async {
 
     if (doc.exists) {
       daysLogged++;
+
       final data = doc.data()!;
+
       totalProtein += ((data['totalProtein'] ?? 0) as num).toInt();
     }
   }
 
+  /// NO DATA
   if (daysLogged == 0) {
-    return "Start logging meals to unlock personalized tips.";
+    final List<String> startTips = [
+      "👋 Start logging your meals daily to unlock personalized nutrition coaching.",
+      "🥗 Track your meals consistently so FitMind AI can guide your nutrition better.",
+      "💪 Your fitness journey starts with meal tracking. Add your meals to get smart AI insights.",
+      "🔥 Begin logging your food today and receive personalized health recommendations.",
+    ];
+
+    return startTips[
+        DateTime.now().millisecond % startTips.length];
   }
 
   int avgProtein = totalProtein ~/ daysLogged;
 
+  /// LOW PROTEIN
   if (avgProtein < proteinGoal) {
-    return "Increase protein intake today (eggs, chicken, yogurt).";
-  } else if (avgProtein > (proteinGoal * 1.3).toInt()) {
-    return "Balance protein with carbs and healthy fats.";
-  } else if (avgProtein > proteinGoal) {
-    return "Focus on protein intake in the morning to boost metabolism.";
-  } else {
-    return "Great job! Maintain your current diet balance.";
-  }
-}
+    final List<String> lowProteinTips = [
+      "🍗 Your protein intake is slightly low. Add chicken, eggs, fish, or Greek yogurt today.",
+      "💪 You need more protein to support recovery and muscle health. Try high-protein snacks.",
+      "🥚 Increase your protein intake today for better strength and fitness performance.",
+      "🔥 You're doing well! Adding more lean protein can improve your daily nutrition balance.",
+    ];
 
+    return lowProteinTips[
+        DateTime.now().second % lowProteinTips.length];
+  }
+
+  /// HIGH PROTEIN
+  if (avgProtein > proteinGoal + 20) {
+    final List<String> highProteinTips = [
+      "💧 Your protein intake is high today. Drink more water and balance it with healthy carbs.",
+      "🥤 Great protein intake! Make sure to stay hydrated throughout the day.",
+      "⚖️ Your protein levels are above target. Add fruits and healthy carbs for better balance.",
+      "🚰 High protein intake detected. Increase water intake to support digestion and recovery.",
+    ];
+
+    return highProteinTips[
+        DateTime.now().minute % highProteinTips.length];
+  }
+
+  /// BALANCED NUTRITION
+  final List<String> balancedTips = [
+    "✨ Excellent progress today! Your nutrition balance looks strong and consistent.",
+    "💪 Great job! Your protein and nutrition intake are looking balanced today.",
+    "🔥 Awesome work! Your food choices are supporting your fitness journey perfectly.",
+    "🥗 Nice balance today! Keep making healthy choices and stay hydrated.",
+    "⭐ Your nutrition is on track today. Consistency like this builds real results.",
+    "🚀 Amazing progress! Your daily nutrition balance is helping you move closer to your goal.",
+  ];
+
+  return balancedTips[
+      DateTime.now().day % balancedTips.length];
+}
 }

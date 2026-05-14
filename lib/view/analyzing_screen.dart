@@ -1,6 +1,11 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
+
+import 'package:fitmind_ai/controller/scan_controller.dart';
+import 'package:fitmind_ai/models/food_model.dart';
+import 'package:fitmind_ai/view/scan_result_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:fitmind_ai/view/FoodDetectedScreen.dart';
 
 class AnalyzingScreen extends StatefulWidget {
   final File image;
@@ -18,208 +23,535 @@ class AnalyzingScreen extends StatefulWidget {
 
 class _AnalyzingScreenState extends State<AnalyzingScreen>
     with TickerProviderStateMixin {
-  late AnimationController _scanController;
-  late AnimationController _rotateController;
-  late Animation<double> _scanAnimation;
+  late AnimationController _pulseController;
+  late AnimationController _progressController;
+  late Animation<double> _pulseAnimation;
+
+  int currentStep = 0;
+  bool hasError = false;
+  String errorTitle = "";
+  String errorMessage = "";
+
+  final List<String> steps = const [
+    "Preparing image",
+    "Detecting food items",
+    "Estimating calories",
+    "Building nutrition report",
+  ];
 
   @override
   void initState() {
     super.initState();
 
-    /// 🔥 Scan Line Animation
-    _scanController =
-        AnimationController(vsync: this, duration: const Duration(seconds: 2));
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1300),
+    )..repeat(reverse: true);
 
-    _scanAnimation =
-        Tween<double>(begin: -100, end: 100).animate(_scanController);
+    _progressController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..forward();
 
-    _scanController.repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.96, end: 1.04).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
 
-    /// 🔄 Rotation Animation
-    _rotateController =
-        AnimationController(vsync: this, duration: const Duration(seconds: 2))
-          ..repeat();
-
+    _runStepAnimation();
     _startAnalysis();
   }
 
-  void _startAnalysis() async {
-    String result = await widget.analyzeFuture;
+  void _runStepAnimation() {
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 850));
 
+      if (!mounted || hasError) return false;
+
+      setState(() {
+        currentStep = (currentStep + 1) % steps.length;
+      });
+
+      return true;
+    });
+  }
+
+  Future<void> _startAnalysis() async {
+    try {
+      final result = await widget.analyzeFuture.timeout(
+        const Duration(seconds: 35),
+      );
+
+      if (!mounted) return;
+
+      final ScanController controller = ScanController();
+      final Food parsedFood = controller.parseFoodFromResult(result);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ScanResultScreen(
+            image: widget.image,
+            result: result,
+            food: parsedFood,
+          ),
+        ),
+      );
+    } on SocketException {
+      _showError(
+        title: "No Internet Connection",
+        message:
+            "Your internet is not working. Please check Wi-Fi or mobile data and try again.",
+      );
+    } on TimeoutException {
+      _showError(
+        title: "Slow Internet Connection",
+        message:
+            "The analysis is taking too long. Please use a stronger connection and try again.",
+      );
+    } catch (e) {
+      _showError(
+        title: "Analysis Failed",
+        message:
+            "We couldn’t analyze this meal right now. Please check your internet and try again.",
+      );
+    }
+  }
+
+  void _showError({
+    required String title,
+    required String message,
+  }) {
     if (!mounted) return;
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => FoodDetectedScreen(
-          foods: [],
-          image: widget.image,
-          result: result,
-        ),
-      ),
-    );
+    _pulseController.stop();
+    _progressController.stop();
+
+    setState(() {
+      hasError = true;
+      errorTitle = title;
+      errorMessage = message;
+    });
   }
 
   @override
   void dispose() {
-    _scanController.dispose();
-    _rotateController.dispose();
+    _pulseController.dispose();
+    _progressController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-
-            /// 🔥 Scanner UI
-            Stack(
-              alignment: Alignment.center,
-              children: [
-
-                /// Image
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: Image.file(
-                    widget.image,
-                    height: 220,
-                    width: 220,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-
-                /// Glow Border
-                Container(
-                  height: 230,
-                  width: 230,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.greenAccent, width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.greenAccent.withOpacity(0.5),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      )
-                    ],
-                  ),
-                ),
-
-                /// Moving Scan Line
-                AnimatedBuilder(
-                  animation: _scanAnimation,
-                  builder: (context, child) {
-                    return Positioned(
-                      top: 110 + _scanAnimation.value,
-                      child: Container(
-                        width: 200,
-                        height: 3,
-                        decoration: BoxDecoration(
-                          color: Colors.greenAccent,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.greenAccent.withOpacity(0.8),
-                              blurRadius: 10,
-                              spreadRadius: 2,
-                            )
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-
-                /// Corner Borders
-                _buildCorners(),
-              ],
-            ),
-
-            const SizedBox(height: 40),
-
-            /// 🔄 Loader
-            RotationTransition(
-              turns: _rotateController,
-              child: const Icon(
-                Icons.sync,
-                color: Colors.greenAccent,
-                size: 30,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            /// Title
-            const Text(
-              "Analyzing Your Meal",
-              style: TextStyle(
-                color: Colors.greenAccent,
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            /// Subtitle
-            const Text(
-              "Please wait while AI analyzes your food",
-              style: TextStyle(color: Colors.white70),
-            ),
-
-            const SizedBox(height: 25),
-
-            /// Steps Text
-            const Text(
-              "Analyzing image...\nDetecting food items...",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white38,
-                height: 1.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// 🔲 Corner Design (Scanner Look)
-  Widget _buildCorners() {
-    return SizedBox(
-      height: 230,
-      width: 230,
-      child: Stack(
+      backgroundColor: const Color(0xFF020617),
+      body: Stack(
         children: [
-          _corner(top: 0, left: 0),
-          _corner(top: 0, right: 0),
-          _corner(bottom: 0, left: 0),
-          _corner(bottom: 0, right: 0),
+          Positioned(
+            top: -120,
+            right: -90,
+            child: _glowCircle(
+              color: const Color(0xFF22C55E).withOpacity(0.13),
+              size: 270,
+            ),
+          ),
+          Positioned(
+            bottom: -140,
+            left: -100,
+            child: _glowCircle(
+              color: const Color(0xFF06B6D4).withOpacity(0.11),
+              size: 290,
+            ),
+          ),
+
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: hasError ? _errorView() : _loadingView(),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _corner({double? top, double? left, double? right, double? bottom}) {
-    return Positioned(
-      top: top,
-      left: left,
-      right: right,
-      bottom: bottom,
-      child: Container(
-        width: 25,
-        height: 25,
-        decoration: BoxDecoration(
-          border: Border(
-            top: BorderSide(color: Colors.greenAccent, width: 3),
-            left: BorderSide(color: Colors.greenAccent, width: 3),
-            right: BorderSide(color: Colors.greenAccent, width: 3),
-            bottom: BorderSide(color: Colors.greenAccent, width: 3),
+  Widget _loadingView() {
+    return Column(
+      children: [
+        const SizedBox(height: 22),
+
+        Row(
+          children: [
+            _smallBadge(Icons.auto_awesome_rounded, "AI Scanner"),
+            const Spacer(),
+            const Text(
+              "Analyzing",
+              style: TextStyle(
+                color: Colors.white54,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+
+        const Spacer(),
+
+        ScaleTransition(
+          scale: _pulseAnimation,
+          child: _imagePreviewCard(),
+        ),
+
+        const SizedBox(height: 38),
+
+        const Text(
+          "Creating Your Nutrition Report",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 27,
+            fontWeight: FontWeight.bold,
+            height: 1.15,
           ),
         ),
+
+        const SizedBox(height: 12),
+
+        Text(
+          "FitMind AI is analyzing your meal photo and estimating calories, protein, carbs, and fat.",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.62),
+            fontSize: 14,
+            height: 1.55,
+          ),
+        ),
+
+        const SizedBox(height: 30),
+
+        _progressCard(),
+
+        const SizedBox(height: 24),
+
+        _stepsCard(),
+
+        const Spacer(),
+
+        Text(
+          "Please keep this screen open",
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.40),
+            fontSize: 12,
+          ),
+        ),
+
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _errorView() {
+    return Column(
+      children: [
+        const SizedBox(height: 22),
+
+        Row(
+          children: [
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: _iconBox(Icons.arrow_back_ios_new_rounded),
+            ),
+            const Spacer(),
+            _smallBadge(Icons.wifi_off_rounded, "Connection Issue"),
+          ],
+        ),
+
+        const Spacer(),
+
+        _imagePreviewCard(),
+
+        const SizedBox(height: 30),
+
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.055),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.redAccent.withOpacity(0.35)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                height: 68,
+                width: 68,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.redAccent.withOpacity(0.14),
+                ),
+                child: const Icon(
+                  Icons.wifi_off_rounded,
+                  color: Colors.redAccent,
+                  size: 34,
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              Text(
+                errorTitle,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 23,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              Text(
+                errorMessage,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.62),
+                  fontSize: 14,
+                  height: 1.5,
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: Container(
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.07),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.10),
+                          ),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            "Go Back",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 12),
+
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF22C55E),
+                              Color(0xFF06B6D4),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            "Try Again",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        const Spacer(),
+      ],
+    );
+  }
+
+  Widget _imagePreviewCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(36),
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withOpacity(0.08),
+            Colors.white.withOpacity(0.025),
+          ],
+        ),
+        border: Border.all(color: Colors.white.withOpacity(0.09)),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Image.file(
+          widget.image,
+          height: 255,
+          width: double.infinity,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  Widget _progressCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.045),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: AnimatedBuilder(
+        animation: _progressController,
+        builder: (context, _) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "${(_progressController.value * 100).toStringAsFixed(0)}% completed",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: LinearProgressIndicator(
+                  value: _progressController.value,
+                  minHeight: 12,
+                  backgroundColor: Colors.white10,
+                  valueColor: const AlwaysStoppedAnimation(
+                    Color(0xFF22C55E),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _stepsCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(26),
+        color: Colors.white.withOpacity(0.04),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        children: List.generate(steps.length, (index) {
+          final active = index == currentStep;
+          final done = index < currentStep;
+
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: index == steps.length - 1 ? 0 : 14,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  done ? Icons.check_circle_rounded : Icons.circle,
+                  color: active || done
+                      ? const Color(0xFF22C55E)
+                      : Colors.white24,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    steps[index],
+                    style: TextStyle(
+                      color: active
+                          ? Colors.white
+                          : Colors.white.withOpacity(0.55),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _smallBadge(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF22C55E).withOpacity(0.12),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: const Color(0xFF22C55E).withOpacity(0.25),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: const Color(0xFF22C55E), size: 16),
+          const SizedBox(width: 7),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFF22C55E),
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _iconBox(IconData icon) {
+    return Container(
+      height: 48,
+      width: 48,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Icon(icon, color: Colors.white, size: 19),
+    );
+  }
+
+  Widget _glowCircle({
+    required Color color,
+    required double size,
+  }) {
+    return Container(
+      height: size,
+      width: size,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
       ),
     );
   }

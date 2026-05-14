@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:fitmind_ai/onboarding_screen.dart';
 import 'package:fitmind_ai/view/auth_view/signup_screen.dart';
 import 'package:fitmind_ai/view/buttom_bar.dart';
 import 'package:flutter/material.dart';
@@ -35,7 +36,7 @@ class SplashService {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => const SignUpScreen(),
+              builder: (_) => const OnboardingScreen(),
             ),
           );
 

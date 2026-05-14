@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'MyDiet App',
+        title: 'FitMind AI',
         home: const SplashScreen(),
       ),
     );

@@ -1,9 +1,13 @@
+/// ===============================
+/// UPDATED PREMIUM BODY INFO UI
+/// ===============================
+
+import 'dart:ui';
+
 import 'package:fitmind_ai/components/showCustomSnackBar.dart';
-import 'package:fitmind_ai/resources/app_them.dart';
-import 'package:fitmind_ai/resources/custom_gradient_button.dart';
+import 'package:fitmind_ai/controller/step_one_controller.dart';
 import 'package:fitmind_ai/view/onboarding/target_screen.dart';
 import 'package:flutter/material.dart';
-import '../../controller/step_one_controller.dart';
 
 class BodyInfoScreen extends StatefulWidget {
   const BodyInfoScreen({super.key});
@@ -12,7 +16,8 @@ class BodyInfoScreen extends StatefulWidget {
   State<BodyInfoScreen> createState() => _BodyInfoScreenState();
 }
 
-class _BodyInfoScreenState extends State<BodyInfoScreen> {
+class _BodyInfoScreenState extends State<BodyInfoScreen>
+    with SingleTickerProviderStateMixin {
   final StepOneController controller = StepOneController();
 
   final ageController = TextEditingController(text: "18");
@@ -21,6 +26,29 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
 
   String gender = "Male";
   bool isLoading = false;
+
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+
+    ageController.dispose();
+    heightController.dispose();
+    weightController.dispose();
+
+    super.dispose();
+  }
 
   Future<void> saveData() async {
     int age = int.tryParse(ageController.text) ?? 0;
@@ -47,7 +75,10 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => TargetWeightScreen(height: height, weight: weight),
+          builder: (_) => TargetWeightScreen(
+            height: height,
+            weight: weight,
+          ),
         ),
       );
     } else {
@@ -58,18 +89,106 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bgColor,
-      body: SizedBox.expand(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
+      backgroundColor: const Color(0xFF020617),
+
+      body: Stack(
+        children: [
+          /// TOP GLOW
+          Positioned(
+            top: -120,
+            left: -90,
+            child: AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return Container(
+                  height: 260,
+                  width: 260,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: const Color(
+                      0xFF22C55E,
+                    ).withOpacity(0.10 + (_animationController.value * 0.06)),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          /// BOTTOM GLOW
+          Positioned(
+            bottom: -130,
+            right: -100,
+            child: Container(
+              height: 280,
+              width: 280,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF06B6D4).withOpacity(0.08),
+              ),
+            ),
+          ),
+
+          SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 22),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 20),
-        
-                  /// Progress
+                  const SizedBox(height: 12),
+
+                  /// TOP BAR
+                  Row(
+                    children: [
+                      Container(
+                        height: 52,
+                        width: 52,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.08),
+                          ),
+                        ),
+                        child: IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          color: Colors.white.withOpacity(0.05),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.06),
+                          ),
+                        ),
+                        child: const Text(
+                          "STEP 1 OF 4",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 35),
+
+                  /// PROGRESS BAR
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -80,143 +199,202 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
                       _progress(false),
                       const SizedBox(width: 8),
                       _progress(false),
-                      
                     ],
                   ),
-        
-                  const SizedBox(height: 10),
-        
-                  const Center(
-                    child: Text(
-                      "Step 1 of 4",
+
+                  const SizedBox(height: 40),
+
+                  /// TITLE
+                  ShaderMask(
+                    shaderCallback: (bounds) {
+                      return const LinearGradient(
+                        colors: [
+                          Colors.white,
+                          Color(0xFF67E8F9),
+                          Color(0xFF22C55E),
+                        ],
+                      ).createShader(bounds);
+                    },
+                    child: const Text(
+                      "Body\nInformation",
                       style: TextStyle(
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w500,
+                        color: Colors.white,
+                        fontSize: 42,
+                        fontWeight: FontWeight.bold,
+                        height: 1.05,
                       ),
                     ),
                   ),
-        
-                  const SizedBox(height: 30),
-        
-                  const Text(
-                    "Tell us about your body",
+
+                  const SizedBox(height: 16),
+
+                  Text(
+                    "This information helps AI generate your personalized nutrition and fitness plan.",
                     style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Colors.white.withOpacity(0.68),
+                      fontSize: 15,
+                      height: 1.6,
                     ),
                   ),
-        
-                  const SizedBox(height: 8),
-        
-                  const Text(
-                    "This helps us calculate your metabolism and calories.",
-                    style: TextStyle(color: Colors.white70),
-                  ),
-        
-                  const SizedBox(height: 30),
-        
-                  /// AGE
-                  _inputCard("Age", ageController, "", Icons.cake_outlined),
-        
-                  const SizedBox(height: 18),
-        
-                  /// Gender
-                  const Text(
-                    "Gender",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                    ),
-                  ),
-        
-                  const SizedBox(height: 12),
-        
-                  Row(
-                    children: [
-                      Expanded(child: _genderCard("Male", Icons.male)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _genderCard("Female", Icons.female)),
-                    ],
-                  ),
-        
-                  const SizedBox(height: 18),
-        
-                  /// Height
-                  _inputCard("Height", heightController, "cm", Icons.height),
-        
-                  const SizedBox(height: 18),
-        
-                  /// Weight
-                  _inputCard(
-                    "Weight",
-                    weightController,
-                    "kg",
-                    Icons.monitor_weight_outlined,
-                  ),
-        
-                  const SizedBox(height: 180),
-        
-                  isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : CustomGradientButton(
-                          text: "Continue",
-                          onPressed: saveData,
+
+                  const SizedBox(height: 38),
+
+                  /// GLASS CARD
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(34),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(
+                        sigmaX: 14,
+                        sigmaY: 14,
+                      ),
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(34),
+                          color: Colors.white.withOpacity(0.05),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.08),
+                          ),
                         ),
-        
-                  const SizedBox(height: 20),
+                        child: Column(
+                          children: [
+                            _modernField(
+                              title: "Age",
+                              hint: "18",
+                              suffix: "Years",
+                              controller: ageController,
+                              icon: Icons.cake_rounded,
+                            ),
+
+                            const SizedBox(height: 22),
+
+                            _modernField(
+                              title: "Height",
+                              hint: "170",
+                              suffix: "CM",
+                              controller: heightController,
+                              icon: Icons.height_rounded,
+                            ),
+
+                            const SizedBox(height: 22),
+
+                            _modernField(
+                              title: "Weight",
+                              hint: "75",
+                              suffix: "KG",
+                              controller: weightController,
+                              icon: Icons.monitor_weight_rounded,
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            /// GENDER TITLE
+                            Row(
+                              children: [
+                                Text(
+                                  "Gender",
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.92),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _genderCard(
+                                    title: "Male",
+                                    icon: Icons.male_rounded,
+                                  ),
+                                ),
+
+                                const SizedBox(width: 16),
+
+                                Expanded(
+                                  child: _genderCard(
+                                    title: "Female",
+                                    icon: Icons.female_rounded,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  /// CONTINUE BUTTON
+                  GestureDetector(
+                    onTap: isLoading ? null : saveData,
+
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+
+                      height: 72,
+                      width: double.infinity,
+
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(26),
+
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF22C55E),
+                            Color(0xFF06B6D4),
+                            Color(0xFF3B82F6),
+                          ],
+                        ),
+
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(
+                              0xFF06B6D4,
+                            ).withOpacity(0.4),
+                            blurRadius: 24,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+
+                      child: Center(
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "Continue",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 20,
+                                    ),
+                                  ),
+
+                                  SizedBox(width: 10),
+
+                                  Icon(
+                                    Icons.arrow_forward_rounded,
+                                    color: Colors.white,
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
                 ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Input Card
-  Widget _inputCard(
-    String title,
-    TextEditingController controller,
-    String suffix,
-    IconData icon,
-  ) {
-    return Container(
-      height: 65,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white24),
-      ),
-
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.white70),
-
-          const SizedBox(width: 10),
-
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white, fontSize: 16),
-          ),
-
-          const Spacer(),
-
-          SizedBox(
-            width: 80,
-            child: TextField(
-              controller: controller,
-              textAlign: TextAlign.right,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
-
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                suffixText: suffix,
-                suffixStyle: const TextStyle(color: Colors.white70),
               ),
             ),
           ),
@@ -225,53 +403,172 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
     );
   }
 
-  /// Gender Card
-  Widget _genderCard(String value, IconData icon) {
-    bool selected = gender == value;
+  /// MODERN FIELD
+  Widget _modernField({
+    required String title,
+    required String hint,
+    required String suffix,
+    required TextEditingController controller,
+    required IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.9),
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        Container(
+          height: 74,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            color: Colors.white.withOpacity(0.04),
+
+            border: Border.all(
+              color: Colors.white.withOpacity(0.06),
+            ),
+          ),
+
+          child: Row(
+            children: [
+              Container(
+                height: 48,
+                width: 48,
+
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF22C55E).withOpacity(0.2),
+                      const Color(0xFF06B6D4).withOpacity(0.2),
+                    ],
+                  ),
+                ),
+
+                child: Icon(
+                  icon,
+                  color: const Color(0xFF22C55E),
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+
+                    hintText: hint,
+
+                    hintStyle: TextStyle(
+                      color: Colors.white.withOpacity(0.35),
+                    ),
+                  ),
+                ),
+              ),
+
+              Text(
+                suffix,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.55),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// GENDER CARD
+  Widget _genderCard({
+    required String title,
+    required IconData icon,
+  }) {
+    final bool isSelected = gender == title;
 
     return GestureDetector(
       onTap: () {
         setState(() {
-          gender = value;
+          gender = title;
         });
       },
 
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
 
-        padding: const EdgeInsets.symmetric(vertical: 20),
+        padding: const EdgeInsets.symmetric(vertical: 24),
 
         decoration: BoxDecoration(
-          gradient: selected
+          borderRadius: BorderRadius.circular(24),
+
+          gradient: isSelected
               ? const LinearGradient(
                   colors: [
-                   Color(0xFF22C55E), // Green
-                  Color(0xFF06B6D4), // Cyan
-                  Color(0xFF38BDF8), // Light Blue
+                    Color(0xFF22C55E),
+                    Color(0xFF06B6D4),
                   ],
                 )
               : null,
 
-          color: selected ? null : Colors.white.withOpacity(0.08),
-
-          borderRadius: BorderRadius.circular(16),
+          color: isSelected
+              ? null
+              : Colors.white.withOpacity(0.04),
 
           border: Border.all(
-            color: selected ? Colors.transparent : Colors.white24,
+            color: isSelected
+                ? Colors.transparent
+                : Colors.white.withOpacity(0.06),
           ),
+
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(
+                      0xFF06B6D4,
+                    ).withOpacity(0.35),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ]
+              : [],
         ),
 
         child: Column(
           children: [
-            Icon(icon, size: 30, color: Colors.white),
+            Icon(
+              icon,
+              size: 42,
+              color: Colors.white,
+            ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 14),
 
             Text(
-              value,
+              title,
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.w600,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ],
@@ -280,27 +577,31 @@ class _BodyInfoScreenState extends State<BodyInfoScreen> {
     );
   }
 
+  /// PROGRESS
+  Widget _progress(bool active) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
 
+      width: active ? 40 : 18,
+      height: 7,
 
-/// Progress Indicator
-Widget _progress(bool active) {
-  return AnimatedContainer(
-    duration: const Duration(milliseconds: 300),
-    width: active ? 35 : 20,
-    height: 6,
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(10),
-      gradient: active
-          ? const LinearGradient(
-              colors: [
-                Color(0xFF22C55E), // Green
-                Color(0xFF06B6D4), // Cyan
-                Color(0xFF38BDF8), // Light Blue
-              ],
-            )
-          : null,
-      color: active ? null : Colors.white24,
-    ),
-  );
-}
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(50),
+
+        gradient: active
+            ? const LinearGradient(
+                colors: [
+                  Color(0xFF22C55E),
+                  Color(0xFF06B6D4),
+                  Color(0xFF3B82F6),
+                ],
+              )
+            : null,
+
+        color: active
+            ? null
+            : Colors.white.withOpacity(0.12),
+      ),
+    );
+  }
 }

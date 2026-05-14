@@ -1,51 +1,26 @@
 {
   "project_info": {
-    "project_number": "486151944621",
-    "project_id": "mydiet-apps",
-    "storage_bucket": "mydiet-apps.firebasestorage.app"
+    "project_number": "157796106706",
+    "project_id": "fitmind-b03bb",
+    "storage_bucket": "fitmind-b03bb.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:486151944621:android:6bb020e173a958cfdc8924",
+        "mobilesdk_app_id": "1:157796106706:android:2b875b04575c803e14080b",
         "android_client_info": {
           "package_name": "com.example.fitmind_ai"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "486151944621-ai9fc6jnd9mg48sg0ed1qvf7d890v6l5.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.fitmind_ai",
-            "certificate_hash": "37c45d190ec6c8a212eae0d7483d7a564f7695cb"
-          }
-        },
-        {
-          "client_id": "486151944621-lveuq0kitfbs5g81atup6r1k7c7q6p73.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBc7EsikoRe54ebU1MQPPcJTx_03ygS9Ac"
+          "current_key": "AIzaSyDmZNjNt5ddKuzHi4P2Yf85-MXelUjobw4"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "486151944621-lveuq0kitfbs5g81atup6r1k7c7q6p73.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "486151944621-ish0dmjd5g9poeqedsskf08tsfp2o4kc.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.fitmindAi"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
