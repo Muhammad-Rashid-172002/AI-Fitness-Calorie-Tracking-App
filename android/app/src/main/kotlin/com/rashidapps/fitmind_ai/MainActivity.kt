@@ -1,4 +1,4 @@
-package com.example.fitmind_ai
+package com.rashidapps.fitmindai
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

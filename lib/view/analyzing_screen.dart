@@ -53,7 +53,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
       duration: const Duration(seconds: 4),
     )..forward();
 
-    _pulseAnimation = Tween<double>(begin: 0.96, end: 1.04).animate(
+    _pulseAnimation = Tween<double>(begin: 0.97, end: 1.03).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
 
@@ -64,7 +64,6 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
   void _runStepAnimation() {
     Future.doWhile(() async {
       await Future.delayed(const Duration(milliseconds: 850));
-
       if (!mounted || hasError) return false;
 
       setState(() {
@@ -117,10 +116,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
     }
   }
 
-  void _showError({
-    required String title,
-    required String message,
-  }) {
+  void _showError({required String title, required String message}) {
     if (!mounted) return;
 
     _pulseController.stop();
@@ -142,6 +138,9 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final height = MediaQuery.of(context).size.height;
+    final isSmall = height < 720;
+
     return Scaffold(
       backgroundColor: const Color(0xFF020617),
       body: Stack(
@@ -162,11 +161,14 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
               size: 290,
             ),
           ),
-
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: hasError ? _errorView() : _loadingView(),
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmall ? 18 : 24,
+                vertical: 18,
+              ),
+              child: hasError ? _errorView(isSmall) : _loadingView(isSmall),
             ),
           ),
         ],
@@ -174,11 +176,9 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
     );
   }
 
-  Widget _loadingView() {
+  Widget _loadingView(bool isSmall) {
     return Column(
       children: [
-        const SizedBox(height: 22),
-
         Row(
           children: [
             _smallBadge(Icons.auto_awesome_rounded, "AI Scanner"),
@@ -193,66 +193,59 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
           ],
         ),
 
-        const Spacer(),
+        SizedBox(height: isSmall ? 24 : 42),
 
         ScaleTransition(
           scale: _pulseAnimation,
-          child: _imagePreviewCard(),
+          child: _imagePreviewCard(isSmall),
         ),
 
-        const SizedBox(height: 38),
+        SizedBox(height: isSmall ? 24 : 34),
 
-        const Text(
-          "Creating Your Nutrition Report",
+        Text(
+          "Creating Your\nNutrition Report",
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white,
-            fontSize: 27,
+            fontSize: isSmall ? 24 : 28,
             fontWeight: FontWeight.bold,
-            height: 1.15,
+            height: 1.12,
           ),
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
 
         Text(
           "FitMind AI is analyzing your meal photo and estimating calories, protein, carbs, and fat.",
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white.withOpacity(0.62),
-            fontSize: 14,
-            height: 1.55,
+            fontSize: isSmall ? 13 : 14,
+            height: 1.45,
           ),
         ),
 
-        const SizedBox(height: 30),
+        SizedBox(height: isSmall ? 20 : 28),
 
         _progressCard(),
 
-        const SizedBox(height: 24),
+        SizedBox(height: isSmall ? 16 : 22),
 
         _stepsCard(),
 
-        const Spacer(),
+        SizedBox(height: isSmall ? 18 : 26),
 
         Text(
           "Please keep this screen open",
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.40),
-            fontSize: 12,
-          ),
+          style: TextStyle(color: Colors.white.withOpacity(0.40), fontSize: 12),
         ),
-
-        const SizedBox(height: 24),
       ],
     );
   }
 
-  Widget _errorView() {
+  Widget _errorView(bool isSmall) {
     return Column(
       children: [
-        const SizedBox(height: 22),
-
         Row(
           children: [
             GestureDetector(
@@ -264,117 +257,75 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
           ],
         ),
 
-        const Spacer(),
+        SizedBox(height: isSmall ? 22 : 34),
 
-        _imagePreviewCard(),
+        _imagePreviewCard(isSmall),
 
-        const SizedBox(height: 30),
+        SizedBox(height: isSmall ? 20 : 28),
 
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(22),
+          padding: EdgeInsets.all(isSmall ? 18 : 22),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.055),
-            borderRadius: BorderRadius.circular(30),
+            borderRadius: BorderRadius.circular(28),
             border: Border.all(color: Colors.redAccent.withOpacity(0.35)),
           ),
           child: Column(
             children: [
               Container(
-                height: 68,
-                width: 68,
+                height: isSmall ? 58 : 68,
+                width: isSmall ? 58 : 68,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.redAccent.withOpacity(0.14),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.wifi_off_rounded,
                   color: Colors.redAccent,
-                  size: 34,
+                  size: isSmall ? 30 : 34,
                 ),
               ),
 
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
 
               Text(
                 errorTitle,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.white,
-                  fontSize: 23,
+                  fontSize: isSmall ? 20 : 23,
                   fontWeight: FontWeight.bold,
                 ),
               ),
 
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
 
               Text(
                 errorMessage,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.62),
-                  fontSize: 14,
-                  height: 1.5,
+                  fontSize: isSmall ? 13 : 14,
+                  height: 1.45,
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               Row(
                 children: [
                   Expanded(
                     child: GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: Container(
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.07),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.10),
-                          ),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            "Go Back",
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
+                      child: _actionButton(text: "Go Back", filled: false),
                     ),
                   ),
-
                   const SizedBox(width: 12),
-
                   Expanded(
                     child: GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                      child: Container(
-                        height: 56,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFF22C55E),
-                              Color(0xFF06B6D4),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            "Try Again",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
+                      onTap: () => Navigator.pop(context),
+                      child: _actionButton(text: "Try Again", filled: true),
                     ),
                   ),
                 ],
@@ -382,18 +333,16 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
             ],
           ),
         ),
-
-        const Spacer(),
       ],
     );
   }
 
-  Widget _imagePreviewCard() {
+  Widget _imagePreviewCard(bool isSmall) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(36),
+        borderRadius: BorderRadius.circular(32),
         gradient: LinearGradient(
           colors: [
             Colors.white.withOpacity(0.08),
@@ -403,10 +352,10 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
         border: Border.all(color: Colors.white.withOpacity(0.09)),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(24),
         child: Image.file(
           widget.image,
-          height: 255,
+          height: isSmall ? 185 : 240,
           width: double.infinity,
           fit: BoxFit.cover,
         ),
@@ -417,10 +366,10 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
   Widget _progressCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.045),
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: AnimatedBuilder(
@@ -436,16 +385,14 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
               ClipRRect(
                 borderRadius: BorderRadius.circular(30),
                 child: LinearProgressIndicator(
                   value: _progressController.value,
-                  minHeight: 12,
+                  minHeight: 10,
                   backgroundColor: Colors.white10,
-                  valueColor: const AlwaysStoppedAnimation(
-                    Color(0xFF22C55E),
-                  ),
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFF22C55E)),
                 ),
               ),
             ],
@@ -458,9 +405,9 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
   Widget _stepsCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(24),
         color: Colors.white.withOpacity(0.04),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
@@ -471,7 +418,7 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
 
           return Padding(
             padding: EdgeInsets.only(
-              bottom: index == steps.length - 1 ? 0 : 14,
+              bottom: index == steps.length - 1 ? 0 : 12,
             ),
             child: Row(
               children: [
@@ -480,16 +427,19 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
                   color: active || done
                       ? const Color(0xFF22C55E)
                       : Colors.white24,
-                  size: 24,
+                  size: 22,
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     steps[index],
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: active
                           ? Colors.white
                           : Colors.white.withOpacity(0.55),
+                      fontSize: 13.5,
                     ),
                   ),
                 ),
@@ -501,15 +451,40 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
     );
   }
 
+  Widget _actionButton({required String text, required bool filled}) {
+    return Container(
+      height: 54,
+      decoration: BoxDecoration(
+        gradient: filled
+            ? const LinearGradient(
+                colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
+              )
+            : null,
+        color: filled ? null : Colors.white.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: filled ? Colors.transparent : Colors.white.withOpacity(0.10),
+        ),
+      ),
+      child: Center(
+        child: Text(
+          text,
+          style: TextStyle(
+            color: filled ? Colors.white : Colors.white70,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _smallBadge(IconData icon, String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFF22C55E).withOpacity(0.12),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: const Color(0xFF22C55E).withOpacity(0.25),
-        ),
+        border: Border.all(color: const Color(0xFF22C55E).withOpacity(0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -542,17 +517,11 @@ class _AnalyzingScreenState extends State<AnalyzingScreen>
     );
   }
 
-  Widget _glowCircle({
-    required Color color,
-    required double size,
-  }) {
+  Widget _glowCircle({required Color color, required double size}) {
     return Container(
       height: size,
       width: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

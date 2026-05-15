@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/controller/ai_coach_controller.dart';
+import 'package:fitmind_ai/resources/fire_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -393,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                "Welcome Back 👋",
+                "Welcome Back!",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 30,
@@ -412,19 +413,7 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
         ),
-        Container(
-          height: 50,
-          width: 50,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.06),
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
-          ),
-          child: const Icon(
-            Icons.notifications_none_rounded,
-            color: Colors.white,
-          ),
-        ),
+    
       ],
     );
   }
@@ -470,11 +459,7 @@ class _HomeScreenState extends State<HomeScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.local_fire_department_rounded,
-                    color: Colors.white,
-                    size: 42,
-                  ),
+                 const FirePulseIcon(),
 
                   const SizedBox(height: 22),
 

@@ -22,7 +22,7 @@ class _SettingsSectionState extends State<SettingsSection> {
       builder: (_) => _customDialog(
         title: "About FitMind AI",
         content:
-            "FitMind AI is a smart fitness & nutrition tracker app.\n\nVersion: 1.1.0",
+            "FitMind AI is a smart fitness & nutrition tracker app.\n\nVersion: 1.0.0+1",
         confirmText: "Close",
       ),
     );
@@ -119,7 +119,7 @@ class _SettingsSectionState extends State<SettingsSection> {
   }
 
   Future<void> _openPrivacyPolicy() async {
-    final Uri url = Uri.parse('https://mydiet-privacy-policy.vercel.app');
+    final Uri url = Uri.parse('https://fitmind-ai-one.vercel.app/');
 
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);

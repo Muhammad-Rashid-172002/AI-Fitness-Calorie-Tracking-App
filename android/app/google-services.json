@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:157796106706:android:2b875b04575c803e14080b",
+        "mobilesdk_app_id": "1:157796106706:android:d7f800af3338c21814080b",
         "android_client_info": {
-          "package_name": "com.example.fitmind_ai"
+          "package_name": "com.rashidapps.fitmindai"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "157796106706-btbvupl24kfama3leoam9hg9er6ltpov.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDmZNjNt5ddKuzHi4P2Yf85-MXelUjobw4"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "157796106706-btbvupl24kfama3leoam9hg9er6ltpov.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "157796106706-j47a89d9adkdd0ba8oofl0qr93q3ahk2.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.fitmindAi"
+              }
+            }
+          ]
         }
       }
     }

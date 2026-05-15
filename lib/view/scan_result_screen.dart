@@ -35,32 +35,98 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     parsedFood = controller.parseFoodFromResult(widget.result);
   }
 
+String get foodName {
+  final name = (parsedFood.name ?? "").trim();
+
+  if (name.isEmpty ||
+      name.toLowerCase() == "unknown" ||
+      name.toLowerCase() == "food item" ||
+      name.toLowerCase().contains("not food")) {
+    return "This is not food";
+  }
+
+  return name;
+}
+
+  int get calories => (parsedFood.calories ?? 0).toInt();
+  int get protein => (parsedFood.protein ?? 0).toInt();
+  int get carbs => (parsedFood.carbs ?? 0).toInt();
+  int get fat => (parsedFood.fats ?? 0).toInt();
+
+  bool get isFoodDetected {
+    final resultText = widget.result.toLowerCase();
+
+    final noFoodKeywords = [
+      "not food",
+      "no food",
+      "unable to detect food",
+      "not a food item",
+      "non-food",
+      "cannot identify food",
+      "not edible",
+    ];
+
+    final hasNoFoodText = noFoodKeywords.any(resultText.contains);
+
+    final hasName = foodName != "No food detected";
+    final hasNutrition = calories > 0 || protein > 0 || carbs > 0 || fat > 0;
+
+    return !hasNoFoodText && hasName && hasNutrition;
+  }
+
   double get healthScore {
+    if (!isFoodDetected) return 0;
+
     double score = 5;
 
-    if ((parsedFood.protein ?? 0) >= 20) score += 2;
-    if ((parsedFood.fats ?? 0) <= 10) score += 1;
-    if ((parsedFood.calories ?? 0) <= 400) score += 1;
-    if ((parsedFood.carbs ?? 0) <= 40) score += 1;
+    if (calories <= 350) score += 1.5;
+    if (calories > 700) score -= 2;
+
+    if (protein >= 20) score += 2;
+    if (protein < 8) score -= 1;
+
+    if (fat <= 12) score += 1;
+    if (fat > 25) score -= 1.5;
+
+    if (carbs <= 45) score += 1;
+    if (carbs > 80) score -= 1;
 
     return score.clamp(1, 10);
   }
 
-  String get feedbackText {
-    if ((parsedFood.protein ?? 0) >= 20 &&
-        (parsedFood.fats ?? 0) <= 10) {
-      return "Excellent lean protein source with minimal fat. Great for muscle building and weight management.";
-    }
-
-    if ((parsedFood.calories ?? 0) > 700) {
-      return "This meal is high in calories. Try balancing it with lighter meals later today.";
-    }
-
-    return "This looks like a balanced meal. Keep tracking consistently for better results.";
+ String get feedbackText {
+  if (!isFoodDetected) {
+    return "This image is not recognized as food. Please try again with a clear meal or drink photo.";
   }
 
-  Future<void> _saveMeal() async {
+  if (calories > 750) {
+    return "This meal is high in calories. Balance it with lighter meals, vegetables, and water for the rest of the day.";
+  }
+
+  if (protein >= 20 && fat <= 12) {
+    return "Great choice! This meal has good protein and controlled fat, which can support muscle recovery and healthy weight management.";
+  }
+
+  if (protein < 10) {
+    return "This meal looks low in protein. Add eggs, chicken, fish, lentils, yogurt, or tofu to make it more balanced.";
+  }
+
+  if (carbs > 75) {
+    return "This meal is carb-heavy. Try pairing it with protein and fiber to keep your energy more stable.";
+  }
+
+  return "This looks like a balanced meal. Keep tracking consistently to improve your nutrition habits.";
+}  Future<void> _saveMeal() async {
     if (isSaving) return;
+
+    if (!isFoodDetected) {
+      showCustomSnackBar(
+        context,
+        "Please scan a food item before saving.",
+        false,
+      );
+      return;
+    }
 
     setState(() => isSaving = true);
 
@@ -88,8 +154,6 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final foodName = parsedFood.name ?? "Food Item";
-
     return Scaffold(
       backgroundColor: const Color(0xFF020617),
       body: Stack(
@@ -98,7 +162,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
             top: -130,
             right: -90,
             child: _glowCircle(
-              color: const Color(0xFF22C55E).withOpacity(0.13),
+              color: (isFoodDetected
+                      ? const Color(0xFF22C55E)
+                      : const Color(0xFFEF4444))
+                  .withOpacity(0.13),
               size: 280,
             ),
           ),
@@ -110,7 +177,6 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               size: 300,
             ),
           ),
-
           SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
@@ -127,122 +193,131 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                         child: _iconBox(Icons.arrow_back_ios_new_rounded),
                       ),
                       const Spacer(),
-                      _smallBadge(Icons.check_circle_rounded, "AI Result"),
-                    ],
-                  ),
-
-                  const SizedBox(height: 26),
-
-                  _heroImageCard(foodName),
-
-                  const SizedBox(height: 26),
-
-                  _sectionTitle(
-                    title: "Nutrition Breakdown",
-                    subtitle: "Estimated values from your meal image",
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 14,
-                    crossAxisSpacing: 14,
-                    childAspectRatio: 1.15,
-                    children: [
-                      _macroCard(
-                        title: "Calories",
-                        value: "${parsedFood.calories ?? 0}",
-                        unit: "kcal",
-                        icon: Icons.local_fire_department_rounded,
-                        color: const Color(0xFFF97316),
-                      ),
-                      _macroCard(
-                        title: "Protein",
-                        value: "${parsedFood.protein ?? 0}",
-                        unit: "g",
-                        icon: Icons.fitness_center_rounded,
-                        color: const Color(0xFF22C55E),
-                      ),
-                      _macroCard(
-                        title: "Carbs",
-                        value: "${parsedFood.carbs ?? 0}",
-                        unit: "g",
-                        icon: Icons.grain_rounded,
-                        color: const Color(0xFF06B6D4),
-                      ),
-                      _macroCard(
-                        title: "Fat",
-                        value: "${parsedFood.fats ?? 0}",
-                        unit: "g",
-                        icon: Icons.opacity_rounded,
-                        color: const Color(0xFFEF4444),
+                      _smallBadge(
+                        isFoodDetected
+                            ? Icons.check_circle_rounded
+                            : Icons.error_outline_rounded,
+                        isFoodDetected ? "Food Detected" : "Not Food",
+                        color: isFoodDetected
+                            ? const Color(0xFF22C55E)
+                            : const Color(0xFFEF4444),
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 26),
 
-                  _healthScoreCard(),
+                  _heroImageCard(),
 
-                  const SizedBox(height: 22),
+                  const SizedBox(height: 26),
+
+                  if (!isFoodDetected) ...[
+                    _notFoodCard(),
+                    const SizedBox(height: 22),
+                  ] else ...[
+                    _sectionTitle(
+                      title: "Nutrition Breakdown",
+                      subtitle: "Estimated values from your meal image",
+                    ),
+                    const SizedBox(height: 14),
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 14,
+                      crossAxisSpacing: 14,
+                      childAspectRatio: 1.15,
+                      children: [
+                        _macroCard(
+                          title: "Calories",
+                          value: "$calories",
+                          unit: "kcal",
+                          icon: Icons.local_fire_department_rounded,
+                          color: const Color(0xFFF97316),
+                        ),
+                        _macroCard(
+                          title: "Protein",
+                          value: "$protein",
+                          unit: "g",
+                          icon: Icons.fitness_center_rounded,
+                          color: const Color(0xFF22C55E),
+                        ),
+                        _macroCard(
+                          title: "Carbs",
+                          value: "$carbs",
+                          unit: "g",
+                          icon: Icons.grain_rounded,
+                          color: const Color(0xFF06B6D4),
+                        ),
+                        _macroCard(
+                          title: "Fat",
+                          value: "$fat",
+                          unit: "g",
+                          icon: Icons.opacity_rounded,
+                          color: const Color(0xFFEF4444),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 26),
+                    _healthScoreCard(),
+                    const SizedBox(height: 22),
+                  ],
 
                   _feedbackCard(),
 
                   const SizedBox(height: 30),
 
-                  GestureDetector(
-                    onTap: _saveMeal,
-                    child: Container(
-                      height: 64,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF22C55E),
-                            Color(0xFF06B6D4),
-                            Color(0xFF3B82F6),
+                  if (isFoodDetected)
+                    GestureDetector(
+                      onTap: _saveMeal,
+                      child: Container(
+                        height: 64,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF22C55E),
+                              Color(0xFF06B6D4),
+                              Color(0xFF3B82F6),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF06B6D4).withOpacity(0.30),
+                              blurRadius: 24,
+                              offset: const Offset(0, 12),
+                            ),
                           ],
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF06B6D4).withOpacity(0.30),
-                            blurRadius: 24,
-                            offset: const Offset(0, 12),
-                          ),
-                        ],
-                      ),
-                      child: Center(
-                        child: isSaving
-                            ? const CircularProgressIndicator(
-                                color: Colors.white,
-                              )
-                            : const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.bookmark_added_rounded,
-                                    color: Colors.white,
-                                  ),
-                                  SizedBox(width: 10),
-                                  Text(
-                                    "Save Meal",
-                                    style: TextStyle(
+                        child: Center(
+                          child: isSaving
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                )
+                              : const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.bookmark_added_rounded,
                                       color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
                                     ),
-                                  ),
-                                ],
-                              ),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      "Save Meal",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                        ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 16),
+                  if (isFoodDetected) const SizedBox(height: 16),
 
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
@@ -256,10 +331,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                           color: Colors.white.withOpacity(0.08),
                         ),
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
-                          "Scan Another Food",
-                          style: TextStyle(
+                          isFoodDetected ? "Scan Another Food" : "Try Again",
+                          style: const TextStyle(
                             color: Colors.white70,
                             fontWeight: FontWeight.bold,
                           ),
@@ -278,7 +353,7 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     );
   }
 
-  Widget _heroImageCard(String foodName) {
+  Widget _heroImageCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -293,7 +368,10 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
         border: Border.all(color: Colors.white.withOpacity(0.09)),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF22C55E).withOpacity(0.15),
+            color: (isFoodDetected
+                    ? const Color(0xFF22C55E)
+                    : const Color(0xFFEF4444))
+                .withOpacity(0.15),
             blurRadius: 32,
             offset: const Offset(0, 16),
           ),
@@ -309,7 +387,6 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
               width: double.infinity,
               fit: BoxFit.cover,
             ),
-
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -325,13 +402,19 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                 ),
               ),
             ),
-
             Positioned(
               top: 18,
               left: 18,
-              child: _smallBadge(Icons.auto_awesome_rounded, "Detected"),
+              child: _smallBadge(
+                isFoodDetected
+                    ? Icons.auto_awesome_rounded
+                    : Icons.image_not_supported_rounded,
+                isFoodDetected ? "Detected" : "Not Food",
+                color: isFoodDetected
+                    ? const Color(0xFF22C55E)
+                    : const Color(0xFFEF4444),
+              ),
             ),
-
             Positioned(
               left: 18,
               right: 18,
@@ -356,11 +439,18 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
                           width: 48,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: const Color(0xFF22C55E).withOpacity(0.18),
+                            color: (isFoodDetected
+                                    ? const Color(0xFF22C55E)
+                                    : const Color(0xFFEF4444))
+                                .withOpacity(0.18),
                           ),
-                          child: const Icon(
-                            Icons.restaurant_menu_rounded,
-                            color: Color(0xFF22C55E),
+                          child: Icon(
+                            isFoodDetected
+                                ? Icons.restaurant_menu_rounded
+                                : Icons.warning_amber_rounded,
+                            color: isFoodDetected
+                                ? const Color(0xFF22C55E)
+                                : const Color(0xFFEF4444),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -389,73 +479,112 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     );
   }
 
-Widget _macroCard({
-  required String title,
-  required String value,
-  required String unit,
-  required IconData icon,
-  required Color color,
-}) {
+ Widget _notFoodCard() {
   return Container(
-    padding: const EdgeInsets.all(14),
+    width: double.infinity,
+    padding: const EdgeInsets.all(22),
     decoration: BoxDecoration(
-      color: Colors.white.withOpacity(0.045),
-      borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: Colors.white.withOpacity(0.08)),
+      color: const Color(0xFFEF4444).withOpacity(0.08),
+      borderRadius: BorderRadius.circular(28),
+      border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.25)),
     ),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
+    child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _roundIcon(icon, color),
-
-        const SizedBox(height: 14),
-
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: RichText(
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: value,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+        _roundIcon(Icons.no_food_rounded, const Color(0xFFEF4444)),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "This is not food",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
                 ),
-                TextSpan(
-                  text: " $unit",
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.55),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "FitMind AI could not detect any food in this image. Please scan a clear food item like rice, chicken, fruit, snack, or drink.",
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.68),
+                  fontSize: 14,
+                  height: 1.55,
                 ),
-              ],
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 4),
-
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.55),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
+              ),
+            ],
           ),
         ),
       ],
     ),
   );
-}  Widget _healthScoreCard() {
+}  Widget _macroCard({
+    required String title,
+    required String value,
+    required String unit,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.045),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _roundIcon(icon, color),
+          const SizedBox(height: 14),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: RichText(
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              text: TextSpan(
+                children: [
+                  TextSpan(
+                    text: value,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextSpan(
+                    text: " $unit",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.55),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.55),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _healthScoreCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
@@ -493,9 +622,7 @@ Widget _macroCard({
               ),
             ],
           ),
-
           const SizedBox(height: 18),
-
           ClipRRect(
             borderRadius: BorderRadius.circular(30),
             child: LinearProgressIndicator(
@@ -519,30 +646,42 @@ Widget _macroCard({
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         gradient: LinearGradient(
-          colors: [
-            const Color(0xFF22C55E).withOpacity(0.12),
-            const Color(0xFF06B6D4).withOpacity(0.08),
-          ],
+          colors: isFoodDetected
+              ? [
+                  const Color(0xFF22C55E).withOpacity(0.12),
+                  const Color(0xFF06B6D4).withOpacity(0.08),
+                ]
+              : [
+                  const Color(0xFFEF4444).withOpacity(0.12),
+                  const Color(0xFFF97316).withOpacity(0.08),
+                ],
         ),
         border: Border.all(
-          color: const Color(0xFF22C55E).withOpacity(0.20),
+          color: (isFoodDetected
+                  ? const Color(0xFF22C55E)
+                  : const Color(0xFFEF4444))
+              .withOpacity(0.20),
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _roundIcon(
-            Icons.lightbulb_rounded,
-            const Color(0xFF22C55E),
+            isFoodDetected
+                ? Icons.lightbulb_rounded
+                : Icons.info_outline_rounded,
+            isFoodDetected
+                ? const Color(0xFF22C55E)
+                : const Color(0xFFEF4444),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "AI Nutrition Insight",
-                  style: TextStyle(
+                Text(
+                  isFoodDetected ? "AI Nutrition Insight" : "Scan Guidance",
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 19,
                     fontWeight: FontWeight.bold,
@@ -632,25 +771,27 @@ Widget _macroCard({
     );
   }
 
-  Widget _smallBadge(IconData icon, String text) {
+  Widget _smallBadge(
+    IconData icon,
+    String text, {
+    Color color = const Color(0xFF22C55E),
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF22C55E).withOpacity(0.12),
+        color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: const Color(0xFF22C55E).withOpacity(0.25),
-        ),
+        border: Border.all(color: color.withOpacity(0.25)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: const Color(0xFF22C55E), size: 16),
+          Icon(icon, color: color, size: 16),
           const SizedBox(width: 7),
           Text(
             text,
-            style: const TextStyle(
-              color: Color(0xFF22C55E),
+            style: TextStyle(
+              color: color,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),

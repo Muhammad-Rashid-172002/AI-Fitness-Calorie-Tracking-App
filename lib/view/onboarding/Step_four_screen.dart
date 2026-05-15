@@ -1,5 +1,6 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:fitmind_ai/resources/app_them.dart';
 import 'package:fitmind_ai/controller/step_four_controller.dart';
 import 'package:fitmind_ai/view/onboarding/CalculatingPlanScreen.dart';
 
@@ -17,57 +18,81 @@ class StepFourScreen extends StatefulWidget {
   State<StepFourScreen> createState() => _StepFourScreenState();
 }
 
-class _StepFourScreenState extends State<StepFourScreen> {
+class _StepFourScreenState extends State<StepFourScreen>
+    with SingleTickerProviderStateMixin {
   final StepFourController _controller = StepFourController();
+
+  late final AnimationController _animationController;
 
   int selectedIndex = 0;
   bool isLoading = false;
 
-  final List<Map<String, dynamic>> activities = [
-    {
-      "title": "Sedentary",
-      "subtitle": "Little or no exercise",
-      "icon": Icons.weekend_rounded,
-      "emoji": "🛋️",
-    },
-    {
-      "title": "Lightly Active",
-      "subtitle": "Light exercise 1-3 days/week",
-      "icon": Icons.directions_walk_rounded,
-      "emoji": "🚶",
-    },
-    {
-      "title": "Moderately Active",
-      "subtitle": "Moderate exercise 3-5 days/week",
-      "icon": Icons.fitness_center_rounded,
-      "emoji": "💪",
-    },
-    {
-      "title": "Very Active",
-      "subtitle": "Hard exercise 6-7 days/week",
-      "icon": Icons.local_fire_department_rounded,
-      "emoji": "🔥",
-    },
+  final List<ActivityItem> activities = const [
+    ActivityItem(
+      title: "Sedentary",
+      subtitle: "Little or no exercise",
+      icon: Icons.weekend_rounded,
+      emoji: "🛋️",
+      color1: Color(0xFF64748B),
+      color2: Color(0xFF334155),
+    ),
+    ActivityItem(
+      title: "Lightly Active",
+      subtitle: "Light exercise 1-3 days/week",
+      icon: Icons.directions_walk_rounded,
+      emoji: "🚶",
+      color1: Color(0xFF06B6D4),
+      color2: Color(0xFF3B82F6),
+    ),
+    ActivityItem(
+      title: "Moderately Active",
+      subtitle: "Moderate exercise 3-5 days/week",
+      icon: Icons.fitness_center_rounded,
+      emoji: "💪",
+      color1: Color(0xFF22C55E),
+      color2: Color(0xFF14B8A6),
+    ),
+    ActivityItem(
+      title: "Very Active",
+      subtitle: "Hard exercise 6-7 days/week",
+      icon: Icons.local_fire_department_rounded,
+      emoji: "🔥",
+      color1: Color(0xFFF97316),
+      color2: Color(0xFFEF4444),
+    ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 5),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   Future<void> _saveAndContinue() async {
-    setState(() {
-      isLoading = true;
-    });
+    if (isLoading) return;
+
+    setState(() => isLoading = true);
 
     try {
-      String selectedActivity =
-          activities[selectedIndex]["title"].toString();
+      final selectedActivity = activities[selectedIndex].title;
 
-      String? result = await _controller.saveStepFourData(
+      final result = await _controller.saveStepFourData(
         activityLevel: selectedActivity,
       );
 
       if (!mounted) return;
 
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
 
       if (result == null) {
         Navigator.pushReplacement(
@@ -85,394 +110,346 @@ class _StepFourScreenState extends State<StepFourScreen> {
         );
       }
     } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
+      if (!mounted) return;
+
+      setState(() => isLoading = false);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        const SnackBar(
+          content: Text("Something went wrong. Please try again."),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final selectedActivity = activities[selectedIndex];
+
     return Scaffold(
       backgroundColor: const Color(0xFF020617),
-
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0F172A),
-              Color(0xFF111827),
-              Color(0xFF020617),
-            ],
+      body: Stack(
+        children: [
+          AnimatedBuilder(
+            animation: _animationController,
+            builder: (_, __) {
+              return Positioned(
+                top: -125 + (_animationController.value * 35),
+                right: -95,
+                child: _glowCircle(
+                  color: selectedActivity.color1.withOpacity(0.14),
+                  size: 290,
+                ),
+              );
+            },
           ),
-        ),
-
-        child: SafeArea(
-          child: Stack(
-            children: [
-              /// Top Glow
-              Positioned(
-                top: -120,
-                right: -80,
+          AnimatedBuilder(
+            animation: _animationController,
+            builder: (_, __) {
+              return Positioned(
+                bottom: -150,
+                left: -110 + (_animationController.value * 40),
                 child: _glowCircle(
-                  color: primary.withOpacity(0.18),
-                  size: 260,
+                  color: selectedActivity.color2.withOpacity(0.12),
+                  size: 320,
                 ),
-              ),
+              );
+            },
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
+              child: Column(
+                children: [
+                  const SizedBox(height: 16),
 
-              /// Bottom Glow
-              Positioned(
-                bottom: -100,
-                left: -60,
-                child: _glowCircle(
-                  color: accent.withOpacity(0.15),
-                  size: 220,
-                ),
-              ),
+                  Row(
+                    children: [
+                      _iconBox(Icons.directions_run_rounded),
+                      const Spacer(),
+                      _stepBadge(),
+                    ],
+                  ),
 
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 22),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 18),
+                  const SizedBox(height: 26),
 
-                    /// Progress
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _progress(false),
-                        const SizedBox(width: 8),
-                        _progress(false),
-                        const SizedBox(width: 8),
-                        _progress(false),
-                        const SizedBox(width: 8),
-                        _progress(true),
-                      ],
-                    ),
+                  _progressLine(),
 
-                    const SizedBox(height: 18),
+                  const SizedBox(height: 32),
 
-                    /// Step Badge
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
-                          ),
-                        ),
-                        child: const Text(
-                          "STEP 4 OF 4",
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    /// Heading
-                    ShaderMask(
-                      shaderCallback: (bounds) {
-                        return const LinearGradient(
-                          colors: [
-                            Colors.white,
-                            Color(0xFF67E8F9),
-                            Color(0xFF22C55E),
-                          ],
-                        ).createShader(bounds);
-                      },
-                      child: const Text(
-                        "How Active\nAre You?",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 38,
-                          fontWeight: FontWeight.bold,
-                          height: 1.1,
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    Text(
-                      "Choose your activity level to generate your personalized fitness and calorie plan.",
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "Choose Your\nActivity Level",
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 15,
-                        height: 1.5,
+                        color: Colors.white,
+                        fontSize: 40,
+                        height: 1.05,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 30),
+                  const SizedBox(height: 12),
 
-                    /// Cards
-                    Expanded(
-                      child: ListView.builder(
-                        physics: const BouncingScrollPhysics(),
-                        itemCount: activities.length,
-                        itemBuilder: (context, index) {
-                          final item = activities[index];
-
-                          return _activityCard(
-                            index: index,
-                            title: item["title"]?.toString() ?? "",
-                            subtitle: item["subtitle"]?.toString() ?? "",
-                            icon: item["icon"] ?? Icons.fitness_center,
-                            emoji: item["emoji"]?.toString() ?? "🔥",
-                          );
-                        },
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "This helps FitMind AI calculate your daily calories and build the right plan for your lifestyle.",
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.58),
+                        fontSize: 14.5,
+                        height: 1.55,
                       ),
                     ),
+                  ),
 
-                    /// Continue Button
-                    GestureDetector(
-                      onTap: isLoading ? null : _saveAndContinue,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        width: double.infinity,
-                        height: 64,
+                  const SizedBox(height: 26),
 
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(24),
+                  _selectedActivityPreview(selectedActivity),
 
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFF22C55E),
-                              Color(0xFF06B6D4),
-                              Color(0xFF3B82F6),
-                            ],
-                          ),
+                  const SizedBox(height: 22),
 
-                          boxShadow: [
-                            BoxShadow(
-                              color: primary.withOpacity(0.45),
-                              blurRadius: 30,
-                              offset: const Offset(0, 10),
-                            ),
+                  Expanded(
+                    child: ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: activities.length,
+                      itemBuilder: (context, index) {
+                        return _activityCard(
+                          index: index,
+                          activity: activities[index],
+                        );
+                      },
+                    ),
+                  ),
+
+                  GestureDetector(
+                    onTap: isLoading ? null : _saveAndContinue,
+                    child: Container(
+                      height: 64,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF22C55E),
+                            Color(0xFF06B6D4),
+                            Color(0xFF3B82F6),
                           ],
                         ),
-
-                        child: Center(
-                          child: isLoading
-                              ? const CircularProgressIndicator(
-                                  color: Colors.white,
-                                )
-                              : const Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      "Continue",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-
-                                    SizedBox(width: 10),
-
-                                    Icon(
-                                      Icons.arrow_forward_rounded,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF06B6D4).withOpacity(0.32),
+                            blurRadius: 26,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "Create My Plan",
+                                    style: TextStyle(
                                       color: Colors.white,
-                                      size: 24,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                  ],
-                                ),
-                        ),
+                                  ),
+                                  SizedBox(width: 10),
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    color: Colors.white,
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
+                  ),
 
-                    const SizedBox(height: 20),
-                  ],
-                ),
+                  const SizedBox(height: 22),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  /// Activity Card
-  Widget _activityCard({
-    required int index,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required String emoji,
-  }) {
-    bool selected = selectedIndex == index;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedIndex = index;
-        });
-      },
-
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 350),
-        curve: Curves.easeInOut,
-
-        margin: const EdgeInsets.only(bottom: 18),
-        padding: const EdgeInsets.all(18),
-
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
-
-          gradient: selected
-              ? LinearGradient(
-                  colors: [
-                    primary.withOpacity(0.28),
-                    accent.withOpacity(0.22),
-                  ],
-                )
-              : LinearGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.05),
-                    Colors.white.withOpacity(0.03),
-                  ],
-                ),
-
-          border: Border.all(
-            color: selected
-                ? primary.withOpacity(0.9)
-                : Colors.white.withOpacity(0.08),
-            width: 1.5,
+  Widget _selectedActivityPreview(ActivityItem activity) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: LinearGradient(
+          colors: [activity.color1, activity.color2],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: activity.color1.withOpacity(0.28),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 76,
+            width: 76,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withOpacity(0.20),
+              border: Border.all(color: Colors.white.withOpacity(0.22)),
+            ),
+            child: Center(
+              child: Text(
+                activity.emoji,
+                style: const TextStyle(fontSize: 36),
+              ),
+            ),
           ),
 
-          boxShadow: [
-            BoxShadow(
-              color: selected
-                  ? primary.withOpacity(0.30)
-                  : Colors.black.withOpacity(0.22),
-              blurRadius: selected ? 24 : 10,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
+          const SizedBox(width: 16),
 
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Selected Activity",
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  activity.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 23,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  activity.subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.78),
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _activityCard({
+    required int index,
+    required ActivityItem activity,
+  }) {
+    final selected = selectedIndex == index;
+
+    return GestureDetector(
+      onTap: () => setState(() => selectedIndex = index),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 260),
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: selected
+              ? activity.color1.withOpacity(0.14)
+              : Colors.white.withOpacity(0.045),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: selected
+                ? activity.color1.withOpacity(0.75)
+                : Colors.white10,
+            width: selected ? 1.6 : 1,
+          ),
+        ),
         child: Row(
           children: [
-            /// Icon Circle
             AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-
-              height: 62,
-              width: 62,
-
+              duration: const Duration(milliseconds: 260),
+              height: 58,
+              width: 58,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-
                 gradient: selected
-                    ? const LinearGradient(
-                        colors: [
-                          Color(0xFF22C55E),
-                          Color(0xFF06B6D4),
-                        ],
+                    ? LinearGradient(
+                        colors: [activity.color1, activity.color2],
                       )
                     : null,
-
-                color: selected
-                    ? null
-                    : Colors.white.withOpacity(0.06),
-
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                          color: accent.withOpacity(0.35),
-                          blurRadius: 18,
-                          offset: const Offset(0, 6),
-                        ),
-                      ]
-                    : [],
+                color: selected ? null : Colors.white.withOpacity(0.055),
               ),
-
-              child: Center(
-                child: selected
-                    ? Icon(
-                        icon,
-                        color: Colors.white,
-                        size: 28,
-                      )
-                    : Text(
-                        emoji,
-                        style: const TextStyle(fontSize: 28),
+              child: selected
+                  ? Icon(activity.icon, color: Colors.white, size: 28)
+                  : Center(
+                      child: Text(
+                        activity.emoji,
+                        style: const TextStyle(fontSize: 27),
                       ),
-              ),
+                    ),
             ),
 
-            const SizedBox(width: 18),
+            const SizedBox(width: 14),
 
-            /// Texts
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
+                    activity.title,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 19,
+                      fontSize: 17.5,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
-                  const SizedBox(height: 6),
-
+                  const SizedBox(height: 5),
                   Text(
-                    subtitle,
+                    activity.subtitle,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.65),
-                      fontSize: 13.5,
-                      height: 1.4,
+                      color: Colors.white.withOpacity(0.52),
+                      fontSize: 13,
+                      height: 1.35,
                     ),
                   ),
                 ],
               ),
             ),
 
-            /// Check
             AnimatedScale(
               scale: selected ? 1 : 0,
-              duration: const Duration(milliseconds: 250),
-
+              duration: const Duration(milliseconds: 220),
               child: Container(
-                padding: const EdgeInsets.all(8),
-
-                decoration: const BoxDecoration(
+                height: 30,
+                width: 30,
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-
                   gradient: LinearGradient(
-                    colors: [
-                      Color(0xFF22C55E),
-                      Color(0xFF06B6D4),
-                    ],
+                    colors: [activity.color1, activity.color2],
                   ),
                 ),
-
                 child: const Icon(
-                  Icons.check,
+                  Icons.check_rounded,
                   color: Colors.white,
-                  size: 18,
+                  size: 19,
                 ),
               ),
             ),
@@ -482,35 +459,78 @@ class _StepFourScreenState extends State<StepFourScreen> {
     );
   }
 
-  /// Progress Bar
-  Widget _progress(bool active) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+  Widget _progressLine() {
+    return Row(
+      children: [
+        _dot(true),
+        _bar(true),
+        _dot(true),
+        _bar(true),
+        _dot(true),
+        _bar(true),
+        _dot(true),
+      ],
+    );
+  }
 
-      width: active ? 40 : 18,
-      height: 7,
-
+  Widget _dot(bool active) {
+    return Container(
+      height: 13,
+      width: 13,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(50),
-
-        gradient: active
-            ? const LinearGradient(
-                colors: [
-                  Color(0xFF22C55E),
-                  Color(0xFF06B6D4),
-                  Color(0xFF3B82F6),
-                ],
-              )
-            : null,
-
-        color: active
-            ? null
-            : Colors.white.withOpacity(0.12),
+        shape: BoxShape.circle,
+        color: active ? const Color(0xFF22C55E) : Colors.white24,
       ),
     );
   }
 
-  /// Glow Effect
+  Widget _bar(bool active) {
+    return Expanded(
+      child: Container(
+        height: 4,
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: active ? const Color(0xFF22C55E) : Colors.white12,
+        ),
+      ),
+    );
+  }
+
+  Widget _stepBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFF22C55E).withOpacity(0.12),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(
+          color: const Color(0xFF22C55E).withOpacity(0.25),
+        ),
+      ),
+      child: const Text(
+        "STEP 4 OF 4",
+        style: TextStyle(
+          color: Color(0xFF22C55E),
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _iconBox(IconData icon) {
+    return Container(
+      height: 48,
+      width: 48,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Icon(icon, color: Colors.white, size: 22),
+    );
+  }
+
   Widget _glowCircle({
     required Color color,
     required double size,
@@ -518,11 +538,25 @@ class _StepFourScreenState extends State<StepFourScreen> {
     return Container(
       height: size,
       width: size,
-
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
+}
+
+class ActivityItem {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String emoji;
+  final Color color1;
+  final Color color2;
+
+  const ActivityItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.emoji,
+    required this.color1,
+    required this.color2,
+  });
 }
