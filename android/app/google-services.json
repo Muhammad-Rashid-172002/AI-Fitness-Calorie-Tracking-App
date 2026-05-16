@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "157796106706-vh1gspkmod80mqte2ih2nsfqvgu1glk8.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rashidapps.fitmindai",
+            "certificate_hash": "235593886eaae72a793ffbd9d8136ce78540f671"
+          }
+        },
+        {
           "client_id": "157796106706-btbvupl24kfama3leoam9hg9er6ltpov.apps.googleusercontent.com",
           "client_type": 3
         }
