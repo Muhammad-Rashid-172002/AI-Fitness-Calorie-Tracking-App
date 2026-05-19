@@ -1,5 +1,4 @@
 import 'package:fitmind_ai/services/StripePaymentProvider.dart';
-import 'package:fitmind_ai/view/Premium_Screens/add_card_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

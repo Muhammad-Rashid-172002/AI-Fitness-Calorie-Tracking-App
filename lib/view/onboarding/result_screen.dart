@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/models/FormulaRecommendation.dart';
-import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:fitmind_ai/view/buttom_bar.dart';
 import 'package:flutter/material.dart';
 

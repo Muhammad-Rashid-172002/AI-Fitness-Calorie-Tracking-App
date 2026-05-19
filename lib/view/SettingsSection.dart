@@ -22,7 +22,7 @@ class _SettingsSectionState extends State<SettingsSection> {
       builder: (_) => _customDialog(
         title: "About FitMind AI",
         content:
-            "FitMind AI is a smart fitness & nutrition tracker app.\n\nVersion: 1.0.0+1",
+            "FitMind AI is a smart fitness & nutrition tracker app.\n\nVersion: 1.0.0+5",
         confirmText: "Close",
       ),
     );
@@ -74,16 +74,11 @@ class _SettingsSectionState extends State<SettingsSection> {
         child: Row(
           children: [
             Icon(
-              selected
-                  ? Icons.radio_button_checked
-                  : Icons.radio_button_off,
+              selected ? Icons.radio_button_checked : Icons.radio_button_off,
               color: selected ? const Color(0xFF22C55E) : Colors.white54,
             ),
             const SizedBox(width: 12),
-            Text(
-              title,
-              style: const TextStyle(color: Colors.white),
-            ),
+            Text(title, style: const TextStyle(color: Colors.white)),
           ],
         ),
       ),
@@ -100,7 +95,10 @@ class _SettingsSectionState extends State<SettingsSection> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       title: Text(
         title,
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
       ),
       content: Text(
         content,
@@ -143,7 +141,10 @@ class _SettingsSectionState extends State<SettingsSection> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Colors.white70)),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(color: Colors.white70),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -310,7 +311,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                   _tile(
                     icon: Icons.info_rounded,
                     title: "About FitMind AI",
-                    subtitle: "Version 1.1.0",
+                    subtitle: "Version 1.0.0+5",
                     color: const Color(0xFF14B8A6),
                     onTap: _showAboutDialog,
                   ),

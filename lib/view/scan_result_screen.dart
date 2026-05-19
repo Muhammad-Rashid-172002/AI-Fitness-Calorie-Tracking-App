@@ -35,23 +35,35 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     parsedFood = controller.parseFoodFromResult(widget.result);
   }
 
-String get foodName {
-  final name = (parsedFood.name ?? "").trim();
+  String get foodName {
+    final name = (parsedFood.name ?? "").trim();
 
-  if (name.isEmpty ||
-      name.toLowerCase() == "unknown" ||
-      name.toLowerCase() == "food item" ||
-      name.toLowerCase().contains("not food")) {
-    return "This is not food";
+    if (name.isEmpty ||
+        name.toLowerCase() == "unknown" ||
+        name.toLowerCase() == "food item" ||
+        name.toLowerCase().contains("not food")) {
+      return "This is not food";
+    }
+
+    return name;
   }
-
-  return name;
-}
 
   int get calories => (parsedFood.calories ?? 0).toInt();
   int get protein => (parsedFood.protein ?? 0).toInt();
   int get carbs => (parsedFood.carbs ?? 0).toInt();
   int get fat => (parsedFood.fats ?? 0).toInt();
+
+  bool get isAiBusy {
+    final text = widget.result.toLowerCase();
+
+    return text.contains("busy") ||
+        text.contains("overloaded") ||
+        text.contains("service unavailable") ||
+        text.contains("try again") ||
+        text.contains("failed") ||
+        text.contains("timeout") ||
+        text.contains("error");
+  }
 
   bool get isFoodDetected {
     final resultText = widget.result.toLowerCase();
@@ -94,29 +106,39 @@ String get foodName {
     return score.clamp(1, 10);
   }
 
- String get feedbackText {
-  if (!isFoodDetected) {
-    return "This image is not recognized as food. Please try again with a clear meal or drink photo.";
+  String get feedbackText {
+    if (isAiBusy) {
+      return "AI service is busy right now. Please try again in a few moments.";
+    }
+
+    if (!isFoodDetected) {
+      return "This image is not recognized as food. Please try again with a clear meal or drink photo.";
+    }
+
+    if (!isFoodDetected) {
+      return "This image is not recognized as food. Please try again with a clear meal or drink photo.";
+    }
+
+    if (calories > 750) {
+      return "This meal is high in calories. Balance it with lighter meals, vegetables, and water for the rest of the day.";
+    }
+
+    if (protein >= 20 && fat <= 12) {
+      return "Great choice! This meal has good protein and controlled fat, which can support muscle recovery and healthy weight management.";
+    }
+
+    if (protein < 10) {
+      return "This meal looks low in protein. Add eggs, chicken, fish, lentils, yogurt, or tofu to make it more balanced.";
+    }
+
+    if (carbs > 75) {
+      return "This meal is carb-heavy. Try pairing it with protein and fiber to keep your energy more stable.";
+    }
+
+    return "This looks like a balanced meal. Keep tracking consistently to improve your nutrition habits.";
   }
 
-  if (calories > 750) {
-    return "This meal is high in calories. Balance it with lighter meals, vegetables, and water for the rest of the day.";
-  }
-
-  if (protein >= 20 && fat <= 12) {
-    return "Great choice! This meal has good protein and controlled fat, which can support muscle recovery and healthy weight management.";
-  }
-
-  if (protein < 10) {
-    return "This meal looks low in protein. Add eggs, chicken, fish, lentils, yogurt, or tofu to make it more balanced.";
-  }
-
-  if (carbs > 75) {
-    return "This meal is carb-heavy. Try pairing it with protein and fiber to keep your energy more stable.";
-  }
-
-  return "This looks like a balanced meal. Keep tracking consistently to improve your nutrition habits.";
-}  Future<void> _saveMeal() async {
+  Future<void> _saveMeal() async {
     if (isSaving) return;
 
     if (!isFoodDetected) {
@@ -131,10 +153,7 @@ String get foodName {
     setState(() => isSaving = true);
 
     try {
-      await controller.saveScan(
-        result: widget.result,
-        food: parsedFood,
-      );
+      await controller.saveScan(result: widget.result, food: parsedFood);
 
       if (!mounted) return;
 
@@ -162,10 +181,11 @@ String get foodName {
             top: -130,
             right: -90,
             child: _glowCircle(
-              color: (isFoodDetected
-                      ? const Color(0xFF22C55E)
-                      : const Color(0xFFEF4444))
-                  .withOpacity(0.13),
+              color:
+                  (isFoodDetected
+                          ? const Color(0xFF22C55E)
+                          : const Color(0xFFEF4444))
+                      .withOpacity(0.13),
               size: 280,
             ),
           ),
@@ -368,10 +388,11 @@ String get foodName {
         border: Border.all(color: Colors.white.withOpacity(0.09)),
         boxShadow: [
           BoxShadow(
-            color: (isFoodDetected
-                    ? const Color(0xFF22C55E)
-                    : const Color(0xFFEF4444))
-                .withOpacity(0.15),
+            color:
+                (isFoodDetected
+                        ? const Color(0xFF22C55E)
+                        : const Color(0xFFEF4444))
+                    .withOpacity(0.15),
             blurRadius: 32,
             offset: const Offset(0, 16),
           ),
@@ -428,9 +449,7 @@ String get foodName {
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.14),
-                      ),
+                      border: Border.all(color: Colors.white.withOpacity(0.14)),
                     ),
                     child: Row(
                       children: [
@@ -439,10 +458,11 @@ String get foodName {
                           width: 48,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: (isFoodDetected
-                                    ? const Color(0xFF22C55E)
-                                    : const Color(0xFFEF4444))
-                                .withOpacity(0.18),
+                            color:
+                                (isFoodDetected
+                                        ? const Color(0xFF22C55E)
+                                        : const Color(0xFFEF4444))
+                                    .withOpacity(0.18),
                           ),
                           child: Icon(
                             isFoodDetected
@@ -479,48 +499,52 @@ String get foodName {
     );
   }
 
- Widget _notFoodCard() {
-  return Container(
-    width: double.infinity,
-    padding: const EdgeInsets.all(22),
-    decoration: BoxDecoration(
-      color: const Color(0xFFEF4444).withOpacity(0.08),
-      borderRadius: BorderRadius.circular(28),
-      border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.25)),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _roundIcon(Icons.no_food_rounded, const Color(0xFFEF4444)),
-        const SizedBox(width: 14),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "This is not food",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+  Widget _notFoodCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEF4444).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFEF4444).withOpacity(0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _roundIcon(Icons.no_food_rounded, const Color(0xFFEF4444)),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  isAiBusy ? "AI Service Busy" : "This is not food",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                "FitMind AI could not detect any food in this image. Please scan a clear food item like rice, chicken, fruit, snack, or drink.",
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.68),
-                  fontSize: 14,
-                  height: 1.55,
+                const SizedBox(height: 8),
+                Text(
+                  isAiBusy
+                      ? "FitMind AI is busy right now. Please try again after a few moments."
+                      : "FitMind AI could not detect any food in this image. Please scan a clear food item like rice, chicken, fruit, snack, or drink.",
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.68),
+                    fontSize: 14,
+                    height: 1.55,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}  Widget _macroCard({
+        ],
+      ),
+    );
+  }
+
+  Widget _macroCard({
     required String title,
     required String value,
     required String unit,
@@ -629,9 +653,7 @@ String get foodName {
               value: healthScore / 10,
               minHeight: 14,
               backgroundColor: Colors.white10,
-              valueColor: const AlwaysStoppedAnimation(
-                Color(0xFF22C55E),
-              ),
+              valueColor: const AlwaysStoppedAnimation(Color(0xFF22C55E)),
             ),
           ),
         ],
@@ -657,10 +679,11 @@ String get foodName {
                 ],
         ),
         border: Border.all(
-          color: (isFoodDetected
-                  ? const Color(0xFF22C55E)
-                  : const Color(0xFFEF4444))
-              .withOpacity(0.20),
+          color:
+              (isFoodDetected
+                      ? const Color(0xFF22C55E)
+                      : const Color(0xFFEF4444))
+                  .withOpacity(0.20),
         ),
       ),
       child: Row(
@@ -670,9 +693,7 @@ String get foodName {
             isFoodDetected
                 ? Icons.lightbulb_rounded
                 : Icons.info_outline_rounded,
-            isFoodDetected
-                ? const Color(0xFF22C55E)
-                : const Color(0xFFEF4444),
+            isFoodDetected ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -704,10 +725,7 @@ String get foodName {
     );
   }
 
-  Widget _sectionTitle({
-    required String title,
-    required String subtitle,
-  }) {
+  Widget _sectionTitle({required String title, required String subtitle}) {
     return Row(
       children: [
         Container(
@@ -801,17 +819,11 @@ String get foodName {
     );
   }
 
-  Widget _glowCircle({
-    required Color color,
-    required double size,
-  }) {
+  Widget _glowCircle({required Color color, required double size}) {
     return Container(
       height: size,
       width: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

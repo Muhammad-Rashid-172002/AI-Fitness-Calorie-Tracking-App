@@ -23,7 +23,7 @@ class CustomTextField extends StatefulWidget {
 }
 
 class _CustomTextFieldState extends State<CustomTextField> {
-  bool _obscureText = true;
+  late bool _obscureText;
 
   @override
   void initState() {
@@ -38,47 +38,73 @@ class _CustomTextFieldState extends State<CustomTextField> {
       validator: widget.validator,
       keyboardType: widget.keyboardType,
       obscureText: widget.isPassword ? _obscureText : false,
-      style: const TextStyle(color: Colors.white),
-
+      cursorColor: const Color(0xFF22C55E),
+      style: const TextStyle(
+        color: Colors.white,
+        fontSize: 15.5,
+        fontWeight: FontWeight.w600,
+      ),
       decoration: InputDecoration(
-
         hintText: widget.hint,
-        hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+        hintStyle: TextStyle(
+          color: Colors.white.withOpacity(0.38),
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
 
-        prefixIcon: Icon(
-          widget.icon,
-          color: const Color(0xFF22C55E),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: 14, right: 10),
+          child: Container(
+            height: 42,
+            width: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF22C55E).withOpacity(0.13),
+            ),
+            child: Icon(
+              widget.icon,
+              color: const Color(0xFF22C55E),
+              size: 21,
+            ),
+          ),
+        ),
+        prefixIconConstraints: const BoxConstraints(
+          minWidth: 66,
+          minHeight: 56,
         ),
 
         suffixIcon: widget.isPassword
             ? IconButton(
+                splashRadius: 22,
                 icon: Icon(
                   _obscureText
-                      ? Icons.visibility_off
-                      : Icons.visibility,
-                  color: Colors.grey,
+                      ? Icons.visibility_off_rounded
+                      : Icons.visibility_rounded,
+                  color: Colors.white.withOpacity(0.48),
                 ),
                 onPressed: () {
-                  setState(() {
-                    _obscureText = !_obscureText;
-                  });
+                  setState(() => _obscureText = !_obscureText);
                 },
               )
             : null,
 
         filled: true,
-        fillColor: const Color(0xFF020617),
+        fillColor: Colors.white.withOpacity(0.055),
 
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+        contentPadding: const EdgeInsets.symmetric(
+          vertical: 20,
+          horizontal: 18,
+        ),
 
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0xFF334155)),
+          borderRadius: BorderRadius.circular(22),
+          borderSide: BorderSide(
+            color: Colors.white.withOpacity(0.08),
+          ),
         ),
 
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(22),
           borderSide: const BorderSide(
             color: Color(0xFF22C55E),
             width: 1.5,
@@ -86,18 +112,25 @@ class _CustomTextFieldState extends State<CustomTextField> {
         ),
 
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Colors.red),
+          borderRadius: BorderRadius.circular(22),
+          borderSide: const BorderSide(
+            color: Colors.redAccent,
+            width: 1.2,
+          ),
         ),
 
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Colors.red, width: 1.2),
+          borderRadius: BorderRadius.circular(22),
+          borderSide: const BorderSide(
+            color: Colors.redAccent,
+            width: 1.4,
+          ),
         ),
 
         errorStyle: const TextStyle(
           color: Colors.redAccent,
           fontSize: 12,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

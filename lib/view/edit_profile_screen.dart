@@ -58,7 +58,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Provider.of<ProfileController>(context, listen: false);
+  //  final controller = Provider.of<ProfileController>(context, listen: false);
 
     return Scaffold(
       backgroundColor: bgColor,
