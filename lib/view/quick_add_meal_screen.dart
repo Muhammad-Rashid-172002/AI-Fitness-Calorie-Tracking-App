@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/components/showCustomSnackBar.dart';
-import 'package:fitmind_ai/resources/custom_gradient_button.dart';
 import 'package:flutter/material.dart';
 
 class QuickAddMealScreen extends StatefulWidget {
@@ -22,14 +21,31 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
 
   bool isSaving = false;
 
+  static const Color bgColor = Color(0xFF0B1220);
+  static const Color primary = Color(0xFF22C55E);
+  static const Color cyan = Color(0xFF06B6D4);
+  static const Color textMain = Color(0xFFF8FAFC);
+  static const Color textSub = Color(0xFF94A3B8);
+
   @override
   void initState() {
     super.initState();
-
-    proteinController.addListener(() => setState(() {}));
-    carbsController.addListener(() => setState(() {}));
-    fatController.addListener(() => setState(() {}));
+    for (final c in [
+      mealNameController,
+      caloriesController,
+      proteinController,
+      carbsController,
+      fatController,
+    ]) {
+      c.addListener(() => setState(() {}));
+    }
   }
+
+  double get protein => double.tryParse(proteinController.text.trim()) ?? 0;
+  double get carbs => double.tryParse(carbsController.text.trim()) ?? 0;
+  double get fat => double.tryParse(fatController.text.trim()) ?? 0;
+  double get calories => double.tryParse(caloriesController.text.trim()) ?? 0;
+  double get totalMacros => protein + carbs + fat;
 
   Future<void> saveMeal() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -41,19 +57,11 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
 
     final mealName = mealNameController.text.trim();
     final caloriesText = caloriesController.text.trim();
-    final proteinText = proteinController.text.trim();
-    final carbsText = carbsController.text.trim();
-    final fatText = fatController.text.trim();
 
     if (mealName.isEmpty || caloriesText.isEmpty) {
-      showCustomSnackBar(context, "Please fill required fields", false);
+      showCustomSnackBar(context, "Please fill meal name and calories", false);
       return;
     }
-
-    final calories = double.tryParse(caloriesText) ?? 0;
-    final protein = double.tryParse(proteinText) ?? 0;
-    final carbs = double.tryParse(carbsText) ?? 0;
-    final fat = double.tryParse(fatText) ?? 0;
 
     setState(() => isSaving = true);
 
@@ -99,10 +107,8 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
       final consumedCalories =
           (updatedDoc.data()?["totalCalories"] ?? 0).toDouble();
 
-      final userDoc = await FirebaseFirestore.instance
-          .collection("users")
-          .doc(uid)
-          .get();
+      final userDoc =
+          await FirebaseFirestore.instance.collection("users").doc(uid).get();
 
       final targetCalories =
           (userDoc.data()?["dailyCalories"] ?? 2000).toDouble();
@@ -115,27 +121,18 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
         "weightChange": weightChange,
       }, SetOptions(merge: true));
 
-      String msg;
-
-      if (weightChange < 0) {
-        msg =
-            "🔥 Losing ${weightChange.abs().toStringAsFixed(2)} kg today\nDeficit: ${deficit.toStringAsFixed(0)} kcal";
-      } else {
-        msg =
-            "⚠️ Gaining ${weightChange.toStringAsFixed(2)} kg today\nExtra: ${deficit.abs().toStringAsFixed(0)} kcal";
-      }
+      final msg = weightChange < 0
+          ? "🔥 Losing ${weightChange.abs().toStringAsFixed(2)} kg today\nDeficit: ${deficit.toStringAsFixed(0)} kcal"
+          : "⚠️ Gaining ${weightChange.toStringAsFixed(2)} kg today\nExtra: ${deficit.abs().toStringAsFixed(0)} kcal";
 
       if (!mounted) return;
-
       showCustomSnackBar(context, msg, true);
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
       showCustomSnackBar(context, "Error saving meal", false);
     } finally {
-      if (mounted) {
-        setState(() => isSaving = false);
-      }
+      if (mounted) setState(() => isSaving = false);
     }
   }
 
@@ -151,213 +148,71 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final totalMacros =
-        (double.tryParse(proteinController.text) ?? 0) +
-        (double.tryParse(carbsController.text) ?? 0) +
-        (double.tryParse(fatController.text) ?? 0);
-
     return Scaffold(
-      backgroundColor: const Color(0xFF020617),
+      backgroundColor: bgColor,
       body: Stack(
         children: [
-          Positioned(
-            top: -120,
-            right: -80,
-            child: _glowCircle(
-              color: const Color(0xFF22C55E).withOpacity(0.12),
-              size: 260,
-            ),
-          ),
-
-          Positioned(
-            bottom: -140,
-            left: -90,
-            child: _glowCircle(
-              color: const Color(0xFF06B6D4).withOpacity(0.10),
-              size: 280,
-            ),
-          ),
-
+          _backgroundGlow(),
           SafeArea(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 22),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 18),
-
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: _iconBox(Icons.arrow_back_ios_new_rounded),
-                      ),
-
-                      const Spacer(),
-
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 7,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF22C55E).withOpacity(0.12),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: const Color(0xFF22C55E).withOpacity(0.28),
-                          ),
-                        ),
-                        child: const Text(
-                          "Manual Entry",
-                          style: TextStyle(
-                            color: Color(0xFF22C55E),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 28),
-
+                  _appBar(),
+                  const SizedBox(height: 24),
                   _heroCard(),
-
+                  const SizedBox(height: 22),
+                  _mealFormCard(),
+                  const SizedBox(height: 22),
+                  _macroPreview(),
                   const SizedBox(height: 24),
-
-                  _sectionTitle(
-                    title: "Meal Details",
-                    subtitle: "Add your calories and macros manually",
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  _glassCard(
-                    child: Column(
-                      children: [
-                        _buildField(
-                          label: "Meal Name",
-                          hint: "Example: Chicken Rice",
-                          controller: mealNameController,
-                          icon: Icons.restaurant_menu_rounded,
-                          color: const Color(0xFF22C55E),
-                        ),
-                        const SizedBox(height: 16),
-                        _buildField(
-                          label: "Calories",
-                          hint: "Example: 450",
-                          controller: caloriesController,
-                          keyboard: TextInputType.number,
-                          icon: Icons.local_fire_department_rounded,
-                          color: const Color(0xFFF97316),
-                          suffix: "kcal",
-                        ),
-                        const SizedBox(height: 16),
-                        _buildField(
-                          label: "Protein",
-                          hint: "Example: 35",
-                          controller: proteinController,
-                          keyboard: TextInputType.number,
-                          icon: Icons.fitness_center_rounded,
-                          color: const Color(0xFF06B6D4),
-                          suffix: "g",
-                        ),
-                        const SizedBox(height: 16),
-                        _buildField(
-                          label: "Carbs",
-                          hint: "Example: 50",
-                          controller: carbsController,
-                          keyboard: TextInputType.number,
-                          icon: Icons.rice_bowl_rounded,
-                          color: const Color(0xFFF59E0B),
-                          suffix: "g",
-                        ),
-                        const SizedBox(height: 16),
-                        _buildField(
-                          label: "Fat",
-                          hint: "Example: 12",
-                          controller: fatController,
-                          keyboard: TextInputType.number,
-                          icon: Icons.opacity_rounded,
-                          color: const Color(0xFFEF4444),
-                          suffix: "g",
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  _sectionTitle(
-                    title: "Macro Preview",
-                    subtitle: totalMacros == 0
-                        ? "Enter macros to preview meal breakdown"
-                        : "Total entered macros: ${totalMacros.toStringAsFixed(0)}g",
-                  ),
-
-                  const SizedBox(height: 14),
-
-                  Row(
-                    children: [
-                      _macroCard(
-                        title: "Protein",
-                        value: proteinController.text,
-                        icon: Icons.fitness_center_rounded,
-                        color: const Color(0xFF06B6D4),
-                      ),
-                      const SizedBox(width: 12),
-                      _macroCard(
-                        title: "Carbs",
-                        value: carbsController.text,
-                        icon: Icons.rice_bowl_rounded,
-                        color: const Color(0xFFF59E0B),
-                      ),
-                      const SizedBox(width: 12),
-                      _macroCard(
-                        title: "Fat",
-                        value: fatController.text,
-                        icon: Icons.opacity_rounded,
-                        color: const Color(0xFFEF4444),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  SizedBox(
-                    width: double.infinity,
-                    height: 60,
-                    child: isSaving
-                        ? Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(22),
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFF22C55E),
-                                  Color(0xFF06B6D4),
-                                ],
-                              ),
-                            ),
-                            child: const Center(
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                              ),
-                            ),
-                          )
-                        : CustomGradientButton(
-                            text: "Save Meal",
-                            onPressed: saveMeal,
-                          ),
-                  ),
-
-                  const SizedBox(height: 28),
+                  _saveButton(),
                 ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _appBar() {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: _iconBox(Icons.arrow_back_ios_new_rounded),
+        ),
+        const SizedBox(width: 14),
+        const Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Quick Add Meal",
+                style: TextStyle(
+                  color: textMain,
+                  fontSize: 25,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.4,
+                ),
+              ),
+              SizedBox(height: 3),
+              Text(
+                "Manual calories & macros entry",
+                style: TextStyle(
+                  color: textSub,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _premiumBadge(),
+      ],
     );
   }
 
@@ -378,61 +233,53 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF06B6D4).withOpacity(0.32),
-            blurRadius: 32,
-            offset: const Offset(0, 14),
+            color: cyan.withOpacity(0.30),
+            blurRadius: 35,
+            offset: const Offset(0, 16),
           ),
         ],
       ),
       child: Stack(
         children: [
           Positioned(
-            top: -45,
             right: -45,
-            child: _glowCircle(
-              color: Colors.white.withOpacity(0.14),
-              size: 150,
-            ),
+            top: -45,
+            child: _softCircle(Colors.white.withOpacity(0.14), 155),
           ),
-
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                height: 66,
-                width: 66,
+                height: 68,
+                width: 68,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white.withOpacity(0.20),
                   border: Border.all(color: Colors.white.withOpacity(0.25)),
                 ),
                 child: const Icon(
-                  Icons.edit_note_rounded,
+                  Icons.restaurant_menu_rounded,
                   color: Colors.white,
-                  size: 38,
+                  size: 35,
                 ),
               ),
-
-              const SizedBox(height: 20),
-
+              const SizedBox(height: 18),
               const Text(
-                "Quick Add Meal",
+                "Add nutrition manually",
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 29,
-                  fontWeight: FontWeight.bold,
+                  fontSize: 27,
+                  fontWeight: FontWeight.w900,
                   height: 1.1,
                 ),
               ),
-
               const SizedBox(height: 8),
-
               Text(
-                "Manually add your meal nutrition when you already know calories and macros.",
+                "Perfect when you already know your meal calories, protein, carbs and fats.",
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.86),
                   fontSize: 14,
-                  height: 1.5,
+                  height: 1.45,
                 ),
               ),
             ],
@@ -442,100 +289,221 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
     );
   }
 
-  Widget _sectionTitle({
-    required String title,
-    required String subtitle,
-  }) {
-    return Row(
-      children: [
-        Container(
-          height: 7,
-          width: 7,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFF22C55E),
+  Widget _mealFormCard() {
+    return _glassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _cardHeader(
+            icon: Icons.edit_note_rounded,
+            title: "Meal Details",
+            subtitle: "Fill required fields to save your meal",
           ),
-        ),
-        const SizedBox(width: 9),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          const SizedBox(height: 18),
+          _inputField(
+            label: "Meal Name",
+            hint: "Example: Chicken rice",
+            controller: mealNameController,
+            icon: Icons.fastfood_rounded,
+            color: primary,
+          ),
+          const SizedBox(height: 14),
+          _inputField(
+            label: "Calories",
+            hint: "Example: 450",
+            controller: caloriesController,
+            icon: Icons.local_fire_department_rounded,
+            color: const Color(0xFFF97316),
+            suffix: "kcal",
+          ),
+          const SizedBox(height: 14),
+          Row(
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 19,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: _inputField(
+                  label: "Protein",
+                  hint: "35",
+                  controller: proteinController,
+                  icon: Icons.fitness_center_rounded,
+                  color: cyan,
+                  suffix: "g",
+                  compact: true,
                 ),
               ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.50),
-                  fontSize: 12,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _inputField(
+                  label: "Carbs",
+                  hint: "50",
+                  controller: carbsController,
+                  icon: Icons.rice_bowl_rounded,
+                  color: const Color(0xFFF59E0B),
+                  suffix: "g",
+                  compact: true,
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 14),
+          _inputField(
+            label: "Fat",
+            hint: "Example: 12",
+            controller: fatController,
+            icon: Icons.opacity_rounded,
+            color: const Color(0xFFEF4444),
+            suffix: "g",
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _macroPreview() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _cardHeader(
+          icon: Icons.pie_chart_rounded,
+          title: "Live Macro Preview",
+          subtitle: totalMacros == 0
+              ? "Enter macros to preview breakdown"
+              : "Total macros: ${totalMacros.toStringAsFixed(0)}g",
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            _macroCard(
+              title: "Calories",
+              value: calories.toStringAsFixed(0),
+              unit: "kcal",
+              icon: Icons.local_fire_department_rounded,
+              color: const Color(0xFFF97316),
+            ),
+            const SizedBox(width: 12),
+            _macroCard(
+              title: "Protein",
+              value: protein.toStringAsFixed(0),
+              unit: "g",
+              icon: Icons.fitness_center_rounded,
+              color: cyan,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            _macroCard(
+              title: "Carbs",
+              value: carbs.toStringAsFixed(0),
+              unit: "g",
+              icon: Icons.rice_bowl_rounded,
+              color: const Color(0xFFF59E0B),
+            ),
+            const SizedBox(width: 12),
+            _macroCard(
+              title: "Fat",
+              value: fat.toStringAsFixed(0),
+              unit: "g",
+              icon: Icons.opacity_rounded,
+              color: const Color(0xFFEF4444),
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _glassCard({required Widget child}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.045),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+  Widget _saveButton() {
+    return GestureDetector(
+      onTap: isSaving ? null : saveMeal,
+      child: Container(
+        height: 60,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          gradient: LinearGradient(
+            colors: isSaving
+                ? [Colors.grey.shade700, Colors.grey.shade800]
+                : const [primary, cyan],
           ),
-          child: child,
+          boxShadow: [
+            BoxShadow(
+              color: primary.withOpacity(0.25),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Center(
+          child: isSaving
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.6,
+                  ),
+                )
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.check_circle_rounded, color: Colors.white),
+                    SizedBox(width: 10),
+                    Text(
+                      "Save Meal",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );
   }
 
-  Widget _buildField({
+  Widget _inputField({
     required String label,
     required String hint,
     required TextEditingController controller,
     required IconData icon,
     required Color color,
     String? suffix,
-    TextInputType keyboard = TextInputType.text,
+    bool compact = false,
   }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.045),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.07)),
+        border: Border.all(color: Colors.white.withOpacity(0.075)),
       ),
       child: TextField(
         controller: controller,
-        keyboardType: keyboard,
+        keyboardType: suffix == null ? TextInputType.text : TextInputType.number,
         style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
+          color: textMain,
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
         ),
         decoration: InputDecoration(
-          prefixIcon: Icon(icon, color: color),
+          prefixIcon: Icon(icon, color: color, size: compact ? 20 : 22),
           suffixText: suffix,
           suffixStyle: TextStyle(
             color: Colors.white.withOpacity(0.45),
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w800,
           ),
           labelText: label,
-          labelStyle: TextStyle(color: Colors.white.withOpacity(0.65)),
+          labelStyle: TextStyle(
+            color: Colors.white.withOpacity(0.62),
+            fontSize: 13,
+          ),
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.white.withOpacity(0.32)),
+          hintStyle: TextStyle(
+            color: Colors.white.withOpacity(0.30),
+            fontSize: 13,
+          ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             vertical: 17,
@@ -549,56 +517,139 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
   Widget _macroCard({
     required String title,
     required String value,
+    required String unit,
     required IconData icon,
     required Color color,
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 14,
-        ),
+        padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.045),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withOpacity(0.075)),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
             Container(
-              height: 40,
-              width: 40,
+              height: 44,
+              width: 44,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: color.withOpacity(0.14),
               ),
               child: Icon(icon, color: color, size: 22),
             ),
-            const SizedBox(height: 10),
-            Text(
-              value.isEmpty ? "0g" : "$value g",
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.58),
-                fontSize: 11,
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "$value $unit",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: textMain,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: textSub,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cardHeader({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
+    return Row(
+      children: [
+        Container(
+          height: 42,
+          width: 42,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15),
+            color: primary.withOpacity(0.12),
+          ),
+          child: Icon(icon, color: primary, size: 22),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: textMain,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  color: textSub,
+                  fontSize: 12.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _glassCard({required Widget child}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(17),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.055),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Widget _premiumBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+      decoration: BoxDecoration(
+        color: primary.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: primary.withOpacity(0.25)),
+      ),
+      child: const Text(
+        "Manual",
+        style: TextStyle(
+          color: primary,
+          fontSize: 12,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );
@@ -610,17 +661,43 @@ class _QuickAddMealScreenState extends State<QuickAddMealScreen> {
       width: 48,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(17),
         border: Border.all(color: Colors.white.withOpacity(0.08)),
       ),
       child: Icon(icon, color: Colors.white, size: 19),
     );
   }
 
-  Widget _glowCircle({
-    required Color color,
-    required double size,
-  }) {
+  Widget _backgroundGlow() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -95,
+          right: -80,
+          child: _blurCircle(primary.withOpacity(0.18), 260),
+        ),
+        Positioned(
+          top: 310,
+          left: -120,
+          child: _blurCircle(cyan.withOpacity(0.13), 280),
+        ),
+        Positioned(
+          bottom: -100,
+          right: -100,
+          child: _blurCircle(const Color(0xFF6366F1).withOpacity(0.12), 260),
+        ),
+      ],
+    );
+  }
+
+  Widget _blurCircle(Color color, double size) {
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: 65, sigmaY: 65),
+      child: _softCircle(color, size),
+    );
+  }
+
+  Widget _softCircle(Color color, double size) {
     return Container(
       height: size,
       width: size,

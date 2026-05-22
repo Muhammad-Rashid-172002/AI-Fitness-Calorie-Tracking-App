@@ -35,18 +35,18 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
     parsedFood = controller.parseFoodFromResult(widget.result);
   }
 
-  String get foodName {
-    final name = (parsedFood.name ?? "").trim();
+String get foodName {
+  final name = parsedFood.name.trim();
 
-    if (name.isEmpty ||
-        name.toLowerCase() == "unknown" ||
-        name.toLowerCase() == "food item" ||
-        name.toLowerCase().contains("not food")) {
-      return "This is not food";
-    }
-
-    return name;
+  if (name.isEmpty ||
+      name.toLowerCase() == "unknown" ||
+      name.toLowerCase() == "food item" ||
+      name.toLowerCase().contains("not food")) {
+    return "This is not food";
   }
+
+  return name;
+}
 
   int get calories => (parsedFood.calories ?? 0).toInt();
   int get protein => (parsedFood.protein ?? 0).toInt();

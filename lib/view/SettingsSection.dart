@@ -22,65 +22,8 @@ class _SettingsSectionState extends State<SettingsSection> {
       builder: (_) => _customDialog(
         title: "About FitMind AI",
         content:
-            "FitMind AI is a smart fitness & nutrition tracker app.\n\nVersion: 1.0.0+5",
+            "FitMind AI is a smart fitness & nutrition tracker app.\n\nVersion: 1.0.0+6",
         confirmText: "Close",
-      ),
-    );
-  }
-
-  void _showUnitsDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: const Color(0xFF0F172A),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text(
-          "Select Units",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _unitOption("kg / cm", true),
-            const SizedBox(height: 10),
-            _unitOption("lb / ft", false),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _unitOption(String title, bool value) {
-    final selected = useMetric == value;
-
-    return GestureDetector(
-      onTap: () {
-        setState(() => useMetric = value);
-        Navigator.pop(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF22C55E).withOpacity(0.12)
-              : Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: selected
-                ? const Color(0xFF22C55E)
-                : Colors.white.withOpacity(0.08),
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              selected ? Icons.radio_button_checked : Icons.radio_button_off,
-              color: selected ? const Color(0xFF22C55E) : Colors.white54,
-            ),
-            const SizedBox(width: 12),
-            Text(title, style: const TextStyle(color: Colors.white)),
-          ],
-        ),
       ),
     );
   }
@@ -266,28 +209,6 @@ class _SettingsSectionState extends State<SettingsSection> {
               child: Column(
                 children: [
                   _tile(
-                    icon: Icons.notifications_active_rounded,
-                    title: "Notifications",
-                    subtitle: notificationsEnabled
-                        ? "Daily reminders are enabled"
-                        : "Daily reminders are disabled",
-                    color: const Color(0xFF22C55E),
-                    trailing: Switch(
-                      value: notificationsEnabled,
-                      activeColor: const Color(0xFF22C55E),
-                      onChanged: (val) {
-                        setState(() => notificationsEnabled = val);
-                      },
-                    ),
-                  ),
-                  _tile(
-                    icon: Icons.straighten_rounded,
-                    title: "Units",
-                    subtitle: useMetric ? "kg / cm" : "lb / ft",
-                    color: const Color(0xFF06B6D4),
-                    onTap: _showUnitsDialog,
-                  ),
-                  _tile(
                     icon: Icons.privacy_tip_rounded,
                     title: "Data & Privacy",
                     subtitle: "View privacy policy",
@@ -311,7 +232,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                   _tile(
                     icon: Icons.info_rounded,
                     title: "About FitMind AI",
-                    subtitle: "Version 1.0.0+5",
+                    subtitle: "Version 1.0.0+6",
                     color: const Color(0xFF14B8A6),
                     onTap: _showAboutDialog,
                   ),
