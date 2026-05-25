@@ -1,9 +1,10 @@
-import 'dart:ui';
+// Replace your HomeScreen with this updated premium UI.
+// Water container is tappable and adds 0.25L on every tap.
 
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/controller/ai_coach_controller.dart';
-import 'package:fitmind_ai/resources/fire_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -16,18 +17,19 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
-  int dailyGoalCalories = 0;
-  int proteinGoal = 0;
-  int carbsGoal = 0;
-  int fatGoal = 0;
+  int dailyGoalCalories = 2200;
+  int proteinGoal = 150;
+  int carbsGoal = 300;
+  int fatGoal = 75;
 
   DateTime selectedDate = DateTime.now();
 
   final AICoachController aiController = AICoachController();
-  AnimationController? _animationController;
 
-  static const Color bgColor = Color(0xFF0B1220);
+  static const Color bgColor = Color(0xFF07101D);
+  static const Color cardColor = Color(0xFF101D31);
   static const Color primary = Color(0xFF22C55E);
+  static const Color primaryLight = Color(0xFF4ADE80);
   static const Color cyan = Color(0xFF06B6D4);
   static const Color orange = Color(0xFFF97316);
   static const Color textMain = Color(0xFFF8FAFC);
@@ -36,49 +38,132 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
-
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 4),
-    )..repeat(reverse: true);
-
     loadUserGoals();
   }
 
-  @override
-  void dispose() {
-    _animationController?.dispose();
-    super.dispose();
+  Stream<Map<String, dynamic>> weeklyStatsStream() {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final now = DateTime.now();
+
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+
+    return FirebaseFirestore.instance
+        .collection("users")
+        .doc(uid)
+        .collection("dailyLogs")
+        .snapshots()
+        .map((snapshot) {
+          int completedDays = 0;
+          int streak = 0;
+
+          for (int i = 0; i < 7; i++) {
+            final date = startOfWeek.add(Duration(days: i));
+            final id = DateFormat('yyyy-MM-dd').format(date);
+
+            final doc = snapshot.docs.where((e) => e.id == id).toList();
+
+            if (doc.isNotEmpty) {
+              final data = doc.first.data();
+
+              final calories = ((data["totalCalories"] ?? 0) as num).toInt();
+              final water = ((data["waterDrank"] ?? 0) as num).toDouble();
+
+              if (calories >= dailyGoalCalories || water >= 8) {
+                completedDays++;
+              }
+            }
+          }
+
+          for (int i = 0; i < 30; i++) {
+            final date = now.subtract(Duration(days: i));
+            final id = DateFormat('yyyy-MM-dd').format(date);
+
+            final doc = snapshot.docs.where((e) => e.id == id).toList();
+
+            if (doc.isEmpty) break;
+
+            final data = doc.first.data();
+            final calories = ((data["totalCalories"] ?? 0) as num).toInt();
+            final water = ((data["waterDrank"] ?? 0) as num).toDouble();
+
+            if (calories > 0 || water > 0) {
+              streak++;
+            } else {
+              break;
+            }
+          }
+
+          return {"completedDays": completedDays, "streak": streak};
+        });
+  }
+
+  String getHealthStatus({
+    required int calories,
+    required int calorieGoal,
+    required double water,
+    required int protein,
+    required int proteinGoal,
+  }) {
+    double calorieProgress = calories / calorieGoal;
+    double proteinProgress = protein / proteinGoal;
+
+    if (calorieProgress >= 0.9 && proteinProgress >= 0.8 && water >= 6) {
+      return "Excellent!";
+    }
+
+    if (calorieProgress >= 0.7 && proteinProgress >= 0.6) {
+      return "Great!";
+    }
+
+    if (calorieProgress >= 0.5) {
+      return "Good!";
+    }
+
+    return "Needs Focus";
   }
 
   Future<void> loadUserGoals() async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-    final doc =
-        await FirebaseFirestore.instance.collection("users").doc(uid).get();
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .get();
 
-    if (!mounted) return;
+    if (!mounted || !doc.exists) return;
 
-    if (doc.exists) {
-      final data = doc.data()!;
+    final data = doc.data()!;
 
-      setState(() {
-        dailyGoalCalories = ((data["dailyCalories"] ?? 0) as num).toInt();
-        proteinGoal = ((data["proteinTarget"] ?? 0) as num).toInt();
-        carbsGoal = ((data["carbsTarget"] ?? 0) as num).toInt();
-        fatGoal = ((data["fatTarget"] ?? 0) as num).toInt();
-      });
-    }
+    setState(() {
+      dailyGoalCalories = ((data["dailyCalories"] ?? 2200) as num).toInt();
+      proteinGoal = ((data["proteinTarget"] ?? 150) as num).toInt();
+      carbsGoal = ((data["carbsTarget"] ?? 300) as num).toInt();
+      fatGoal = ((data["fatTarget"] ?? 75) as num).toInt();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const Scaffold(
+        backgroundColor: bgColor,
+        body: Center(
+          child: Text(
+            "User not logged in",
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
     final todayId = DateFormat('yyyy-MM-dd').format(selectedDate);
-    final uid = FirebaseAuth.instance.currentUser!.uid;
 
     final dailyRef = FirebaseFirestore.instance
         .collection("users")
-        .doc(uid)
+        .doc(user.uid)
         .collection("dailyLogs")
         .doc(todayId);
 
@@ -89,164 +174,115 @@ class _HomeScreenState extends State<HomeScreen>
           _backgroundGlow(),
           SafeArea(
             child: StreamBuilder<DocumentSnapshot>(
-              stream: dailyRef.snapshots(),
-              builder: (context, snapshot) {
-                final data =
-                    snapshot.data?.data() as Map<String, dynamic>?;
+              stream: FirebaseFirestore.instance
+                  .collection("users")
+                  .doc(user.uid)
+                  .snapshots(),
+              builder: (context, userSnapshot) {
+                final userData =
+                    userSnapshot.data?.data() as Map<String, dynamic>?;
 
-                final calories =
-                    ((data?["totalCalories"] ?? 0) as num).toInt();
-                final todayProtein =
-                    ((data?["totalProtein"] ?? 0) as num).toInt();
-                final todayCarbs =
-                    ((data?["totalCarbs"] ?? 0) as num).toInt();
-                final todayFat =
-                    ((data?["totalFat"] ?? 0) as num).toInt();
+                final userName = userData?["name"] ?? "User";
 
-                final waterDrank =
-                    ((data?["waterDrank"] ?? 0) as num).toDouble();
-                final dailyWaterGoal =
-                    ((data?["dailyWaterGoal"] ?? 4.0) as num).toDouble();
+                return StreamBuilder<DocumentSnapshot>(
+                  stream: dailyRef.snapshots(),
+                  builder: (context, snapshot) {
+                    final data = snapshot.data?.data() as Map<String, dynamic>?;
 
-                final remaining = dailyGoalCalories - calories;
+                    final calories = ((data?["totalCalories"] ?? 0) as num)
+                        .toInt();
+                    final todayProtein = ((data?["totalProtein"] ?? 0) as num)
+                        .toInt();
+                    final todayCarbs = ((data?["totalCarbs"] ?? 0) as num)
+                        .toInt();
+                    final todayFat = ((data?["totalFat"] ?? 0) as num).toInt();
 
-                final calorieProgress = dailyGoalCalories == 0
-                    ? 0.0
-                    : (calories / dailyGoalCalories).clamp(0.0, 1.0);
+                    final waterDrank = ((data?["waterDrank"] ?? 0) as num)
+                        .toDouble();
+                    final dailyWaterGoal =
+                        ((data?["dailyWaterGoal"] ?? 8.0) as num).toDouble();
 
-                final remainingWater =
-                    (dailyWaterGoal - waterDrank).clamp(0.0, dailyWaterGoal);
-
-                return SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 34),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _header(),
-                      const SizedBox(height: 22),
-
-                      _calorieHeroCard(
-                        calories: calories,
-                        goal: dailyGoalCalories,
-                        remaining: remaining,
-                        progress: calorieProgress,
-                      ),
-
-                      const SizedBox(height: 22),
-
-                      Row(
+                    return SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 34),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: _smallStatCard(
-                              icon: Icons.local_fire_department_rounded,
-                              title: "Consumed",
-                              value: "$calories",
-                              unit: "kcal",
-                              color: orange,
-                            ),
+                          _header(userName),
+                          const SizedBox(height: 24),
+
+                          _healthScoreCard(
+                            calories: calories,
+                            protein: todayProtein,
+                            water: waterDrank,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _smallStatCard(
-                              icon: Icons.flag_rounded,
-                              title: "Daily Goal",
-                              value: "$dailyGoalCalories",
-                              unit: "kcal",
-                              color: primary,
-                            ),
+                          const SizedBox(height: 22),
+
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _todayStatCard(
+                                  icon: Icons.local_fire_department_rounded,
+                                  color: orange,
+                                  title: "Calories",
+                                  value: "$calories",
+                                  subtitle: "of $dailyGoalCalories kcal",
+                                  progress: (calories / dailyGoalCalories)
+                                      .clamp(0.0, 1.0),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: _waterTodayCard(
+                                  waterDrank: waterDrank,
+                                  goal: dailyWaterGoal,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 22),
+
+                          _macrosTodayCard(
+                            protein: todayProtein,
+                            carbs: todayCarbs,
+                            fat: todayFat,
+                            proteinGoal: proteinGoal,
+                            carbsGoal: carbsGoal,
+                            fatGoal: fatGoal,
+                          ),
+
+                          const SizedBox(height: 22),
+
+                          FutureBuilder<String>(
+                            future: aiController.generateDailyTip(todayProtein),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return _loadingTipCard();
+                              }
+
+                              final tip =
+                                  snapshot.data ??
+                                  "Add more protein and stay hydrated today for better energy and recovery.";
+
+                              return _aiTipCard(tip);
+                            },
+                          ),
+
+                          const SizedBox(height: 22),
+
+                          Row(
+                            children: [
+                              Expanded(child: _quickActionScan()),
+                              const SizedBox(width: 14),
+                              Expanded(child: _quickActionFitness()),
+                            ],
                           ),
                         ],
                       ),
-
-                      const SizedBox(height: 26),
-
-                      _sectionTitle(
-                        title: "Today's Macros",
-                        subtitle: "Protein, carbs and fat progress",
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      Row(
-                        children: [
-                          _macroCard(
-                            title: "Protein",
-                            value: todayProtein,
-                            goal: proteinGoal,
-                            icon: Icons.fitness_center_rounded,
-                            color: primary,
-                          ),
-                          const SizedBox(width: 12),
-                          _macroCard(
-                            title: "Carbs",
-                            value: todayCarbs,
-                            goal: carbsGoal,
-                            icon: Icons.rice_bowl_rounded,
-                            color: cyan,
-                          ),
-                          const SizedBox(width: 12),
-                          _macroCard(
-                            title: "Fat",
-                            value: todayFat,
-                            goal: fatGoal,
-                            icon: Icons.opacity_rounded,
-                            color: orange,
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 26),
-
-                      _waterCard(
-                        waterDrank: waterDrank,
-                        goal: dailyWaterGoal,
-                        remaining: remainingWater,
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      _drinkWaterButton(),
-
-                      const SizedBox(height: 26),
-
-                      FutureBuilder<String>(
-                        future: aiController.generateDailyTip(todayProtein),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return _loadingTipCard();
-                          }
-
-                          if (snapshot.hasError) {
-                            final error =
-                                snapshot.error.toString().toLowerCase();
-
-                            if (error.contains("socketexception") ||
-                                error.contains("failed host lookup") ||
-                                error.contains("network") ||
-                                error.contains("connection")) {
-                              return _aiCoachCard(
-                                "📡 No internet connection. Please check your Wi-Fi or mobile data to load AI nutrition coaching.",
-                              );
-                            }
-
-                            return _aiCoachCard(
-                              "⚠️ Unable to load AI coaching tips right now.",
-                            );
-                          }
-
-                          if (!snapshot.hasData || snapshot.data == null) {
-                            return _aiCoachCard(
-                              "💪 Keep tracking your meals daily to receive smart nutrition coaching.",
-                            );
-                          }
-
-                          return _aiCoachCard(snapshot.data!);
-                        },
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -256,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _header() {
+  Widget _header(String userName) {
     return Row(
       children: [
         Expanded(
@@ -264,158 +300,392 @@ class _HomeScreenState extends State<HomeScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                "Welcome Back!",
+                "Welcome Back 👋",
                 style: TextStyle(
+                  color: textSub,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                userName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
                   color: textMain,
                   fontSize: 30,
                   fontWeight: FontWeight.w900,
-                  letterSpacing: -0.6,
-                  height: 1.05,
+                  letterSpacing: -0.8,
                 ),
               ),
-              const SizedBox(height: 7),
-              Text(
-                DateFormat('EEEE, dd MMM').format(DateTime.now()),
-                style: const TextStyle(
+              const SizedBox(height: 6),
+              const Text(
+                "Track your health goals today",
+                style: TextStyle(
                   color: textSub,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
         ),
         Container(
-          height: 50,
-          width: 50,
+          height: 58,
+          width: 58,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: LinearGradient(
-              colors: [
-                primary.withOpacity(0.95),
-                cyan.withOpacity(0.95),
-              ],
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              colors: [primaryLight, primary],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color: primary.withOpacity(0.28),
-                blurRadius: 22,
+                color: primary.withOpacity(0.35),
+                blurRadius: 24,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
           child: const Icon(
-            Icons.auto_graph_rounded,
-            color: Colors.white,
+            Icons.workspace_premium_rounded,
+            color: bgColor,
+            size: 30,
           ),
         ),
       ],
     );
   }
 
-  Widget _calorieHeroCard({
+  Widget _healthScoreCard({
     required int calories,
-    required int goal,
-    required int remaining,
-    required double progress,
+    required int protein,
+    required double water,
   }) {
-    final displayRemaining = remaining < 0 ? 0 : remaining;
+    final healthText = getHealthStatus(
+      calories: calories,
+      calorieGoal: dailyGoalCalories,
+      water: water,
+      protein: protein,
+      proteinGoal: proteinGoal,
+    );
 
+    return StreamBuilder<Map<String, dynamic>>(
+      stream: weeklyStatsStream(),
+      builder: (context, snapshot) {
+        final completedDays = snapshot.data?["completedDays"] ?? 0;
+        final streak = snapshot.data?["streak"] ?? 0;
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(34),
+            gradient: const LinearGradient(
+              colors: [Color(0xFF4ADE80), Color(0xFF22C55E), Color(0xFF06B6D4)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "AI Health Score",
+                style: TextStyle(
+                  color: bgColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+
+              const SizedBox(height: 26),
+
+              Text(
+                healthText,
+                style: const TextStyle(
+                  color: bgColor,
+                  fontSize: 42,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1.2,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              Text(
+                healthText == "Excellent!"
+                    ? "You're crushing your goals today 🔥"
+                    : healthText == "Great!"
+                    ? "Almost there, keep going 💪"
+                    : healthText == "Good!"
+                    ? "You're making progress 🚀"
+                    : "Let's improve today's nutrition ✨",
+                style: const TextStyle(
+                  color: bgColor,
+                  fontSize: 17,
+                  height: 1.45,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _greenMiniBox("Daily Streak", "$streak days"),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _greenMiniBox("This Week", "$completedDays/7 goals"),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _greenMiniBox(String title, String value) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(34),
-        gradient: const LinearGradient(
-          colors: [
-            Color(0xFF22C55E),
-            Color(0xFF06B6D4),
-            Color(0xFF3B82F6),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: cyan.withOpacity(0.30),
-            blurRadius: 35,
-            offset: const Offset(0, 16),
+        color: bgColor.withOpacity(0.13),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: bgColor.withOpacity(0.08)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              color: bgColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: const TextStyle(
+              color: bgColor,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ],
       ),
-      child: Stack(
+    );
+  }
+
+  Widget _todayStatCard({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required String value,
+    required String subtitle,
+    required double progress,
+  }) {
+    return Container(
+      height: 202,
+      padding: const EdgeInsets.all(20),
+      decoration: _glassCard(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Positioned(
-            right: -48,
-            top: -48,
-            child: _softCircle(Colors.white.withOpacity(0.15), 160),
+          Row(
+            children: [
+              _iconBox(icon, color),
+              const Spacer(),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: textSub,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
           ),
-          Positioned(
-            right: 8,
-            bottom: 8,
-            child: Icon(
-              Icons.restaurant_rounded,
-              size: 96,
-              color: Colors.white.withOpacity(0.10),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              color: textMain,
+              fontSize: 34,
+              fontWeight: FontWeight.w900,
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const FirePulseIcon(),
-              const SizedBox(height: 20),
-              Text(
-                "$displayRemaining",
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 64,
-                  fontWeight: FontWeight.w900,
-                  height: 1,
-                  letterSpacing: -2,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                remaining < 0
-                    ? "Calories limit exceeded"
-                    : "Calories remaining today",
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.88),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 22),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(40),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 15,
-                  backgroundColor: Colors.white.withOpacity(0.20),
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    Colors.white,
+          Text(
+            subtitle,
+            style: const TextStyle(
+              color: textSub,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 18),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              backgroundColor: Colors.white.withOpacity(0.06),
+              valueColor: AlwaysStoppedAnimation(color),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _waterTodayCard({required double waterDrank, required double goal}) {
+    final progress = goal == 0 ? 0.0 : (waterDrank / goal).clamp(0.0, 1.0);
+
+    return GestureDetector(
+      onTap: () => addWater(0.25),
+      child: Container(
+        height: 202,
+        padding: const EdgeInsets.all(20),
+        decoration: _glassCard(glowColor: cyan),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                _iconBox(Icons.water_drop_rounded, cyan),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
                   ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "$calories / $goal kcal",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                    ),
+                  decoration: BoxDecoration(
+                    color: cyan.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(30),
                   ),
-                  Text(
-                    "${(progress * 100).toStringAsFixed(0)}%",
+                  child: const Text(
+                    "+ Tap",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.86),
-                      fontWeight: FontWeight.w800,
+                      color: cyan,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                ],
+                ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              waterDrank.toStringAsFixed(1),
+              style: const TextStyle(
+                color: textMain,
+                fontSize: 34,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            Text(
+              "of ${goal.toStringAsFixed(0)} glasses",
+              style: const TextStyle(
+                color: textSub,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 18),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(30),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 8,
+                backgroundColor: Colors.white.withOpacity(0.06),
+                valueColor: const AlwaysStoppedAnimation(cyan),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _macrosTodayCard({
+    required int protein,
+    required int carbs,
+    required int fat,
+    required int proteinGoal,
+    required int carbsGoal,
+    required int fatGoal,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: _glassCard(radius: 32, glowColor: primary),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _iconBox(Icons.pie_chart_rounded, primary, size: 54),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Macros Today",
+                      style: TextStyle(
+                        color: textMain,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      "Updated after every meal",
+                      style: TextStyle(
+                        color: textSub,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: _macroCircle(
+                  title: "Protein",
+                  value: protein,
+                  goal: proteinGoal,
+                  color: primary,
+                ),
+              ),
+              Expanded(
+                child: _macroCircle(
+                  title: "Carbs",
+                  value: carbs,
+                  goal: carbsGoal,
+                  color: cyan,
+                ),
+              ),
+              Expanded(
+                child: _macroCircle(
+                  title: "Fats",
+                  value: fat,
+                  goal: fatGoal,
+                  color: orange,
+                ),
               ),
             ],
           ),
@@ -424,51 +694,117 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _smallStatCard({
-    required IconData icon,
+  Widget _macroCircle({
     required String title,
-    required String value,
-    required String unit,
+    required int value,
+    required int goal,
     required Color color,
   }) {
-    return _glassCard(
+    final progress = goal == 0 ? 0.0 : (value / goal).clamp(0.0, 1.0);
+    final percent = (progress * 100).round();
+
+    return Column(
+      children: [
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: progress),
+          duration: const Duration(milliseconds: 900),
+          curve: Curves.easeOutCubic,
+          builder: (context, animatedValue, _) {
+            return SizedBox(
+              height: 96,
+              width: 96,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    height: 86,
+                    width: 86,
+                    child: CircularProgressIndicator(
+                      value: animatedValue,
+                      strokeWidth: 9,
+                      strokeCap: StrokeCap.round,
+                      backgroundColor: Colors.white.withOpacity(0.06),
+                      valueColor: AlwaysStoppedAnimation(color),
+                    ),
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "$percent%",
+                        style: const TextStyle(
+                          color: textMain,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      Text(
+                        "$value/$goal g",
+                        style: const TextStyle(
+                          color: textSub,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        Text(
+          title,
+          style: const TextStyle(
+            color: textMain,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          "${goal - value <= 0 ? 0 : goal - value}g left",
+          style: const TextStyle(
+            color: textSub,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _aiTipCard(String tip) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: _glassCard(radius: 32, glowColor: primary),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _roundIcon(icon, color),
-          const SizedBox(width: 12),
+          _iconBox(Icons.bolt_rounded, primary, size: 60),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: textSub,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                const Text(
+                  "AI Tip of the Day",
+                  style: TextStyle(
+                    color: textMain,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
-                RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: value,
-                        style: const TextStyle(
-                          color: textMain,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      TextSpan(
-                        text: " $unit",
-                        style: const TextStyle(
-                          color: textSub,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 10),
+                Text(
+                  tip,
+                  style: const TextStyle(
+                    color: textSub,
+                    fontSize: 15,
+                    height: 1.55,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
@@ -479,198 +815,45 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _sectionTitle({
-    required String title,
-    required String subtitle,
-  }) {
-    return Row(
-      children: [
-        Container(
-          height: 42,
-          width: 6,
-          decoration: BoxDecoration(
-            color: primary,
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
-        const SizedBox(width: 11),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: textMain,
-                  fontSize: 21,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.3,
-                ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: textSub,
-                  fontSize: 12.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _macroCard({
-    required String title,
-    required int value,
-    required int goal,
-    required IconData icon,
-    required Color color,
-  }) {
-    final progress = goal == 0 ? 0.0 : (value / goal).clamp(0.0, 1.0);
-
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(13),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          color: Colors.white.withOpacity(0.045),
-          border: Border.all(color: Colors.white.withOpacity(0.075)),
-        ),
-        child: Column(
-          children: [
-            _roundIcon(icon, color, size: 42),
-            const SizedBox(height: 10),
-            Text(
-              "$value g",
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: textMain,
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: const TextStyle(
-                color: textSub,
-                fontSize: 11.5,
-              ),
-            ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 7,
-                backgroundColor: Colors.white10,
-                valueColor: AlwaysStoppedAnimation(color),
-              ),
-            ),
-            const SizedBox(height: 7),
-            Text(
-              "$goal g goal",
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.38),
-                fontSize: 10,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _waterCard({
-    required double waterDrank,
-    required double goal,
-    required double remaining,
-  }) {
-    final progress = goal == 0 ? 0.0 : (waterDrank / goal).clamp(0.0, 1.0);
-
+  Widget _quickActionScan() {
     return Container(
-      width: double.infinity,
+      height: 150,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: LinearGradient(
-          colors: [
-            Colors.white.withOpacity(0.060),
-            Colors.white.withOpacity(0.035),
-          ],
+        borderRadius: BorderRadius.circular(28),
+        gradient: const LinearGradient(
+          colors: [primaryLight, primary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: cyan.withOpacity(0.16)),
+        boxShadow: [
+          BoxShadow(
+            color: primary.withOpacity(0.25),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
+          ),
+        ],
       ),
-      child: Column(
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _roundIcon(Icons.water_drop_rounded, cyan),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  "Water Intake",
-                  style: TextStyle(
-                    color: textMain,
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              Text(
-                "${(progress * 100).toStringAsFixed(0)}%",
-                style: const TextStyle(
-                  color: cyan,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
+          Icon(Icons.document_scanner_rounded, color: bgColor, size: 34),
+          Spacer(),
           Text(
-            "${remaining.toStringAsFixed(1)}L",
-            style: const TextStyle(
-              color: textMain,
-              fontSize: 52,
+            "AI Scan",
+            style: TextStyle(
+              color: bgColor,
+              fontSize: 21,
               fontWeight: FontWeight.w900,
-              height: 1,
-              letterSpacing: -1.5,
             ),
           ),
-          const SizedBox(height: 7),
-          const Text(
-            "Remaining today",
-            style: TextStyle(
-              color: textSub,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 20),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(30),
-            child: LinearProgressIndicator(
-              value: progress,
-              minHeight: 14,
-              backgroundColor: Colors.white10,
-              valueColor: const AlwaysStoppedAnimation(cyan),
-            ),
-          ),
-          const SizedBox(height: 10),
+          SizedBox(height: 5),
           Text(
-            "${waterDrank.toStringAsFixed(1)} / ${goal.toStringAsFixed(1)} Liters",
-            style: const TextStyle(
-              color: textSub,
-              fontSize: 12,
+            "Scan food or skin",
+            style: TextStyle(
+              color: bgColor,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
             ),
           ),
         ],
@@ -678,173 +861,76 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  Widget _drinkWaterButton() {
-    return GestureDetector(
-      onTap: () => addWater(0.25),
-      child: Container(
-        height: 76,
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26),
-          gradient: const LinearGradient(
-            colors: [
-              Color(0xFF06B6D4),
-              Color(0xFF0891B2),
-              Color(0xFF22C55E),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: cyan.withOpacity(0.32),
-              blurRadius: 28,
-              offset: const Offset(0, 12),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              height: 52,
-              width: 52,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.18),
-              ),
-              child: const Icon(
-                Icons.water_drop_rounded,
-                color: Colors.white,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 15),
-            const Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Drink Water",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    "Tap to add 250ml hydration",
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              height: 42,
-              width: 42,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.18),
-              ),
-              child: const Icon(
-                Icons.add_rounded,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _aiCoachCard(String tip) {
+  Widget _quickActionFitness() {
     return Container(
-      width: double.infinity,
+      height: 150,
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        color: Colors.white.withOpacity(0.045),
-        border: Border.all(color: primary.withOpacity(0.18)),
-      ),
-      child: Column(
+      decoration: _glassCard(radius: 28, glowColor: cyan),
+      child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _roundIcon(Icons.auto_awesome_rounded, primary),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  "AI Coach Tip",
-                  style: TextStyle(
-                    color: textMain,
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
+          Icon(Icons.fitness_center_rounded, color: cyan, size: 34),
+          Spacer(),
           Text(
-            tip,
+            "Fitness Plan",
             style: TextStyle(
-              color: Colors.white.withOpacity(0.74),
-              fontSize: 14.5,
-              height: 1.6,
-              fontWeight: FontWeight.w500,
+              color: textMain,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 5),
+          Text(
+            "View workout",
+            style: TextStyle(
+              color: textSub,
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _glassCard({required Widget child}) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.050),
-            borderRadius: BorderRadius.circular(26),
-            border: Border.all(color: Colors.white.withOpacity(0.075)),
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-
-  Widget _roundIcon(IconData icon, Color color, {double size = 46}) {
-    return Container(
-      height: size,
-      width: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color.withOpacity(0.14),
-      ),
-      child: Icon(icon, color: color, size: size * 0.50),
     );
   }
 
   Widget _loadingTipCard() {
     return Container(
-      height: 155,
+      height: 145,
+      decoration: _glassCard(radius: 32),
+      child: const Center(child: CircularProgressIndicator(color: primary)),
+    );
+  }
+
+  BoxDecoration _glassCard({double radius = 30, Color glowColor = primary}) {
+    return BoxDecoration(
+      color: cardColor.withOpacity(0.86),
+      borderRadius: BorderRadius.circular(radius),
+      border: Border.all(color: Colors.white.withOpacity(0.08)),
+      boxShadow: [
+        BoxShadow(
+          color: glowColor.withOpacity(0.10),
+          blurRadius: 28,
+          offset: const Offset(0, 16),
+        ),
+        BoxShadow(
+          color: Colors.black.withOpacity(0.18),
+          blurRadius: 18,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    );
+  }
+
+  Widget _iconBox(IconData icon, Color color, {double size = 50}) {
+    return Container(
+      height: size,
+      width: size,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.045),
-        borderRadius: BorderRadius.circular(30),
+        color: color.withOpacity(0.13),
+        borderRadius: BorderRadius.circular(size * 0.32),
+        border: Border.all(color: color.withOpacity(0.15)),
       ),
-      child: const Center(
-        child: CircularProgressIndicator(color: primary),
-      ),
+      child: Icon(icon, color: color, size: size * 0.48),
     );
   }
 
@@ -853,28 +939,18 @@ class _HomeScreenState extends State<HomeScreen>
       children: [
         Positioned(
           top: -120,
-          right: -95,
-          child: AnimatedBuilder(
-            animation: _animationController ?? kAlwaysDismissedAnimation,
-            builder: (_, __) {
-              return _blurCircle(
-                primary.withOpacity(
-                  0.12 + ((_animationController?.value ?? 0) * 0.08),
-                ),
-                300,
-              );
-            },
-          ),
+          right: -100,
+          child: _blurCircle(primary.withOpacity(0.18), 300),
         ),
         Positioned(
-          top: 300,
-          left: -130,
-          child: _blurCircle(cyan.withOpacity(0.12), 300),
+          top: 330,
+          left: -150,
+          child: _blurCircle(cyan.withOpacity(0.14), 310),
         ),
         Positioned(
           bottom: -120,
-          right: -90,
-          child: _blurCircle(const Color(0xFF6366F1).withOpacity(0.11), 270),
+          right: -130,
+          child: _blurCircle(primaryLight.withOpacity(0.10), 280),
         ),
       ],
     );
@@ -882,29 +958,24 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _blurCircle(Color color, double size) {
     return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 70, sigmaY: 70),
-      child: _softCircle(color, size),
-    );
-  }
-
-  Widget _softCircle(Color color, double size) {
-    return Container(
-      height: size,
-      width: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
+      imageFilter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+      child: Container(
+        height: size,
+        width: size,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
     );
   }
 
   Future<void> addWater(double amount) async {
-    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
     final todayId = DateFormat('yyyy-MM-dd').format(DateTime.now());
 
     final dailyRef = FirebaseFirestore.instance
         .collection("users")
-        .doc(uid)
+        .doc(user.uid)
         .collection("dailyLogs")
         .doc(todayId);
 
@@ -913,8 +984,8 @@ class _HomeScreenState extends State<HomeScreen>
       final data = snapshot.data();
 
       final currentWater = ((data?["waterDrank"] ?? 0) as num).toDouble();
-      final dailyWaterGoal =
-          ((data?["dailyWaterGoal"] ?? 4.0) as num).toDouble();
+      final dailyWaterGoal = ((data?["dailyWaterGoal"] ?? 8.0) as num)
+          .toDouble();
 
       transaction.set(dailyRef, {
         "waterDrank": currentWater + amount,

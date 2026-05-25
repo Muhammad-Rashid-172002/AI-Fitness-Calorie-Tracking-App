@@ -6,6 +6,8 @@ import 'package:fitmind_ai/controller/scan_controller.dart';
 import 'package:fitmind_ai/view/analyzing_screen.dart';
 import 'package:fitmind_ai/view/quick_add_meal_screen.dart';
 
+enum ScanMode { food, face, medicine }
+
 class ScanScreen extends StatefulWidget {
   const ScanScreen({super.key});
 
@@ -15,14 +17,63 @@ class ScanScreen extends StatefulWidget {
 
 class _ScanScreenState extends State<ScanScreen> {
   final ScanController controller = ScanController();
+
   File? selectedImage;
+  ScanMode selectedMode = ScanMode.food;
 
   static const Color bgColor = Color(0xFF0B1220);
   static const Color surfaceColor = Color(0xFF111C2E);
   static const Color primary = Color(0xFF22C55E);
   static const Color cyan = Color(0xFF06B6D4);
+  static const Color purple = Color(0xFF8B5CF6);
+  static const Color pink = Color(0xFFEC4899);
+  static const Color blue = Color(0xFF2563EB);
   static const Color textMain = Color(0xFFF8FAFC);
   static const Color textSub = Color(0xFF94A3B8);
+
+  String get modeTitle {
+    switch (selectedMode) {
+      case ScanMode.food:
+        return "Scan Your Meal";
+      case ScanMode.face:
+        return "Scan Your Face";
+      case ScanMode.medicine:
+        return "Scan Medicine";
+    }
+  }
+
+  String get modeSubtitle {
+    switch (selectedMode) {
+      case ScanMode.food:
+        return "Point your camera at food\nand get calories & macros instantly";
+      case ScanMode.face:
+        return "Take a clear face photo\nand get AI skin insights";
+      case ScanMode.medicine:
+        return "Scan medicine label or tablet\nand get helpful AI information";
+    }
+  }
+
+  IconData get modeIcon {
+    switch (selectedMode) {
+      case ScanMode.food:
+        return Icons.restaurant_rounded;
+      case ScanMode.face:
+        return Icons.face_retouching_natural_rounded;
+      case ScanMode.medicine:
+        return Icons.medication_liquid_rounded;
+    }
+  }
+
+  List<Color> get modeColors {
+    switch (selectedMode) {
+      case ScanMode.food:
+        return const [primary, cyan];
+      case ScanMode.face:
+        return const [purple, pink];
+      case ScanMode.medicine:
+        return const [cyan, blue];
+    }
+  }
 
   Future<void> _takePhoto() async {
     final image = await controller.pickFromCamera();
@@ -37,13 +88,21 @@ class _ScanScreenState extends State<ScanScreen> {
   void _handleImage(File image) {
     setState(() => selectedImage = image);
 
+    Future<String> analyzeFuture;
+
+    if (selectedMode == ScanMode.food) {
+      analyzeFuture = controller.analyzeFoodImage(image);
+    } else if (selectedMode == ScanMode.face) {
+      analyzeFuture = controller.analyzeFaceImage(image);
+    } else {
+      analyzeFuture = controller.analyzeMedicineImage(image);
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => AnalyzingScreen(
-          image: image,
-          analyzeFuture: controller.analyzeFoodImage(image),
-        ),
+        builder: (_) =>
+            AnalyzingScreen(image: image, analyzeFuture: analyzeFuture),
       ),
     );
   }
@@ -51,14 +110,14 @@ class _ScanScreenState extends State<ScanScreen> {
   void _openQuickAdd() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const QuickAddMealScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const QuickAddMealScreen()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = modeColors;
+
     return Scaffold(
       backgroundColor: bgColor,
       body: Stack(
@@ -70,25 +129,25 @@ class _ScanScreenState extends State<ScanScreen> {
               physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 30),
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 30),
                   sliver: SliverList(
-                    delegate: SliverChildListDelegate(
-                      [
-                        _topBar(),
-                        const SizedBox(height: 24),
-                        _premiumHeroCard(),
-                        const SizedBox(height: 18),
-                        _mainScannerCard(),
-                        const SizedBox(height: 18),
-                        _quickActions(),
-                        const SizedBox(height: 24),
-                        _sectionTitle("AI Nutrition Tools"),
-                        const SizedBox(height: 14),
-                        _featureGrid(),
-                        const SizedBox(height: 24),
-                        _dietTipCard(),
-                      ],
-                    ),
+                    delegate: SliverChildListDelegate([
+                      _topBar(),
+                      const SizedBox(height: 22),
+                      _heroCard(colors),
+                      const SizedBox(height: 18),
+                      _scanModeSelector(),
+                      const SizedBox(height: 18),
+                      _mainScannerCard(colors),
+                      const SizedBox(height: 18),
+                      _quickActions(),
+                      const SizedBox(height: 24),
+                      _sectionTitle("Smart AI Tools"),
+                      const SizedBox(height: 14),
+                      _featureGrid(),
+                      const SizedBox(height: 24),
+                      _tipCard(),
+                    ]),
                   ),
                 ),
               ],
@@ -99,73 +158,51 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _backgroundGlow() {
-    return Stack(
-      children: [
-        Positioned(
-          top: -90,
-          right: -80,
-          child: _blurCircle(primary.withOpacity(0.20), 260),
-        ),
-        Positioned(
-          top: 260,
-          left: -120,
-          child: _blurCircle(cyan.withOpacity(0.14), 280),
-        ),
-        Positioned(
-          bottom: -100,
-          right: -80,
-          child: _blurCircle(const Color(0xFF6366F1).withOpacity(0.12), 250),
-        ),
-      ],
-    );
-  }
-
   Widget _topBar() {
     return Row(
       children: [
         Container(
-          height: 52,
-          width: 52,
+          height: 54,
+          width: 54,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: const LinearGradient(
-              colors: [primary, cyan],
+            borderRadius: BorderRadius.circular(19),
+            gradient: LinearGradient(
+              colors: modeColors,
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color: primary.withOpacity(0.30),
+                color: modeColors.first.withOpacity(0.35),
                 blurRadius: 24,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
-          child: const Icon(
-            Icons.document_scanner_rounded,
-            color: Colors.white,
-            size: 27,
-          ),
+          child: Icon(modeIcon, color: Colors.white, size: 28),
         ),
         const SizedBox(width: 14),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "Food Scanner",
+              const Text(
+                "AI Scanner",
                 style: TextStyle(
                   color: textMain,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
+                  fontSize: 27,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.7,
                 ),
               ),
-              SizedBox(height: 3),
+              const SizedBox(height: 3),
               Text(
-                "AI powered calories & macro analysis",
-                style: TextStyle(
+                selectedMode == ScanMode.food
+                    ? "Calories, macros & nutrition insights"
+                    : selectedMode == ScanMode.face
+                    ? "Face scan & AI skin insights"
+                    : "Medicine scan & AI safety information",
+                style: const TextStyle(
                   color: textSub,
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
@@ -179,34 +216,36 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _premiumHeroCard() {
+  Widget _heroCard(List<Color> colors) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(28),
         gradient: LinearGradient(
           colors: [
-            Colors.white.withOpacity(0.09),
+            colors.first.withOpacity(0.22),
+            colors.last.withOpacity(0.10),
             Colors.white.withOpacity(0.035),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        border: Border.all(color: Colors.white.withOpacity(0.09)),
       ),
       child: Row(
         children: [
           Container(
-            height: 58,
-            width: 58,
+            height: 62,
+            width: 62,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: primary.withOpacity(0.13),
+              color: Colors.white.withOpacity(0.09),
+              border: Border.all(color: Colors.white.withOpacity(0.10)),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.auto_awesome_rounded,
-              color: primary,
-              size: 30,
+              color: colors.first,
+              size: 31,
             ),
           ),
           const SizedBox(width: 14),
@@ -214,21 +253,30 @@ class _ScanScreenState extends State<ScanScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Scan smarter, eat better",
-                  style: TextStyle(
+                Text(
+                  selectedMode == ScanMode.food
+                      ? "Scan smarter, eat better"
+                      : selectedMode == ScanMode.face
+                      ? "Understand your skin better"
+                      : "Know your medicine faster",
+                  style: const TextStyle(
                     color: textMain,
                     fontSize: 17,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 6),
                 Text(
-                  "Take a meal photo and get instant calories, protein, carbs and fats.",
+                  selectedMode == ScanMode.food
+                      ? "Take a meal photo and get instant calories, protein, carbs and fats."
+                      : selectedMode == ScanMode.face
+                      ? "Scan your face and get basic AI skin insights with care suggestions."
+                      : "Scan medicine packaging or label and get easy-to-read AI information.",
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.58),
+                    color: Colors.white.withOpacity(0.62),
                     fontSize: 13,
                     height: 1.35,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -239,18 +287,152 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _mainScannerCard() {
+  Widget _scanModeSelector() {
+    return Row(
+      children: [
+        Expanded(
+          child: _scanModeCard(
+            mode: ScanMode.food,
+            icon: Icons.restaurant_rounded,
+            title: "Food",
+            subtitle: "Nutrition",
+            colors: const [primary, cyan],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _scanModeCard(
+            mode: ScanMode.face,
+            icon: Icons.face_retouching_natural_rounded,
+            title: "Face",
+            subtitle: "Skin AI",
+            colors: const [purple, pink],
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _scanModeCard(
+            mode: ScanMode.medicine,
+            icon: Icons.medication_liquid_rounded,
+            title: "Medicine",
+            subtitle: "AI Info",
+            colors: const [cyan, blue],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _scanModeCard({
+    required ScanMode mode,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required List<Color> colors,
+  }) {
+    final bool isSelected = selectedMode == mode;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          selectedMode = mode;
+          selectedImage = null;
+        });
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 260),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          gradient: isSelected
+              ? LinearGradient(
+                  colors: colors,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.065),
+                    Colors.white.withOpacity(0.025),
+                  ],
+                ),
+          border: Border.all(
+            color: isSelected
+                ? Colors.white.withOpacity(0.26)
+                : Colors.white.withOpacity(0.08),
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: colors.first.withOpacity(0.30),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
+                  ),
+                ]
+              : [],
+        ),
+        child: Column(
+          children: [
+            Container(
+              height: 46,
+              width: 46,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isSelected
+                    ? Colors.white.withOpacity(0.18)
+                    : colors.first.withOpacity(0.12),
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? Colors.white : colors.first,
+                size: 25,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isSelected ? Colors.white : textMain,
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              subtitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: isSelected ? Colors.white.withOpacity(0.82) : textSub,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _mainScannerCard(List<Color> colors) {
     return GestureDetector(
       onTap: _takePhoto,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
-        height: 330,
+        height: 360,
         width: double.infinity,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(34),
+          borderRadius: BorderRadius.circular(36),
           color: surfaceColor,
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          border: Border.all(color: Colors.white.withOpacity(0.09)),
           boxShadow: [
+            BoxShadow(
+              color: colors.first.withOpacity(0.18),
+              blurRadius: 36,
+              offset: const Offset(0, 18),
+            ),
             BoxShadow(
               color: Colors.black.withOpacity(0.35),
               blurRadius: 30,
@@ -259,7 +441,7 @@ class _ScanScreenState extends State<ScanScreen> {
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(34),
+          borderRadius: BorderRadius.circular(36),
           child: Stack(
             children: [
               if (selectedImage != null)
@@ -270,16 +452,20 @@ class _ScanScreenState extends State<ScanScreen> {
                   fit: BoxFit.cover,
                 ),
 
-              if (selectedImage == null) _scannerEmptyContent(),
+              if (selectedImage == null) _scannerEmptyContent(colors),
 
               Positioned.fill(
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.black.withOpacity(selectedImage == null ? 0.05 : 0.55),
+                        Colors.black.withOpacity(
+                          selectedImage == null ? 0.06 : 0.58,
+                        ),
                         Colors.transparent,
-                        Colors.black.withOpacity(selectedImage == null ? 0.10 : 0.75),
+                        Colors.black.withOpacity(
+                          selectedImage == null ? 0.10 : 0.78,
+                        ),
                       ],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
@@ -293,7 +479,20 @@ class _ScanScreenState extends State<ScanScreen> {
                 left: 18,
                 child: _glassBadge(
                   icon: Icons.bolt_rounded,
-                  text: "Instant AI Scan",
+                  text: selectedMode == ScanMode.food
+                      ? "Food AI Scan"
+                      : selectedMode == ScanMode.face
+                      ? "Face AI Scan"
+                      : "Medicine AI Scan",
+                ),
+              ),
+
+              Positioned(
+                top: 18,
+                right: 18,
+                child: _glassBadge(
+                  icon: Icons.verified_rounded,
+                  text: "Smart Mode",
                 ),
               ),
 
@@ -302,7 +501,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 left: 18,
                 right: 18,
                 child: selectedImage == null
-                    ? _scanButton()
+                    ? _scanButton(colors)
                     : _selectedImageBottomBar(),
               ),
             ],
@@ -312,14 +511,14 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _scannerEmptyContent() {
+  Widget _scannerEmptyContent(List<Color> colors) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            Color(0xFF13233A),
-            Color(0xFF0F172A),
-            Color(0xFF102A33),
+            colors.first.withOpacity(0.22),
+            const Color(0xFF0F172A),
+            colors.last.withOpacity(0.17),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -330,48 +529,48 @@ class _ScanScreenState extends State<ScanScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              height: 112,
-              width: 112,
+              height: 118,
+              width: 118,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    primary.withOpacity(0.95),
-                    cyan.withOpacity(0.95),
-                  ],
-                ),
+                gradient: LinearGradient(colors: colors),
                 boxShadow: [
                   BoxShadow(
-                    color: cyan.withOpacity(0.30),
-                    blurRadius: 35,
-                    offset: const Offset(0, 14),
+                    color: colors.first.withOpacity(0.35),
+                    blurRadius: 38,
+                    offset: const Offset(0, 16),
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.camera_alt_rounded,
+              child: Icon(
+                selectedMode == ScanMode.food
+                    ? Icons.camera_alt_rounded
+                    : selectedMode == ScanMode.face
+                    ? Icons.face_retouching_natural_rounded
+                    : Icons.medication_liquid_rounded,
                 color: Colors.white,
-                size: 48,
+                size: 50,
               ),
             ),
-            const SizedBox(height: 22),
-            const Text(
-              "Scan Your Meal",
-              style: TextStyle(
-                color: textMain,
-                fontSize: 27,
-                fontWeight: FontWeight.w900,
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 24),
             Text(
-              "Point your camera at food\nand get nutrition details instantly",
+              modeTitle,
+              style: const TextStyle(
+                color: textMain,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                letterSpacing: -0.6,
+              ),
+            ),
+            const SizedBox(height: 9),
+            Text(
+              modeSubtitle,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.62),
+                color: Colors.white.withOpacity(0.66),
                 fontSize: 14,
-                height: 1.35,
+                height: 1.42,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -380,19 +579,17 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _scanButton() {
+  Widget _scanButton(List<Color> colors) {
     return Container(
-      height: 58,
+      height: 60,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        gradient: const LinearGradient(
-          colors: [primary, cyan],
-        ),
+        borderRadius: BorderRadius.circular(23),
+        gradient: LinearGradient(colors: colors),
         boxShadow: [
           BoxShadow(
-            color: primary.withOpacity(0.25),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: colors.first.withOpacity(0.28),
+            blurRadius: 22,
+            offset: const Offset(0, 11),
           ),
         ],
       ),
@@ -406,7 +603,7 @@ class _ScanScreenState extends State<ScanScreen> {
             style: TextStyle(
               color: Colors.white,
               fontSize: 16,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w900,
             ),
           ),
         ],
@@ -439,7 +636,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 "Retake",
                 style: TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                 ),
               ),
             ),
@@ -456,7 +653,7 @@ class _ScanScreenState extends State<ScanScreen> {
           child: _actionTile(
             icon: Icons.photo_library_rounded,
             title: "Gallery",
-            subtitle: "Upload food photo",
+            subtitle: "Upload image",
             colors: const [Color(0xFF38BDF8), Color(0xFF2563EB)],
             onTap: _pickGallery,
           ),
@@ -466,7 +663,7 @@ class _ScanScreenState extends State<ScanScreen> {
           child: _actionTile(
             icon: Icons.edit_note_rounded,
             title: "Quick Add",
-            subtitle: "Add meal manually",
+            subtitle: "Manual meal",
             colors: const [Color(0xFFF97316), Color(0xFFEF4444)],
             onTap: _openQuickAdd,
           ),
@@ -485,14 +682,14 @@ class _ScanScreenState extends State<ScanScreen> {
     return GestureDetector(
       onTap: onTap,
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(27),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.055),
-              borderRadius: BorderRadius.circular(26),
+              borderRadius: BorderRadius.circular(27),
               border: Border.all(color: Colors.white.withOpacity(0.08)),
             ),
             child: Column(
@@ -504,6 +701,13 @@ class _ScanScreenState extends State<ScanScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(18),
                     gradient: LinearGradient(colors: colors),
+                    boxShadow: [
+                      BoxShadow(
+                        color: colors.first.withOpacity(0.24),
+                        blurRadius: 18,
+                        offset: const Offset(0, 9),
+                      ),
+                    ],
                   ),
                   child: Icon(icon, color: Colors.white, size: 28),
                 ),
@@ -513,7 +717,7 @@ class _ScanScreenState extends State<ScanScreen> {
                   style: const TextStyle(
                     color: textMain,
                     fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -534,23 +738,44 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   Widget _featureGrid() {
+    final items = selectedMode == ScanMode.food
+        ? [
+            [Icons.local_fire_department_rounded, "Calories", "Smart estimate"],
+            [Icons.pie_chart_rounded, "Macros", "Protein, carbs, fat"],
+            [Icons.insights_rounded, "Insights", "Diet suggestions"],
+            [Icons.trending_up_rounded, "Progress", "Daily tracking"],
+          ]
+        : selectedMode == ScanMode.face
+        ? [
+            [Icons.face_rounded, "Face Scan", "AI skin insights"],
+            [Icons.health_and_safety_rounded, "Care Tips", "Basic advice"],
+            [Icons.warning_amber_rounded, "Alerts", "Helpful warnings"],
+            [Icons.auto_awesome_rounded, "Report", "AI summary"],
+          ]
+        : [
+            [Icons.medication_rounded, "Medicine", "Label scan"],
+            [Icons.info_rounded, "Details", "Usage info"],
+            [Icons.warning_rounded, "Caution", "Safety notes"],
+            [Icons.description_rounded, "Report", "AI summary"],
+          ];
+
     return Column(
       children: [
         Row(
           children: [
             Expanded(
               child: _miniFeature(
-                Icons.local_fire_department_rounded,
-                "Calories",
-                "Smart estimate",
+                items[0][0] as IconData,
+                items[0][1] as String,
+                items[0][2] as String,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _miniFeature(
-                Icons.pie_chart_rounded,
-                "Macros",
-                "Protein, carbs, fat",
+                items[1][0] as IconData,
+                items[1][1] as String,
+                items[1][2] as String,
               ),
             ),
           ],
@@ -560,17 +785,17 @@ class _ScanScreenState extends State<ScanScreen> {
           children: [
             Expanded(
               child: _miniFeature(
-                Icons.insights_rounded,
-                "Insights",
-                "Diet suggestions",
+                items[2][0] as IconData,
+                items[2][1] as String,
+                items[2][2] as String,
               ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: _miniFeature(
-                Icons.trending_up_rounded,
-                "Progress",
-                "Daily tracking",
+                items[3][0] as IconData,
+                items[3][1] as String,
+                items[3][2] as String,
               ),
             ),
           ],
@@ -580,23 +805,25 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   Widget _miniFeature(IconData icon, String title, String subtitle) {
+    final colors = modeColors;
+
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.045),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(23),
         border: Border.all(color: Colors.white.withOpacity(0.07)),
       ),
       child: Row(
         children: [
           Container(
-            height: 42,
-            width: 42,
+            height: 43,
+            width: 43,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: primary.withOpacity(0.12),
+              color: colors.first.withOpacity(0.13),
             ),
-            child: Icon(icon, color: primary, size: 22),
+            child: Icon(icon, color: colors.first, size: 22),
           ),
           const SizedBox(width: 11),
           Expanded(
@@ -608,7 +835,7 @@ class _ScanScreenState extends State<ScanScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: textMain,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                     fontSize: 14,
                   ),
                 ),
@@ -616,10 +843,7 @@ class _ScanScreenState extends State<ScanScreen> {
                 Text(
                   subtitle,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: textSub,
-                    fontSize: 11.5,
-                  ),
+                  style: const TextStyle(color: textSub, fontSize: 11.5),
                 ),
               ],
             ),
@@ -629,28 +853,34 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _dietTipCard() {
+  Widget _tipCard() {
+    final colors = modeColors;
+
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(27),
         gradient: LinearGradient(
           colors: [
-            primary.withOpacity(0.16),
-            cyan.withOpacity(0.10),
+            colors.first.withOpacity(0.17),
+            colors.last.withOpacity(0.10),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: primary.withOpacity(0.18)),
+        border: Border.all(color: colors.first.withOpacity(0.18)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.lightbulb_rounded, color: primary, size: 30),
+          Icon(Icons.lightbulb_rounded, color: colors.first, size: 30),
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              "Tip: Use clear lighting and keep the full plate inside the camera frame for better AI results.",
+              selectedMode == ScanMode.food
+                  ? "Tip: Use clear lighting and keep the full plate inside the camera frame for better AI results."
+                  : selectedMode == ScanMode.face
+                  ? "Tip: Take the photo in natural light and avoid filters for better face scan results."
+                  : "Tip: Scan the medicine box or label clearly. Always confirm details with a doctor or pharmacist.",
               style: TextStyle(
                 color: Colors.white.withOpacity(0.78),
                 fontSize: 13.5,
@@ -676,10 +906,7 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
-  Widget _glassBadge({
-    required IconData icon,
-    required String text,
-  }) {
+  Widget _glassBadge({required IconData icon, required String text}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
@@ -695,7 +922,7 @@ class _ScanScreenState extends State<ScanScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: primary, size: 19),
+              Icon(icon, color: modeColors.first, size: 19),
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
@@ -704,7 +931,7 @@ class _ScanScreenState extends State<ScanScreen> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 12.5,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ),
@@ -728,16 +955,35 @@ class _ScanScreenState extends State<ScanScreen> {
     );
   }
 
+  Widget _backgroundGlow() {
+    return Stack(
+      children: [
+        Positioned(
+          top: -90,
+          right: -80,
+          child: _blurCircle(primary.withOpacity(0.20), 260),
+        ),
+        Positioned(
+          top: 260,
+          left: -120,
+          child: _blurCircle(cyan.withOpacity(0.14), 280),
+        ),
+        Positioned(
+          bottom: -100,
+          right: -80,
+          child: _blurCircle(purple.withOpacity(0.13), 250),
+        ),
+      ],
+    );
+  }
+
   Widget _blurCircle(Color color, double size) {
     return ImageFiltered(
       imageFilter: ImageFilter.blur(sigmaX: 65, sigmaY: 65),
       child: Container(
         height: size,
         width: size,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-        ),
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
     );
   }

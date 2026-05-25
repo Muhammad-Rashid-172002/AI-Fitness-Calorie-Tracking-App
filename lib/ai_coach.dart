@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/config/key.dart';
@@ -90,99 +89,121 @@ class _AiCoachState extends State<AiCoach> {
     scrollToBottom();
   }
 
-Future<String> askGemini(String question) async {
-  try {
-    final url =
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey";
+  String cleanAiText(String text) {
+    return text
+        .replaceAll("**", "")
+        .replaceAll("* ", "• ")
+        .replaceAll("###", "")
+        .replaceAll("##", "")
+        .replaceAll("#", "")
+        .trim();
+  }
 
-    final name = userData?["name"] ?? "User";
-    final goal = userData?["goal"] ?? "";
-    final weight = "${userData?["weight"] ?? ""}";
-    final targetWeight = "${userData?["targetWeight"] ?? ""}";
-    final calories = "${userData?["dailyCalories"] ?? ""}";
-    final protein = "${userData?["proteinTarget"] ?? ""}";
-    final carbs = "${userData?["carbsTarget"] ?? ""}";
-    final fats = "${userData?["fatTarget"] ?? ""}";
-    final water = "${userData?["dailyWaterGoal"] ?? ""}";
-    final age = "${userData?["age"] ?? ""}";
-    final gender = "${userData?["gender"] ?? ""}";
-    final activity = "${userData?["activityLevel"] ?? ""}";
+  Future<String> askGemini(String question) async {
+    try {
+      final url =
+          "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$apiKey";
 
-    final prompt = """
-You are a professional AI Diet Coach inside a fitness app.
+      final name = userData?["name"] ?? "User";
+      final goal = userData?["goal"] ?? "General fitness";
+      final weight = "${userData?["weight"] ?? ""}";
+      final targetWeight = "${userData?["targetWeight"] ?? ""}";
+      final calories = "${userData?["dailyCalories"] ?? ""}";
+      final protein = "${userData?["proteinTarget"] ?? ""}";
+      final carbs = "${userData?["carbsTarget"] ?? ""}";
+      final fats = "${userData?["fatTarget"] ?? ""}";
+      final water = "${userData?["dailyWaterGoal"] ?? ""}";
+      final age = "${userData?["age"] ?? ""}";
+      final gender = "${userData?["gender"] ?? ""}";
+      final activity = "${userData?["activityLevel"] ?? ""}";
 
-Rules:
-- Only answer diet, nutrition, fitness, calories, weight loss, weight gain, meal plans, protein, carbs, fats, water intake, and healthy lifestyle questions.
-- If the user asks unrelated questions, politely say you can only help with diet and fitness.
-- Give short, practical, friendly answers.
-- Use simple language.
+      final prompt =
+          """
+You are FitMind AI Coach, a premium personal diet, nutrition, and fitness assistant.
+
+Important Rules:
+- Only answer questions about diet, fitness, calories, macros, protein, carbs, fats, water intake, weight loss, weight gain, meal plans, workouts, healthy habits, and lifestyle.
+- If the question is unrelated, reply politely: "I can only help with diet, fitness, and healthy lifestyle guidance."
+- Do not use markdown symbols like **, ##, ###, or tables.
+- Do not use bold markdown.
+- Keep answers clean, premium, and app-friendly.
+- Use short headings without symbols.
+- Give practical advice based on the user's profile.
 - Do not give dangerous medical advice.
+- If user asks about illness, medicine, pregnancy, diabetes, heart disease, or serious symptoms, recommend consulting a doctor.
 
 User Profile:
 Name: $name
 Age: $age
 Gender: $gender
-Weight: $weight kg
+Current Weight: $weight kg
 Target Weight: $targetWeight kg
 Goal: $goal
-Daily Calories: $calories
-Protein: $protein g
-Carbs: $carbs g
-Fat: $fats g
-Water: $water L
+Daily Calories Target: $calories kcal
+Protein Target: $protein g
+Carbs Target: $carbs g
+Fat Target: $fats g
+Water Goal: $water L
 Activity Level: $activity
+
+Answer Style:
+Start with a friendly short answer.
+Then give:
+1. Personalized Advice
+2. What To Do Today
+3. Smart Tip
+4. Safety Note if needed
 
 User Question:
 $question
 """;
 
-    final response = await http
-        .post(
-          Uri.parse(url),
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({
-            "contents": [
-              {
-                "parts": [
-                  {"text": prompt},
-                ],
+      final response = await http
+          .post(
+            Uri.parse(url),
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({
+              "contents": [
+                {
+                  "parts": [
+                    {"text": prompt},
+                  ],
+                },
+              ],
+              "generationConfig": {
+                "temperature": 0.7,
+                "topP": 0.9,
+                "maxOutputTokens": 700,
               },
-            ],
-          }),
-        )
-        .timeout(const Duration(seconds: 25));
+            }),
+          )
+          .timeout(const Duration(seconds: 25));
 
-    if (response.statusCode != 200) {
-      debugPrint("Gemini Error: ${response.body}");
+      if (response.statusCode != 200) {
+        debugPrint("Gemini Error: ${response.body}");
+        return "⚠️ AI Coach is currently busy.\nPlease try again in a moment.";
+      }
 
-      return "⚠️ AI Coach is currently unavailable.\nPlease try again in a moment.";
+      final data = jsonDecode(response.body);
+
+      final text = data["candidates"]?[0]?["content"]?["parts"]?[0]?["text"];
+
+      if (text == null || text.toString().trim().isEmpty) {
+        debugPrint("Invalid Gemini response: ${response.body}");
+        return "I couldn't generate a response. Please try again.";
+      }
+
+      return cleanAiText(text.toString());
+    } on SocketException {
+      return "📡 No internet connection.\nPlease check your network and try again.";
+    } on TimeoutException {
+      return "⏳ Connection timeout.\nYour internet seems slow. Please try again.";
+    } catch (e) {
+      debugPrint("Gemini Exception: $e");
+      return "⚠️ AI service is temporarily unavailable.\nPlease try again later.";
     }
-
-    final data = jsonDecode(response.body);
-
-    final text =
-        data["candidates"]?[0]?["content"]?["parts"]?[0]?["text"];
-
-    if (text == null) {
-      debugPrint("Invalid Gemini response: ${response.body}");
-
-      return "I couldn't generate a response. Try again.";
-    }
-
-    return text.toString().trim();
-
-  } on SocketException {
-    return "📡 No internet connection.\nPlease check your network and try again.";
-
-  } on TimeoutException {
-    return "⏳ Connection timeout.\nYour internet seems slow. Please try again.";
-
-  } catch (e) {
-    debugPrint("Gemini Exception: $e");
-
-    return "⚠️ AI service is temporarily unavailable.\nPlease try again later.";
   }
-}
+
   void scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 300), () {
       if (scrollController.hasClients) {
@@ -275,10 +296,7 @@ $question
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFF22C55E),
-                        Color(0xFF06B6D4),
-                      ],
+                      colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -312,10 +330,7 @@ $question
                       SizedBox(height: 4),
                       Text(
                         "Personal nutrition assistant",
-                        style: TextStyle(
-                          color: Colors.white60,
-                          fontSize: 13,
-                        ),
+                        style: TextStyle(color: Colors.white60, fontSize: 13),
                       ),
                     ],
                   ),
@@ -350,10 +365,7 @@ $question
     );
   }
 
-  Widget _chatBubble({
-    required String text,
-    required bool isUser,
-  }) {
+  Widget _chatBubble({required String text, required bool isUser}) {
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -365,10 +377,7 @@ $question
         decoration: BoxDecoration(
           gradient: isUser
               ? const LinearGradient(
-                  colors: [
-                    Color(0xFF22C55E),
-                    Color(0xFF06B6D4),
-                  ],
+                  colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
                 )
               : null,
           color: isUser ? null : Colors.white.withOpacity(0.06),
@@ -379,9 +388,7 @@ $question
             bottomRight: Radius.circular(isUser ? 6 : 22),
           ),
           border: Border.all(
-            color: isUser
-                ? Colors.transparent
-                : Colors.white.withOpacity(0.08),
+            color: isUser ? Colors.transparent : Colors.white.withOpacity(0.08),
           ),
           boxShadow: [
             BoxShadow(
@@ -431,7 +438,7 @@ $question
               ),
               SizedBox(width: 10),
               Text(
-              "FitMind AI is preparing your fitness advice...",
+                "FitMind AI is preparing your fitness advice...",
                 style: TextStyle(color: Colors.white60, fontSize: 13),
               ),
             ],
@@ -496,10 +503,7 @@ $question
                     gradient: isLoading
                         ? null
                         : const LinearGradient(
-                            colors: [
-                              Color(0xFF22C55E),
-                              Color(0xFF06B6D4),
-                            ],
+                            colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
                           ),
                     color: isLoading ? Colors.white12 : null,
                     boxShadow: isLoading
@@ -512,10 +516,7 @@ $question
                             ),
                           ],
                   ),
-                  child: const Icon(
-                    Icons.send_rounded,
-                    color: Colors.white,
-                  ),
+                  child: const Icon(Icons.send_rounded, color: Colors.white),
                 ),
               ),
             ],
@@ -525,17 +526,11 @@ $question
     );
   }
 
-  Widget _glowCircle({
-    required Color color,
-    required double size,
-  }) {
+  Widget _glowCircle({required Color color, required double size}) {
     return Container(
       height: size,
       width: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      decoration: BoxDecoration(shape: BoxShape.circle, color: color),
     );
   }
 }
