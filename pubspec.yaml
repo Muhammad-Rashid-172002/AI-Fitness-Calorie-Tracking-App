@@ -51,6 +51,7 @@ dependencies:
   cloud_functions: ^6.0.6
   fl_chart: ^1.1.1
   google_fonts: ^8.0.2
+  flutter_markdown: ^0.7.4+1
 
 dev_dependencies:
   flutter_test:

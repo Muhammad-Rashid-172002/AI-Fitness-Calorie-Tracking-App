@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:fitmind_ai/view/food_medicine/FaceAnalyzingScreen.dart';
+import 'package:fitmind_ai/view/food_medicine/MedicineAnalyzingScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:fitmind_ai/controller/scan_controller.dart';
 import 'package:fitmind_ai/view/analyzing_screen.dart';
@@ -88,23 +90,37 @@ class _ScanScreenState extends State<ScanScreen> {
   void _handleImage(File image) {
     setState(() => selectedImage = image);
 
-    Future<String> analyzeFuture;
-
     if (selectedMode == ScanMode.food) {
-      analyzeFuture = controller.analyzeFoodImage(image);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AnalyzingScreen(
+            image: image,
+            analyzeFuture: controller.analyzeFoodImage(image),
+          ),
+        ),
+      );
     } else if (selectedMode == ScanMode.face) {
-      analyzeFuture = controller.analyzeFaceImage(image);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FaceAnalyzingScreen(
+            image: image,
+            analyzeFuture: controller.analyzeFaceImage(image),
+          ),
+        ),
+      );
     } else {
-      analyzeFuture = controller.analyzeMedicineImage(image);
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MedicineAnalyzingScreen(
+            image: image,
+            analyzeFuture: controller.analyzeMedicineImage(image),
+          ),
+        ),
+      );
     }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) =>
-            AnalyzingScreen(image: image, analyzeFuture: analyzeFuture),
-      ),
-    );
   }
 
   void _openQuickAdd() {

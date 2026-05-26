@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/config/key.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 class AiCoach extends StatefulWidget {
   const AiCoach({super.key});
@@ -117,20 +118,52 @@ class _AiCoachState extends State<AiCoach> {
       final gender = "${userData?["gender"] ?? ""}";
       final activity = "${userData?["activityLevel"] ?? ""}";
 
+      final recentChat = messages
+          .take(messages.length)
+          .toList()
+          .reversed
+          .take(8)
+          .toList()
+          .reversed
+          .map((m) {
+            final role = m["isUser"] == true ? "User" : "Coach";
+            return "$role: ${m["text"]}";
+          })
+          .join("\n");
+
       final prompt =
           """
-You are FitMind AI Coach, a premium personal diet, nutrition, and fitness assistant.
+You are **FitMind AI Coach**, a premium personal nutrition and fitness assistant inside a mobile app.
 
-Important Rules:
-- Only answer questions about diet, fitness, calories, macros, protein, carbs, fats, water intake, weight loss, weight gain, meal plans, workouts, healthy habits, and lifestyle.
-- If the question is unrelated, reply politely: "I can only help with diet, fitness, and healthy lifestyle guidance."
-- Do not use markdown symbols like **, ##, ###, or tables.
-- Do not use bold markdown.
-- Keep answers clean, premium, and app-friendly.
-- Use short headings without symbols.
-- Give practical advice based on the user's profile.
+Your job:
+- Remember the current conversation context.
+- Answer based on the user's latest question and previous chat.
+- Give professional, practical, and personalized advice.
+- Use markdown formatting with **bold headings**, bullets, and short sections.
+- Keep answers app-friendly, clean, and not too long.
+
+Allowed topics:
+- Diet
+- Nutrition
+- Calories
+- Macros
+- Protein, carbs, fats
+- Water intake
+- Weight loss
+- Weight gain
+- Muscle gain
+- Meal plans
+- Workout plans
+- Healthy lifestyle
+
+If user asks unrelated questions:
+Say: **I can only help with diet, fitness, nutrition, and healthy lifestyle guidance.**
+
+Safety rules:
 - Do not give dangerous medical advice.
-- If user asks about illness, medicine, pregnancy, diabetes, heart disease, or serious symptoms, recommend consulting a doctor.
+- Do not diagnose disease.
+- If user mentions serious illness, medicine, pregnancy, diabetes, heart disease, chest pain, fainting, or severe symptoms, recommend a doctor.
+- Use phrases like "general guidance" and "consult a professional" when needed.
 
 User Profile:
 Name: $name
@@ -146,13 +179,24 @@ Fat Target: $fats g
 Water Goal: $water L
 Activity Level: $activity
 
-Answer Style:
-Start with a friendly short answer.
-Then give:
-1. Personalized Advice
-2. What To Do Today
-3. Smart Tip
-4. Safety Note if needed
+Recent Conversation:
+$recentChat
+
+Response format:
+**Quick Answer**
+Short friendly answer.
+
+**Personalized Advice**
+Give advice based on user profile.
+
+**What To Do Today**
+Give 2-4 practical steps.
+
+**Smart Tip**
+One useful fitness/nutrition tip.
+
+**Safety Note**
+Only include if needed.
 
 User Question:
 $question
@@ -171,9 +215,9 @@ $question
                 },
               ],
               "generationConfig": {
-                "temperature": 0.7,
+                "temperature": 0.65,
                 "topP": 0.9,
-                "maxOutputTokens": 700,
+                "maxOutputTokens": 900,
               },
             }),
           )
@@ -181,26 +225,24 @@ $question
 
       if (response.statusCode != 200) {
         debugPrint("Gemini Error: ${response.body}");
-        return "⚠️ AI Coach is currently busy.\nPlease try again in a moment.";
+        return "⚠️ **AI Coach is currently busy.**\n\nPlease try again in a moment.";
       }
 
       final data = jsonDecode(response.body);
-
       final text = data["candidates"]?[0]?["content"]?["parts"]?[0]?["text"];
 
       if (text == null || text.toString().trim().isEmpty) {
-        debugPrint("Invalid Gemini response: ${response.body}");
         return "I couldn't generate a response. Please try again.";
       }
 
-      return cleanAiText(text.toString());
+      return text.toString().trim();
     } on SocketException {
-      return "📡 No internet connection.\nPlease check your network and try again.";
+      return "📡 **No internet connection.**\n\nPlease check your network and try again.";
     } on TimeoutException {
-      return "⏳ Connection timeout.\nYour internet seems slow. Please try again.";
+      return "⏳ **Connection timeout.**\n\nYour internet seems slow. Please try again.";
     } catch (e) {
       debugPrint("Gemini Exception: $e");
-      return "⚠️ AI service is temporarily unavailable.\nPlease try again later.";
+      return "⚠️ **AI service is temporarily unavailable.**\n\nPlease try again later.";
     }
   }
 
@@ -400,15 +442,50 @@ $question
             ),
           ],
         ),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: isUser ? Colors.white : Colors.white.withOpacity(0.88),
-            fontSize: 14.5,
-            height: 1.55,
-            fontWeight: isUser ? FontWeight.w600 : FontWeight.w400,
-          ),
-        ),
+        child: isUser
+            ? Text(
+                text,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14.5,
+                  height: 1.55,
+                  fontWeight: FontWeight.w600,
+                ),
+              )
+            : MarkdownBody(
+                data: text,
+                selectable: true,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(
+                    color: Colors.white.withOpacity(0.88),
+                    fontSize: 14.5,
+                    height: 1.55,
+                  ),
+                  strong: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  h1: const TextStyle(
+                    color: Color(0xFF4ADE80),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                  ),
+                  h2: const TextStyle(
+                    color: Color(0xFF4ADE80),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  h3: const TextStyle(
+                    color: Color(0xFF4ADE80),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  listBullet: const TextStyle(
+                    color: Color(0xFF22C55E),
+                    fontSize: 15,
+                  ),
+                ),
+              ),
       ),
     );
   }

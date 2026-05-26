@@ -101,28 +101,55 @@ Important:
       final response = await model.generateContent([
         Content.multi([
           TextPart("""
-You are a safe AI skin wellness assistant.
+You are a professional AI skin wellness assistant and skincare advisor.
 
-Analyze the face/skin image only for general wellness insights.
-Do not diagnose disease. Do not claim medical certainty.
+Analyze the face/skin image carefully and provide safe skincare insights.
+Do NOT diagnose diseases.
+Do NOT claim medical certainty.
+Act like a professional skincare consultant.
 
 Use this exact format only:
 
 Skin Scan: Completed
 Skin Health Score: [score]/100
+Skin Type: [Oily/Dry/Combination/Normal/Sensitive]
 Skin Overview: [short professional overview]
 Hydration Level: [Low/Normal/Good]
 Oiliness Level: [Low/Normal/High]
-Possible Concerns: [acne/redness/dryness/dark circles/texture etc]
-AI Insight: [professional skin wellness feedback]
-Care Tips: [3 simple care tips]
-Lifestyle Advice: [hydration, sleep, diet, sun protection etc]
-Doctor Note: This is not a medical diagnosis. Consult a dermatologist for serious or painful skin concerns.
+Possible Concerns: [acne/redness/dryness/dark circles/texture/pimples etc]
+
+Doctor Recommendation:
+[Professional skincare advice based on detected skin type and concerns.
+Example:
+- Use salicylic acid face wash for oily skin
+- Use hydrating moisturizer for dry skin
+- Use sunscreen SPF 50 daily
+- Avoid harsh chemical products
+- Use gentle cleanser twice daily]
+
+Recommended Products:
+[Face wash / moisturizer / serum / sunscreen suggestions]
+
+AI Insight:
+[Professional skin wellness feedback]
+
+Care Tips:
+1. [tip]
+2. [tip]
+3. [tip]
+
+Lifestyle Advice:
+[hydration, sleep, healthy diet, stress control, sun protection etc]
+
+Doctor Note:
+This is not a medical diagnosis. Consult a dermatologist for serious or painful skin concerns.
 
 Important:
-- Be professional and safe.
-- Avoid disease diagnosis.
-- Avoid scary medical claims.
+- Be professional and realistic.
+- Give skincare product suggestions.
+- Mention dermatologist-style recommendations.
+- Never diagnose dangerous diseases.
+- Never scare the user.
 """),
           DataPart('image/jpeg', imageBytes),
         ]),
@@ -146,29 +173,47 @@ Important:
       final response = await model.generateContent([
         Content.multi([
           TextPart("""
-You are a safe AI medicine label assistant.
+You are a safe AI medicine label assistant and pharmacy information helper.
 
-Read the medicine name or label from the image.
+Read the medicine name, active ingredient, strength, formula, or label from the image.
 Give general medicine information only.
 Do not prescribe medicine.
 Do not give personal dosage unless it is clearly printed on the package.
+Do not guarantee availability or say anything is 100% certain.
 
 Use this exact format only:
 
 Medicine Scan: Completed
 Medicine Name: [name if visible]
+Generic Formula / Active Ingredient: [active ingredient if visible or identifiable]
+Strength: [strength like 500mg/10mg if clearly visible, otherwise Not clearly visible]
 Category: [pain relief/antibiotic/vitamin/allergy/etc if identifiable]
 Common Purpose: [general use]
 Important Info: [short simple explanation]
 Common Side Effects: [general possible side effects]
 Safety Warnings: [important warnings]
 Who Should Be Careful: [pregnant people, children, allergies, liver/kidney issues etc if relevant]
-AI Insight: [professional safety-focused feedback]
-Pharmacist Note: Always confirm with a doctor or pharmacist before using medicine.
+
+Same Formula Alternatives:
+[If active ingredient is identified, suggest common generic/brand alternatives that may contain the same active ingredient.
+Write: "Ask a pharmacist for the same generic formula: [ingredient/strength]."
+Do not say it is guaranteed. Mention that brand names vary by country.]
+
+If Not Available:
+[Explain that the user should ask the pharmacist for the same generic formula/active ingredient, not just the same brand name.]
+
+AI Insight:
+[professional safety-focused feedback]
+
+Pharmacist Note:
+Always confirm the medicine name, active ingredient, strength, dose, and suitability with a doctor or pharmacist before using or switching medicine.
 
 Important:
 - If medicine name is unclear, say "Medicine name not clearly visible".
+- If active ingredient/formula is unclear, say "Generic formula not clearly visible".
 - Do not create fake dosage.
+- Do not invent fake brand names.
+- Do not claim any medicine is 100% safe or 100% same.
 - Do not replace professional medical advice.
 """),
           DataPart('image/jpeg', imageBytes),
@@ -432,78 +477,73 @@ Important:
     };
   }
 
-
-
-  /// usda food 
-  /// 
+  /// usda food
+  ///
   Future<Food?> fetchFoodFromUSDA(String foodName) async {
-  try {
-    final uri = Uri.parse(
-      "https://api.nal.usda.gov/fdc/v1/foods/search"
-      "?query=${Uri.encodeComponent(foodName)}"
-      "&pageSize=1"
-      "&api_key=${AppKeys.usdaApiKey}",
-    );
-
-    final response = await http.get(uri);
-
-    if (response.statusCode != 200) return null;
-
-    final data = jsonDecode(response.body);
-    final foods = data["foods"];
-
-    if (foods == null || foods.isEmpty) return null;
-
-    final foodData = foods[0];
-    final nutrients = foodData["foodNutrients"] as List;
-
-    double getNutrient(String name) {
-      final item = nutrients.firstWhere(
-        (n) => n["nutrientName"]
-            .toString()
-            .toLowerCase()
-            .contains(name.toLowerCase()),
-        orElse: () => null,
+    try {
+      final uri = Uri.parse(
+        "https://api.nal.usda.gov/fdc/v1/foods/search"
+        "?query=${Uri.encodeComponent(foodName)}"
+        "&pageSize=1"
+        "&api_key=${AppKeys.usdaApiKey}",
       );
 
-      if (item == null) return 0;
-      return double.tryParse(item["value"].toString()) ?? 0;
+      final response = await http.get(uri);
+
+      if (response.statusCode != 200) return null;
+
+      final data = jsonDecode(response.body);
+      final foods = data["foods"];
+
+      if (foods == null || foods.isEmpty) return null;
+
+      final foodData = foods[0];
+      final nutrients = foodData["foodNutrients"] as List;
+
+      double getNutrient(String name) {
+        final item = nutrients.firstWhere(
+          (n) => n["nutrientName"].toString().toLowerCase().contains(
+            name.toLowerCase(),
+          ),
+          orElse: () => null,
+        );
+
+        if (item == null) return 0;
+        return double.tryParse(item["value"].toString()) ?? 0;
+      }
+
+      return Food(
+        name: foodData["description"] ?? foodName,
+        calories: getNutrient("Energy"),
+        protein: getNutrient("Protein"),
+        carbs: getNutrient("Carbohydrate"),
+        fats: getNutrient("Total lipid"),
+        grams: 100,
+        shortMsg: "Nutrition verified from USDA FoodData Central",
+      );
+    } catch (e) {
+      return null;
     }
-
-    return Food(
-      name: foodData["description"] ?? foodName,
-      calories: getNutrient("Energy"),
-      protein: getNutrient("Protein"),
-      carbs: getNutrient("Carbohydrate"),
-      fats: getNutrient("Total lipid"),
-      grams: 100,
-      shortMsg: "Nutrition verified from USDA FoodData Central",
-    );
-  } catch (e) {
-    return null;
   }
-}
-Future<String> detectFoodNameWithGemini(File image) async {
-  final model = GenerativeModel(
-    model: 'gemini-1.5-flash',
-    apiKey: _apiKey,
-  );
 
-  final imageBytes = await image.readAsBytes();
+  Future<String> detectFoodNameWithGemini(File image) async {
+    final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: _apiKey);
 
-  final response = await model.generateContent([
-    Content.multi([
-      TextPart("""
+    final imageBytes = await image.readAsBytes();
+
+    final response = await model.generateContent([
+      Content.multi([
+        TextPart("""
 Identify only the main food name in this image.
 Return only food name, no extra text.
 Example: Chicken Biryani
 """),
-      DataPart('image/jpeg', imageBytes),
-    ]),
-  ]);
+        DataPart('image/jpeg', imageBytes),
+      ]),
+    ]);
 
-  return response.text?.trim() ?? "";
-}
+    return response.text?.trim() ?? "";
+  }
 }
 
 
