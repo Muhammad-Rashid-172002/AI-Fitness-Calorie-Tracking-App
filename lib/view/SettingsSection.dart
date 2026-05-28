@@ -19,43 +19,208 @@ class _SettingsSectionState extends State<SettingsSection> {
   void _showAboutDialog() {
     showDialog(
       context: context,
-      builder: (_) => _customDialog(
-        title: "About FitMind AI",
-        content:
-            "FitMind AI is a smart fitness & nutrition tracker app.\n\nVersion: 1.0.0+6",
-        confirmText: "Close",
-      ),
+      barrierColor: Colors.black.withOpacity(.7),
+      builder: (_) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(26),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(34),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF111827),
+                  const Color(0xFF0F172A).withOpacity(.96),
+                ],
+              ),
+              border: Border.all(color: Colors.white.withOpacity(.08)),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF06B6D4).withOpacity(.18),
+                  blurRadius: 35,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// APP LOGO
+                Container(
+                  height: 88,
+                  width: 88,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF22C55E).withOpacity(.35),
+                        blurRadius: 28,
+                      ),
+                    ],
+                  ),
+                  child: Image.asset(
+                    "assets/app/FitMind_AI.png",
+                    fit: BoxFit.cover,
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                /// APP NAME
+                ShaderMask(
+                  shaderCallback: (bounds) {
+                    return const LinearGradient(
+                      colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
+                    ).createShader(bounds);
+                  },
+                  child: const Text(
+                    "FitMind AI",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: .4,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                Text(
+                  "AI Health & Fitness Platform",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(.68),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+
+                const SizedBox(height: 26),
+
+                /// FEATURES
+                _aboutFeature(Icons.restaurant_menu_rounded, "AI Food Scanner"),
+
+                _aboutFeature(
+                  Icons.face_retouching_natural_rounded,
+                  "AI Skin Analysis",
+                ),
+
+                _aboutFeature(Icons.medication_rounded, "Medicine Scanner"),
+
+                _aboutFeature(
+                  Icons.fitness_center_rounded,
+                  "Personalized Fitness Plans",
+                ),
+
+                _aboutFeature(Icons.auto_awesome_rounded, "Smart AI Coach"),
+
+                const SizedBox(height: 26),
+
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 14,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(18),
+                    color: Colors.white.withOpacity(.05),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        "Version 1.0.0+7",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(.9),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      Text(
+                        "Powered by Gemini AI",
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(.55),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 28),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+
+                    style: ElevatedButton.styleFrom(
+                      elevation: 0,
+                      backgroundColor: const Color(0xFF22C55E),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(22),
+                      ),
+                    ),
+
+                    child: const Text(
+                      "Awesome!",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  Widget _customDialog({
-    required String title,
-    required String content,
-    required String confirmText,
-  }) {
-    return AlertDialog(
-      backgroundColor: const Color(0xFF0F172A),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      title: Text(
-        title,
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      content: Text(
-        content,
-        style: TextStyle(color: Colors.white.withOpacity(0.7), height: 1.5),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            confirmText,
-            style: const TextStyle(color: Color(0xFF22C55E)),
+  Widget _aboutFeature(IconData icon, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            height: 42,
+            width: 42,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              color: Colors.white.withOpacity(.06),
+            ),
+            child: Icon(icon, color: const Color(0xFF22C55E), size: 22),
           ),
-        ),
-      ],
+
+          const SizedBox(width: 14),
+
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -232,7 +397,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                   _tile(
                     icon: Icons.info_rounded,
                     title: "About FitMind AI",
-                    subtitle: "Version 1.0.0+6",
+                    subtitle: "Version 1.0.0+7",
                     color: const Color(0xFF14B8A6),
                     onTap: _showAboutDialog,
                   ),

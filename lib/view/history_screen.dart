@@ -17,15 +17,15 @@ class _HistoryScreenState extends State<HistoryScreen>
     with SingleTickerProviderStateMixin {
   final String userId = FirebaseAuth.instance.currentUser!.uid;
 
-  final List<String> filters = [
-    "Today",
-    "Week",
-    "Month",
-  ];
+  final List<String> dateFilters = ["Today", "Week", "Month"];
+  final List<String> typeFilters = ["All", "Food", "Skin", "Medicine"];
+
+  int selectedDateIndex = 0;
+  int selectedTypeIndex = 0;
 
   int selectedIndex = 0;
 
-late AnimationController _animationController;
+  late AnimationController _animationController;
 
   @override
   void initState() {
@@ -63,20 +63,20 @@ late AnimationController _animationController;
             top: -120,
             left: -80,
             child: AnimatedBuilder(
-  animation: _animationController,
-  builder: (_, __) {
-    return Container(
-      height: 260,
-      width: 260,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: activeColor.withOpacity(
-          0.04 + (_animationController.value * 0.05),
-        ),
-      ),
-    );
-  },
-),
+              animation: _animationController,
+              builder: (_, __) {
+                return Container(
+                  height: 260,
+                  width: 260,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: activeColor.withOpacity(
+                      0.04 + (_animationController.value * 0.05),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
 
           /// BOTTOM GLOW
@@ -100,7 +100,15 @@ late AnimationController _animationController;
 
                 const SizedBox(height: 18),
 
-                _filterBar(),
+                _filterBar(dateFilters, selectedDateIndex, (index) {
+                  setState(() => selectedDateIndex = index);
+                }),
+
+                const SizedBox(height: 14),
+
+                _filterBar(typeFilters, selectedTypeIndex, (index) {
+                  setState(() => selectedTypeIndex = index);
+                }),
 
                 const SizedBox(height: 18),
 
@@ -108,32 +116,27 @@ late AnimationController _animationController;
                   child: StreamBuilder<QuerySnapshot>(
                     stream: getDailyLogs(),
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState ==
-                          ConnectionState.waiting) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                          ),
+                          child: CircularProgressIndicator(color: Colors.white),
                         );
                       }
 
-                      if (!snapshot.hasData ||
-                          snapshot.data!.docs.isEmpty) {
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                         return _emptyView();
                       }
 
-                      List<Map<String, dynamic>> items =
-                          snapshot.data!.docs.map((doc) {
-                        final data =
-                            doc.data() as Map<String, dynamic>;
+                      List<Map<String, dynamic>> items = snapshot.data!.docs
+                          .map((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
 
-                        data["docId"] = doc.id;
+                            data["docId"] = doc.id;
 
-                        return data;
-                      }).toList();
+                            return data;
+                          })
+                          .toList();
 
-                      List<Map<String, dynamic>> filtered =
-                          _filterData(items);
+                      List<Map<String, dynamic>> filtered = _filterData(items);
 
                       filtered.sort((a, b) {
                         Timestamp? aTime = a["timestamp"];
@@ -152,12 +155,7 @@ late AnimationController _animationController;
 
                       return ListView.builder(
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(
-                          18,
-                          0,
-                          18,
-                          120,
-                        ),
+                        padding: const EdgeInsets.fromLTRB(18, 0, 18, 120),
                         itemCount: filtered.length,
                         itemBuilder: (context, index) {
                           return _historyCard(filtered[index]);
@@ -178,10 +176,7 @@ late AnimationController _animationController;
 
   Widget _header() {
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -191,10 +186,7 @@ late AnimationController _animationController;
               ShaderMask(
                 shaderCallback: (bounds) {
                   return const LinearGradient(
-                    colors: [
-                      Color(0xFF22C55E),
-                      Color(0xFF06B6D4),
-                    ],
+                    colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
                   ).createShader(bounds);
                 },
                 child: const Text(
@@ -210,7 +202,7 @@ late AnimationController _animationController;
               const SizedBox(height: 6),
 
               Text(
-                "Your nutrition journey",
+                "Your AI health scan history",
                 style: TextStyle(
                   color: Colors.white.withOpacity(.55),
                   fontSize: 15,
@@ -230,10 +222,7 @@ late AnimationController _animationController;
                 ],
               ),
             ),
-            child: const Icon(
-              Icons.history_rounded,
-              color: Colors.white,
-            ),
+            child: const Icon(Icons.history_rounded, color: Colors.white),
           ),
         ],
       ),
@@ -242,57 +231,38 @@ late AnimationController _animationController;
 
   /// FILTER BAR
 
-  Widget _filterBar() {
+  Widget _filterBar(List<String> items, int selected, Function(int) onTap) {
     return SizedBox(
       height: 52,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 18),
-        itemCount: filters.length,
+        itemCount: items.length,
         itemBuilder: (context, index) {
-          bool selected = selectedIndex == index;
+          final isSelected = selected == index;
 
           return GestureDetector(
-            onTap: () {
-              setState(() {
-                selectedIndex = index;
-              });
-            },
+            onTap: () => onTap(index),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 250),
               margin: const EdgeInsets.only(right: 12),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 24),
-
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-
-                gradient: selected
+                gradient: isSelected
                     ? const LinearGradient(
-                        colors: [
-                          Color(0xFF22C55E),
-                          Color(0xFF06B6D4),
-                        ],
+                        colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
                       )
                     : null,
-
-                color: selected
-                    ? null
-                    : Colors.white.withOpacity(.05),
-
-                border: Border.all(
-                  color: Colors.white.withOpacity(.06),
-                ),
+                color: isSelected ? null : Colors.white.withOpacity(.05),
+                border: Border.all(color: Colors.white.withOpacity(.06)),
               ),
-
               child: Center(
                 child: Text(
-                  filters[index],
+                  items[index],
                   style: TextStyle(
                     color: Colors.white,
-                    fontWeight: selected
-                        ? FontWeight.bold
-                        : FontWeight.w500,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   ),
                 ),
               ),
@@ -305,52 +275,288 @@ late AnimationController _animationController;
 
   /// FILTER DATA
 
-  List<Map<String, dynamic>> _filterData(
-    List<Map<String, dynamic>> items,
-  ) {
-    DateTime now = DateTime.now();
+  List<Map<String, dynamic>> _filterData(List<Map<String, dynamic>> items) {
+    final now = DateTime.now();
 
     return items.where((data) {
-      Timestamp? ts = data["timestamp"];
+      final Timestamp? ts = data["timestamp"];
+      final type = (data["type"] ?? "food").toString();
 
-      if (ts == null) return true;
+      bool dateMatch = true;
+      bool typeMatch = true;
 
-      DateTime date = ts.toDate();
+      if (ts != null) {
+        final date = ts.toDate();
 
-      if (selectedIndex == 0) {
-        return date.day == now.day &&
-            date.month == now.month &&
-            date.year == now.year;
+        if (selectedDateIndex == 0) {
+          dateMatch =
+              date.day == now.day &&
+              date.month == now.month &&
+              date.year == now.year;
+        } else if (selectedDateIndex == 1) {
+          dateMatch = date.isAfter(now.subtract(const Duration(days: 7)));
+        } else {
+          dateMatch = date.month == now.month && date.year == now.year;
+        }
       }
 
-      if (selectedIndex == 1) {
-        return date.isAfter(
-          now.subtract(const Duration(days: 7)),
-        );
+      if (selectedTypeIndex == 1) {
+        typeMatch = type == "food" || type == "scan";
+      } else if (selectedTypeIndex == 2) {
+        typeMatch = type == "skin";
+      } else if (selectedTypeIndex == 3) {
+        typeMatch = type == "medicine";
       }
 
-      return date.month == now.month &&
-          date.year == now.year;
+      return dateMatch && typeMatch;
     }).toList();
   }
 
   /// HISTORY CARD
 
   Widget _historyCard(Map<String, dynamic> item) {
-    int calories = (item["calories"] ?? 0).toInt();
-    int protein = (item["protein"] ?? 0).toInt();
-    int carbs = (item["carbs"] ?? 0).toInt();
-    int fat = (item["fat"] ?? 0).toInt();
+    final type = item["type"] ?? "food";
 
     Timestamp? ts = item["timestamp"];
 
     String formattedDate = "No Date";
 
     if (ts != null) {
-      formattedDate = DateFormat(
-        "dd MMM yyyy • hh:mm a",
-      ).format(ts.toDate());
+      formattedDate = DateFormat("dd MMM yyyy • hh:mm a").format(ts.toDate());
     }
+
+    /// =========================
+    /// SKIN SCAN CARD
+    /// =========================
+
+    if (type == "skin") {
+      final skinScore = item["skinScore"]?.toString() ?? "N/A";
+
+      final hydration = item["hydration"]?.toString() ?? "N/A";
+
+      final concerns = item["concerns"]?.toString() ?? "No concerns";
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 20),
+
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+
+            child: Container(
+              padding: const EdgeInsets.all(22),
+
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+
+                color: Colors.white.withOpacity(.05),
+
+                border: Border.all(color: Colors.white.withOpacity(.08)),
+              ),
+
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        height: 62,
+                        width: 62,
+
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)],
+                          ),
+                        ),
+
+                        child: const Icon(
+                          Icons.face_retouching_natural_rounded,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+
+                      const SizedBox(width: 14),
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Skin Analysis",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 19,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                            const SizedBox(height: 6),
+
+                            Text(
+                              formattedDate,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(.55),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 10,
+                        ),
+
+                        decoration: BoxDecoration(
+                          color: Colors.pink.withOpacity(.12),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+
+                        child: Text(
+                          skinScore,
+                          style: const TextStyle(
+                            color: Colors.pinkAccent,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  Row(
+                    children: [
+                      _macroItem("Hydration", hydration, Colors.cyanAccent),
+
+                      const SizedBox(width: 12),
+
+                      _macroItem("Concerns", concerns, Colors.pinkAccent),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    /// =========================
+    /// MEDICINE CARD
+    /// =========================
+
+    if (type == "medicine") {
+      final medicineName = item["medicineName"]?.toString() ?? "Medicine";
+
+      final purpose = item["purpose"]?.toString() ?? "N/A";
+
+      final caution = item["caution"]?.toString() ?? "N/A";
+
+      return Container(
+        margin: const EdgeInsets.only(bottom: 20),
+
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+
+            child: Container(
+              padding: const EdgeInsets.all(22),
+
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+
+                color: Colors.white.withOpacity(.05),
+
+                border: Border.all(color: Colors.white.withOpacity(.08)),
+              ),
+
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        height: 62,
+                        width: 62,
+
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20),
+
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF06B6D4), Color(0xFF3B82F6)],
+                          ),
+                        ),
+
+                        child: const Icon(
+                          Icons.medication_rounded,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+
+                      const SizedBox(width: 14),
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              medicineName,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 19,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                            const SizedBox(height: 6),
+
+                            Text(
+                              formattedDate,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(.55),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  Row(
+                    children: [
+                      _macroItem("Purpose", purpose, Colors.cyanAccent),
+
+                      const SizedBox(width: 12),
+
+                      _macroItem("Caution", caution, Colors.orangeAccent),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    /// =========================
+    /// FOOD CARD
+    /// =========================
+
+    int calories = (item["calories"] ?? 0).toInt();
+    int protein = (item["protein"] ?? 0).toInt();
+    int carbs = (item["carbs"] ?? 0).toInt();
+    int fat = (item["fat"] ?? 0).toInt();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -359,10 +565,7 @@ late AnimationController _animationController;
         borderRadius: BorderRadius.circular(30),
 
         child: BackdropFilter(
-          filter: ImageFilter.blur(
-            sigmaX: 18,
-            sigmaY: 18,
-          ),
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
 
           child: Container(
             padding: const EdgeInsets.all(22),
@@ -371,15 +574,11 @@ late AnimationController _animationController;
               borderRadius: BorderRadius.circular(30),
               color: Colors.white.withOpacity(.05),
 
-              border: Border.all(
-                color: Colors.white.withOpacity(.08),
-              ),
+              border: Border.all(color: Colors.white.withOpacity(.08)),
             ),
 
             child: Column(
               children: [
-                /// TOP
-
                 Row(
                   children: [
                     Container(
@@ -387,14 +586,10 @@ late AnimationController _animationController;
                       width: 62,
 
                       decoration: BoxDecoration(
-                        borderRadius:
-                            BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(20),
 
                         gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFF22C55E),
-                            Color(0xFF06B6D4),
-                          ],
+                          colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
                         ),
                       ),
 
@@ -408,8 +603,7 @@ late AnimationController _animationController;
 
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
                             "Nutrition Scan",
@@ -425,8 +619,7 @@ late AnimationController _animationController;
                           Text(
                             formattedDate,
                             style: TextStyle(
-                              color:
-                                  Colors.white.withOpacity(.55),
+                              color: Colors.white.withOpacity(.55),
                             ),
                           ),
                         ],
@@ -434,17 +627,14 @@ late AnimationController _animationController;
                     ),
 
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 18,
                         vertical: 10,
                       ),
 
                       decoration: BoxDecoration(
-                        color:
-                            Colors.orange.withOpacity(.12),
-                        borderRadius:
-                            BorderRadius.circular(18),
+                        color: Colors.orange.withOpacity(.12),
+                        borderRadius: BorderRadius.circular(18),
                       ),
 
                       child: Text(
@@ -460,31 +650,17 @@ late AnimationController _animationController;
 
                 const SizedBox(height: 22),
 
-                /// MACROS
-
                 Row(
                   children: [
-                    _macroItem(
-                      "Protein",
-                      protein,
-                      Colors.greenAccent,
-                    ),
+                    _macroItem("Protein", "$protein g", Colors.greenAccent),
 
                     const SizedBox(width: 12),
 
-                    _macroItem(
-                      "Carbs",
-                      carbs,
-                      Colors.orangeAccent,
-                    ),
+                    _macroItem("Carbs", "$carbs g", Colors.orangeAccent),
 
                     const SizedBox(width: 12),
 
-                    _macroItem(
-                      "Fat",
-                      fat,
-                      Colors.cyanAccent,
-                    ),
+                    _macroItem("Fat", "$fat g", Colors.cyanAccent),
                   ],
                 ),
               ],
@@ -495,16 +671,10 @@ late AnimationController _animationController;
     );
   }
 
-  Widget _macroItem(
-    String title,
-    int value,
-    Color color,
-  ) {
+  Widget _macroItem(String title, String value, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: 18,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 10),
 
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
@@ -514,10 +684,13 @@ late AnimationController _animationController;
         child: Column(
           children: [
             Text(
-              "$value g",
+              value,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: TextStyle(
                 color: color,
-                fontSize: 22,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -526,9 +699,8 @@ late AnimationController _animationController;
 
             Text(
               title,
-              style: TextStyle(
-                color: Colors.white.withOpacity(.6),
-              ),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withOpacity(.6)),
             ),
           ],
         ),

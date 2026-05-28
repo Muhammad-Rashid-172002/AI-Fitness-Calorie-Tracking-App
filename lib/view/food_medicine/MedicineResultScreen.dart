@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class MedicineResultScreen extends StatelessWidget {
+class MedicineResultScreen extends StatefulWidget {
   final File image;
   final String result;
 
@@ -18,14 +20,69 @@ class MedicineResultScreen extends StatelessWidget {
   static const textMain = Color(0xFFF8FAFC);
   static const textSub = Color(0xFF94A3B8);
 
+  @override
+  State<MedicineResultScreen> createState() => _MedicineResultScreenState();
+}
+
+class _MedicineResultScreenState extends State<MedicineResultScreen> {
+  bool isSaved = false;
+
+  String get result => widget.result;
+  File get image => widget.image;
+
   String _getValue(String key) {
     final regex = RegExp('$key:\\s*(.*)', caseSensitive: false);
     final match = regex.firstMatch(result);
     return match?.group(1)?.trim() ?? "Not available";
   }
 
+  Future<void> saveMedicineScanToFirebase() async {
+    if (isSaved) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final medicineName = _getValue("Medicine Name");
+    final purpose = _getValue("Purpose");
+    final usage = _getValue("Usage");
+    final caution = _getValue("Caution");
+    final aiInsight = _getValue("AI Insight");
+    final doctorNote = _getValue("Doctor Note");
+    final formula = _getValue("Generic Formula / Active Ingredient");
+    final strength = _getValue("Strength");
+    final alternatives = _getValue("Same Formula Alternatives");
+    final ifNotAvailable = _getValue("If Not Available");
+
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .collection("scans")
+        .add({
+          "type": "medicine",
+          "title": "Medicine Scan",
+          "result": result,
+          "medicineName": medicineName,
+          "purpose": purpose,
+          "usage": usage,
+          "caution": caution,
+          "aiInsight": aiInsight,
+          "doctorNote": doctorNote,
+          "formula": formula,
+          "strength": strength,
+          "alternatives": alternatives,
+          "ifNotAvailable": ifNotAvailable,
+          "timestamp": FieldValue.serverTimestamp(),
+        });
+
+    setState(() => isSaved = true);
+  }
+
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      saveMedicineScanToFirebase();
+    });
+
     final medicineName = _getValue("Medicine Name");
     final purpose = _getValue("Purpose");
     final usage = _getValue("Usage");
@@ -38,11 +95,19 @@ class MedicineResultScreen extends StatelessWidget {
     final ifNotAvailable = _getValue("If Not Available");
 
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: MedicineResultScreen.bg,
       body: Stack(
         children: [
-          _glow(top: -100, right: -90, color: cyan.withOpacity(.18)),
-          _glow(bottom: -100, left: -80, color: blue.withOpacity(.16)),
+          _glow(
+            top: -100,
+            right: -90,
+            color: MedicineResultScreen.cyan.withOpacity(.18),
+          ),
+          _glow(
+            bottom: -100,
+            left: -80,
+            color: MedicineResultScreen.blue.withOpacity(.16),
+          ),
 
           SafeArea(
             child: SingleChildScrollView(
@@ -143,7 +208,7 @@ class MedicineResultScreen extends StatelessWidget {
           child: Text(
             "Medicine Scan Result",
             style: TextStyle(
-              color: textMain,
+              color: MedicineResultScreen.textMain,
               fontSize: 24,
               fontWeight: FontWeight.w900,
             ),
@@ -171,7 +236,7 @@ class MedicineResultScreen extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(26),
         child: Image.file(
-          image,
+          widget.image,
           height: 250,
           width: double.infinity,
           fit: BoxFit.cover,
@@ -187,13 +252,13 @@ class MedicineResultScreen extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         gradient: const LinearGradient(
-          colors: [cyan, blue],
+          colors: [MedicineResultScreen.cyan, MedicineResultScreen.blue],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: cyan.withOpacity(.28),
+            color: MedicineResultScreen.cyan.withOpacity(.28),
             blurRadius: 28,
             offset: const Offset(0, 14),
           ),
@@ -263,14 +328,14 @@ class MedicineResultScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: cyan, size: 28),
+          Icon(icon, color: MedicineResultScreen.cyan, size: 28),
 
           const SizedBox(height: 12),
 
           Text(
             title,
             style: const TextStyle(
-              color: textSub,
+              color: MedicineResultScreen.textSub,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -283,7 +348,7 @@ class MedicineResultScreen extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: textMain,
+              color: MedicineResultScreen.textMain,
               fontSize: 15,
               fontWeight: FontWeight.w900,
             ),
@@ -310,7 +375,7 @@ class MedicineResultScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: cyan, size: 25),
+          Icon(icon, color: MedicineResultScreen.cyan, size: 25),
 
           const SizedBox(width: 14),
 
@@ -321,7 +386,7 @@ class MedicineResultScreen extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: textMain,
+                    color: MedicineResultScreen.textMain,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),

@@ -5,6 +5,8 @@ import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:fitmind_ai/controller/ai_coach_controller.dart';
+import 'package:fitmind_ai/view/Fitness_plan/fitness_plan_screen.dart';
+import 'package:fitmind_ai/view/scan_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -279,6 +281,8 @@ class _HomeScreenState extends State<HomeScreen>
                               Expanded(child: _quickActionFitness()),
                             ],
                           ),
+                          const SizedBox(height: 22),
+                          _recentScansSection(),
                         ],
                       ),
                     );
@@ -286,6 +290,152 @@ class _HomeScreenState extends State<HomeScreen>
                 );
               },
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _recentScansSection() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const SizedBox();
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection("users")
+          .doc(user.uid)
+          .collection("scans")
+          .orderBy("timestamp", descending: true)
+          .limit(3)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return _loadingTipCard();
+        }
+
+        final scans = snapshot.data!.docs;
+
+        if (scans.isEmpty) {
+          return const SizedBox();
+        }
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(22),
+          decoration: _glassCard(radius: 32, glowColor: cyan),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Recent AI Scans",
+                style: TextStyle(
+                  color: textMain,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                "Food, skin and medicine analysis history",
+                style: TextStyle(
+                  color: textSub,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 18),
+
+              ...scans.map((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return _scanHistoryTile(data);
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _scanHistoryTile(Map<String, dynamic> data) {
+    final type = data["type"] ?? "food";
+
+    IconData icon;
+    Color color;
+    String title;
+    String subtitle;
+
+    if (type == "skin") {
+      icon = Icons.face_retouching_natural_rounded;
+      color = const Color(0xFFEC4899);
+      title = "Skin Analysis";
+      subtitle =
+          "Score: ${data["skinScore"] ?? "N/A"} • ${data["hydration"] ?? "Skin scan"}";
+    } else if (type == "medicine") {
+      icon = Icons.medication_liquid_rounded;
+      color = cyan;
+      title = data["medicineName"] ?? "Medicine Scan";
+      subtitle = data["purpose"] ?? data["aiInsight"] ?? "Medicine information";
+    } else {
+      icon = Icons.restaurant_rounded;
+      color = primary;
+      title = data["foodName"] ?? data["name"] ?? "Food Scan";
+      subtitle =
+          "${data["calories"] ?? 0} kcal • P ${data["protein"] ?? 0}g • C ${data["carbs"] ?? 0}g";
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.055),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            height: 46,
+            width: 46,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.13),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: textMain,
+                    fontSize: 15.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: textSub,
+                    fontSize: 12.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: Colors.white.withOpacity(0.35),
+            size: 15,
           ),
         ],
       ),
@@ -816,79 +966,95 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _quickActionScan() {
-    return Container(
-      height: 150,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          colors: [primaryLight, primary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ScanScreen()),
+        );
+      },
+      child: Container(
+        height: 150,
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(28),
+          gradient: const LinearGradient(
+            colors: [primaryLight, primary],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: primary.withOpacity(0.25),
+              blurRadius: 28,
+              offset: const Offset(0, 14),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: primary.withOpacity(0.25),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.document_scanner_rounded, color: bgColor, size: 34),
-          Spacer(),
-          Text(
-            "AI Scan",
-            style: TextStyle(
-              color: bgColor,
-              fontSize: 21,
-              fontWeight: FontWeight.w900,
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.document_scanner_rounded, color: bgColor, size: 34),
+            Spacer(),
+            Text(
+              "AI Scan",
+              style: TextStyle(
+                color: bgColor,
+                fontSize: 21,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-          SizedBox(height: 5),
-          Text(
-            "Scan food or skin",
-            style: TextStyle(
-              color: bgColor,
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
+            SizedBox(height: 5),
+            Text(
+              "Scan food or skin",
+              style: TextStyle(
+                color: bgColor,
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _quickActionFitness() {
-    return Container(
-      height: 150,
-      padding: const EdgeInsets.all(22),
-      decoration: _glassCard(radius: 28, glowColor: cyan),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.fitness_center_rounded, color: cyan, size: 34),
-          Spacer(),
-          Text(
-            "Fitness Plan",
-            style: TextStyle(
-              color: textMain,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const FitnessPlanScreen()),
+        );
+      },
+      child: Container(
+        height: 150,
+        padding: const EdgeInsets.all(22),
+        decoration: _glassCard(radius: 28, glowColor: cyan),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.fitness_center_rounded, color: cyan, size: 34),
+            Spacer(),
+            Text(
+              "Fitness Plan",
+              style: TextStyle(
+                color: textMain,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-          SizedBox(height: 5),
-          Text(
-            "View workout",
-            style: TextStyle(
-              color: textSub,
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
+            SizedBox(height: 5),
+            Text(
+              "View workout",
+              style: TextStyle(
+                color: textSub,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -129,6 +129,31 @@ class HelpSupportScreen extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 14),
+                _sectionTitle(
+                  "AI Features",
+                  "Smart tools powered by FitMind AI",
+                ),
+
+                const SizedBox(height: 14),
+
+                _buildTipCard(
+                  "AI Food Scanner analyzes calories, protein, carbs, and fats instantly.",
+                  Icons.restaurant_menu_rounded,
+                  const Color(0xFF22C55E),
+                ),
+                const SizedBox(height: 14),
+                _buildTipCard(
+                  "AI Skin Analysis helps detect hydration, oiliness, and skin concerns.",
+                  Icons.face_retouching_natural_rounded,
+                  const Color(0xFFEC4899),
+                ),
+                const SizedBox(height: 14),
+                _buildTipCard(
+                  "Medicine Scanner provides usage, purpose, and safety information.",
+                  Icons.medication_rounded,
+                  const Color(0xFF06B6D4),
+                ),
+                SizedBox(height: 14),
 
                 _buildTipCard(
                   "Upload clear meal images with good lighting for better nutrition analysis.",
@@ -144,6 +169,25 @@ class HelpSupportScreen extends StatelessWidget {
                   "Ask AI Coach for meal ideas, protein targets, and healthy food suggestions.",
                   Icons.psychology_alt_rounded,
                   const Color(0xFF06B6D4),
+                ),
+                SizedBox(height: 14),
+                _sectionTitle(
+                  "Privacy & Security",
+                  "Your health data stays protected",
+                ),
+
+                const SizedBox(height: 14),
+
+                _buildTipCard(
+                  "FitMind AI securely stores your health scans and personal information.",
+                  Icons.security_rounded,
+                  const Color(0xFF22C55E),
+                ),
+                SizedBox(height: 14),
+                _buildTipCard(
+                  "We never share your personal health data with third parties.",
+                  Icons.lock_rounded,
+                  const Color(0xFF3B82F6),
                 ),
 
                 const SizedBox(height: 24),
@@ -173,6 +217,47 @@ class HelpSupportScreen extends StatelessWidget {
                   mailto: bugEmail,
                 ),
 
+                _buildContactCard(
+                  context,
+                  title: "Rate FitMind AI",
+                  subtitle: "Enjoying the app? Leave a review on Play Store.",
+                  icon: Icons.star_rate_rounded,
+                  color: const Color(0xFFF59E0B),
+                  mailto:
+                      "https://play.google.com/store/apps/details?id=com.rashidapps.fitmindai",
+                ),
+                const SizedBox(height: 26),
+
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(.08),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.orange.withOpacity(.18)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.orange,
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      Expanded(
+                        child: Text(
+                          "FitMind AI provides general wellness guidance only and is not a substitute for professional medical advice.",
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(.75),
+                            fontSize: 12.5,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 35),
               ],
             ),
@@ -189,11 +274,7 @@ class HelpSupportScreen extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF22C55E),
-            Color(0xFF06B6D4),
-            Color(0xFF3B82F6),
-          ],
+          colors: [Color(0xFF22C55E), Color(0xFF06B6D4), Color(0xFF3B82F6)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -289,10 +370,7 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFAQCard({
-    required String title,
-    required String content,
-  }) {
+  Widget _buildFAQCard({required String title, required String content}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: ClipRRect(
@@ -315,8 +393,7 @@ class HelpSupportScreen extends StatelessWidget {
                 iconColor: const Color(0xFF22C55E),
                 collapsedIconColor: Colors.white54,
                 tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-                childrenPadding:
-                    const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 title: Text(
                   title,
                   style: const TextStyle(
@@ -346,11 +423,7 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTipCard(
-    String content,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildTipCard(String content, IconData icon, Color color) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(15),
@@ -456,17 +529,11 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _glowCircle({
-    required Color color,
-    required double size,
-  }) {
+  Widget _glowCircle({required Color color, required double size}) {
     return Container(
       height: size,
       width: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

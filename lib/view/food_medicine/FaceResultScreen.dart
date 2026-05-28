@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class FaceResultScreen extends StatelessWidget {
+class FaceResultScreen extends StatefulWidget {
   final File image;
   final String result;
 
@@ -18,10 +20,52 @@ class FaceResultScreen extends StatelessWidget {
   static const textMain = Color(0xFFF8FAFC);
   static const textSub = Color(0xFF94A3B8);
 
+  @override
+  State<FaceResultScreen> createState() => _FaceResultScreenState();
+}
+
+class _FaceResultScreenState extends State<FaceResultScreen> {
+  bool isSaved = false;
+
+  String get result => widget.result;
+  File get image => widget.image;
   String _getValue(String key) {
     final regex = RegExp('$key:\\s*(.*)', caseSensitive: false);
-    final match = regex.firstMatch(result);
+    final match = regex.firstMatch(widget.result);
     return match?.group(1)?.trim() ?? "Not available";
+  }
+
+  Future<void> saveFaceScanToFirebase() async {
+    if (isSaved) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final skinScore = _getValue("Skin Health Score");
+    final overview = _getValue("Skin Overview");
+    final hydration = _getValue("Hydration Level");
+    final oiliness = _getValue("Oiliness Level");
+    final concerns = _getValue("Possible Concerns");
+    final insight = _getValue("AI Insight");
+
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(user.uid)
+        .collection("scans")
+        .add({
+          "type": "skin",
+          "title": "Skin Analysis",
+          "skinScore": skinScore,
+          "overview": overview,
+          "hydration": hydration,
+          "oiliness": oiliness,
+          "concerns": concerns,
+          "insight": insight,
+
+          "timestamp": FieldValue.serverTimestamp(),
+        });
+
+    setState(() => isSaved = true);
   }
 
   @override
@@ -38,12 +82,24 @@ class FaceResultScreen extends StatelessWidget {
     final doctorAdvice = _getValue("Doctor Recommendation");
     final products = _getValue("Recommended Products");
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      saveFaceScanToFirebase();
+    });
+
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: FaceResultScreen.bg,
       body: Stack(
         children: [
-          _glow(top: -90, right: -80, color: purple.withOpacity(.22)),
-          _glow(bottom: -100, left: -90, color: pink.withOpacity(.16)),
+          _glow(
+            top: -90,
+            right: -80,
+            color: FaceResultScreen.purple.withOpacity(.22),
+          ),
+          _glow(
+            bottom: -100,
+            left: -90,
+            color: FaceResultScreen.pink.withOpacity(.16),
+          ),
 
           SafeArea(
             child: SingleChildScrollView(
@@ -147,7 +203,7 @@ class FaceResultScreen extends StatelessWidget {
           child: Text(
             "Face Scan Result",
             style: TextStyle(
-              color: textMain,
+              color: FaceResultScreen.textMain,
               fontSize: 24,
               fontWeight: FontWeight.w900,
             ),
@@ -174,7 +230,7 @@ class FaceResultScreen extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(26),
         child: Image.file(
-          image,
+          widget.image,
           height: 250,
           width: double.infinity,
           fit: BoxFit.cover,
@@ -190,13 +246,13 @@ class FaceResultScreen extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         gradient: const LinearGradient(
-          colors: [purple, pink],
+          colors: [FaceResultScreen.purple, FaceResultScreen.pink],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: pink.withOpacity(.28),
+            color: FaceResultScreen.pink.withOpacity(.28),
             blurRadius: 28,
             offset: const Offset(0, 14),
           ),
@@ -262,12 +318,12 @@ class FaceResultScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: pink, size: 28),
+          Icon(icon, color: FaceResultScreen.pink, size: 28),
           const SizedBox(height: 12),
           Text(
             title,
             style: const TextStyle(
-              color: textSub,
+              color: FaceResultScreen.textSub,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -276,7 +332,7 @@ class FaceResultScreen extends StatelessWidget {
           Text(
             value,
             style: const TextStyle(
-              color: textMain,
+              color: FaceResultScreen.textMain,
               fontSize: 17,
               fontWeight: FontWeight.w900,
             ),
@@ -303,7 +359,7 @@ class FaceResultScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: pink, size: 25),
+          Icon(icon, color: FaceResultScreen.pink, size: 25),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -312,7 +368,7 @@ class FaceResultScreen extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    color: textMain,
+                    color: FaceResultScreen.textMain,
                     fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
