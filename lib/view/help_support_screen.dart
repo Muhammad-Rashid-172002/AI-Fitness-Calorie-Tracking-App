@@ -13,252 +13,207 @@ class HelpSupportScreen extends StatelessWidget {
   final String bugEmail =
       'mailto:muhammadrashid172002@gmail.com?subject=FitMind%20AI%20Bug%20Report';
 
+  final String playStoreUrl =
+      'https://play.google.com/store/apps/details?id=com.rashidapps.fitmindai';
+
+  static const Color bgColor = Color(0xFF020617);
+  static const Color surface = Color(0xFF0B1220);
+  static const Color primary = Color(0xFF22C55E);
+  static const Color cyan = Color(0xFF06B6D4);
+  static const Color blue = Color(0xFF3B82F6);
+  static const Color orange = Color(0xFFF59E0B);
+  static const Color red = Color(0xFFEF4444);
+  static const Color pink = Color(0xFFEC4899);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF020617),
+      backgroundColor: bgColor,
       body: Stack(
         children: [
           Positioned(
             top: -120,
-            right: -80,
-            child: _glowCircle(
-              color: const Color(0xFF22C55E).withOpacity(0.12),
-              size: 260,
-            ),
+            right: -90,
+            child: _glowCircle(primary.withOpacity(.14), 280),
           ),
-
           Positioned(
-            bottom: -140,
-            left: -90,
-            child: _glowCircle(
-              color: const Color(0xFF06B6D4).withOpacity(0.10),
-              size: 280,
-            ),
+            bottom: -150,
+            left: -100,
+            child: _glowCircle(cyan.withOpacity(.12), 300),
           ),
-
           SafeArea(
             child: ListView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 22),
+              padding: const EdgeInsets.fromLTRB(22, 18, 22, 34),
               children: [
-                const SizedBox(height: 18),
+                _topBar(context),
+                const SizedBox(height: 26),
+
+                _heroCard(),
+                const SizedBox(height: 22),
 
                 Row(
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Container(
-                        height: 48,
-                        width: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.06),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.08),
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back_ios_new_rounded,
-                          color: Colors.white,
-                          size: 19,
-                        ),
+                    Expanded(
+                      child: _quickCard(
+                        icon: Icons.email_rounded,
+                        title: "Support",
+                        subtitle: "Get help",
+                        color: blue,
+                        onTap: () => _openLink(context, supportEmail),
                       ),
                     ),
-
-                    const Spacer(),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF22C55E).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(30),
-                        border: Border.all(
-                          color: const Color(0xFF22C55E).withOpacity(0.24),
-                        ),
-                      ),
-                      child: const Text(
-                        "Support",
-                        style: TextStyle(
-                          color: Color(0xFF22C55E),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _quickCard(
+                        icon: Icons.bug_report_rounded,
+                        title: "Bug Report",
+                        subtitle: "Tell issue",
+                        color: red,
+                        onTap: () => _openLink(context, bugEmail),
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 28),
-
-                _heroCard(context),
-
-                const SizedBox(height: 28),
+                const SizedBox(height: 30),
 
                 _sectionTitle(
                   "Frequently Asked Questions",
-                  "Common questions about FitMind AI",
+                  "Quick answers about FitMind AI",
                 ),
-
                 const SizedBox(height: 14),
 
-                _buildFAQCard(
+                _faqCard(
                   title: "How do I track my meals?",
                   content:
-                      "Open the Scan screen, take a clear food photo or upload from gallery, then FitMind AI will estimate calories and nutrition details.",
+                      "Open the Scan screen, capture a clear food image or upload one from your gallery. FitMind AI will estimate calories, protein, carbs, fats, and nutrition details.",
                 ),
-                _buildFAQCard(
-                  title: "How does AI food scanning work?",
+                _faqCard(
+                  title: "How can I get better food scan results?",
                   content:
-                      "FitMind AI analyzes your food image and provides estimated calories, protein, carbs, and fat. For best results, use clear and well-lit images.",
-                ),
-                _buildFAQCard(
-                  title: "How can I update my profile?",
-                  content:
-                      "Go to Profile, open settings or edit profile option, then update your body information and goals.",
+                      "Use bright lighting, keep the meal clearly visible, avoid blurry images, and try to capture the full plate from the top angle.",
                 ),
 
-                const SizedBox(height: 24),
+                _faqCard(
+                  title: "Is FitMind AI medical advice?",
+                  content:
+                      "No. FitMind AI provides general health and wellness guidance only. For medical conditions, always consult a qualified doctor.",
+                ),
+
+                const SizedBox(height: 28),
+
+                _sectionTitle("AI Features", "Smart tools inside your app"),
+                const SizedBox(height: 14),
+
+                _featureCard(
+                  "AI Food Scanner",
+                  "Analyze calories, protein, carbs, fats, and meal nutrition instantly.",
+                  Icons.restaurant_menu_rounded,
+                  primary,
+                ),
+                _featureCard(
+                  "AI Skin Analysis",
+                  "Get smart skin insights for hydration, oiliness, and visible concerns.",
+                  Icons.face_retouching_natural_rounded,
+                  pink,
+                ),
+                _featureCard(
+                  "Medicine Scanner",
+                  "Scan medicine and get helpful usage, purpose, and safety information.",
+                  Icons.medication_rounded,
+                  cyan,
+                ),
+                _featureCard(
+                  "Smart AI Coach",
+                  "Ask about diet, workouts, protein targets, and healthy lifestyle tips.",
+                  Icons.psychology_alt_rounded,
+                  blue,
+                ),
+
+                const SizedBox(height: 28),
 
                 _sectionTitle(
                   "Tips & Tutorials",
                   "Improve your tracking accuracy",
                 ),
-
-                const SizedBox(height: 14),
-                _sectionTitle(
-                  "AI Features",
-                  "Smart tools powered by FitMind AI",
-                ),
-
                 const SizedBox(height: 14),
 
-                _buildTipCard(
-                  "AI Food Scanner analyzes calories, protein, carbs, and fats instantly.",
-                  Icons.restaurant_menu_rounded,
-                  const Color(0xFF22C55E),
+                _tipCard(
+                  "Track meals daily to improve your calorie and macro consistency.",
+                  Icons.insights_rounded,
+                  primary,
                 ),
-                const SizedBox(height: 14),
-                _buildTipCard(
-                  "AI Skin Analysis helps detect hydration, oiliness, and skin concerns.",
-                  Icons.face_retouching_natural_rounded,
-                  const Color(0xFFEC4899),
+                _tipCard(
+                  "Drink water regularly and update your hydration progress.",
+                  Icons.water_drop_rounded,
+                  cyan,
                 ),
-                const SizedBox(height: 14),
-                _buildTipCard(
-                  "Medicine Scanner provides usage, purpose, and safety information.",
-                  Icons.medication_rounded,
-                  const Color(0xFF06B6D4),
-                ),
-                SizedBox(height: 14),
-
-                _buildTipCard(
-                  "Upload clear meal images with good lighting for better nutrition analysis.",
+                _tipCard(
+                  "Use clear images for food, skin, and medicine scanning.",
                   Icons.camera_alt_rounded,
-                  const Color(0xFFF59E0B),
+                  orange,
                 ),
-                _buildTipCard(
-                  "Use daily logs to track calories, protein, carbs, and fat consistently.",
-                  Icons.bar_chart_rounded,
-                  const Color(0xFF22C55E),
-                ),
-                _buildTipCard(
-                  "Ask AI Coach for meal ideas, protein targets, and healthy food suggestions.",
-                  Icons.psychology_alt_rounded,
-                  const Color(0xFF06B6D4),
-                ),
-                SizedBox(height: 14),
+
+                const SizedBox(height: 28),
+
                 _sectionTitle(
                   "Privacy & Security",
                   "Your health data stays protected",
                 ),
-
                 const SizedBox(height: 14),
 
-                _buildTipCard(
-                  "FitMind AI securely stores your health scans and personal information.",
-                  Icons.security_rounded,
-                  const Color(0xFF22C55E),
+                _privacyCard(
+                  icon: Icons.security_rounded,
+                  title: "Secure Health Data",
+                  subtitle:
+                      "Your scans and profile details are handled securely inside the app.",
+                  color: primary,
                 ),
-                SizedBox(height: 14),
-                _buildTipCard(
-                  "We never share your personal health data with third parties.",
-                  Icons.lock_rounded,
-                  const Color(0xFF3B82F6),
+                _privacyCard(
+                  icon: Icons.lock_rounded,
+                  title: "Private by Design",
+                  subtitle:
+                      "Your personal health data is not shared publicly with other users.",
+                  color: blue,
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
 
                 _sectionTitle(
                   "Contact Us",
                   "Need more help? Reach out anytime",
                 ),
-
                 const SizedBox(height: 14),
 
-                _buildContactCard(
+                _contactCard(
                   context,
                   title: "Contact Support",
                   subtitle: "Email us for help, feedback, or account support.",
                   icon: Icons.email_rounded,
-                  color: const Color(0xFF3B82F6),
-                  mailto: supportEmail,
+                  color: blue,
+                  link: supportEmail,
                 ),
-
-                _buildContactCard(
+                _contactCard(
                   context,
                   title: "Report a Bug",
                   subtitle: "Tell us if something is not working properly.",
                   icon: Icons.bug_report_rounded,
-                  color: const Color(0xFFEF4444),
-                  mailto: bugEmail,
+                  color: red,
+                  link: bugEmail,
                 ),
-
-                _buildContactCard(
+                _contactCard(
                   context,
                   title: "Rate FitMind AI",
                   subtitle: "Enjoying the app? Leave a review on Play Store.",
                   icon: Icons.star_rate_rounded,
-                  color: const Color(0xFFF59E0B),
-                  mailto:
-                      "https://play.google.com/store/apps/details?id=com.rashidapps.fitmindai",
+                  color: orange,
+                  link: playStoreUrl,
                 ),
-                const SizedBox(height: 26),
 
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(.08),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.orange.withOpacity(.18)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.orange,
-                      ),
+                const SizedBox(height: 22),
 
-                      const SizedBox(width: 12),
-
-                      Expanded(
-                        child: Text(
-                          "FitMind AI provides general wellness guidance only and is not a substitute for professional medical advice.",
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(.75),
-                            fontSize: 12.5,
-                            height: 1.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 35),
+                _warningBox(),
               ],
             ),
           ),
@@ -267,66 +222,149 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _heroCard(BuildContext context) {
+  Widget _topBar(BuildContext context) {
+    return Row(
+      children: [
+        GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: _iconButton(Icons.arrow_back_ios_new_rounded),
+        ),
+        const Spacer(),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: primary.withOpacity(.13),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: primary.withOpacity(.25)),
+          ),
+          child: const Text(
+            "HELP CENTER",
+            style: TextStyle(
+              color: primary,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+              letterSpacing: .8,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _heroCard() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(34),
         gradient: const LinearGradient(
-          colors: [Color(0xFF22C55E), Color(0xFF06B6D4), Color(0xFF3B82F6)],
+          colors: [primary, cyan, blue],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF06B6D4).withOpacity(0.32),
-            blurRadius: 32,
-            offset: const Offset(0, 14),
+            color: cyan.withOpacity(.30),
+            blurRadius: 35,
+            offset: const Offset(0, 16),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Container(
-            height: 62,
-            width: 62,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white.withOpacity(0.20),
-              border: Border.all(color: Colors.white.withOpacity(0.25)),
-            ),
-            child: const Icon(
-              Icons.support_agent_rounded,
-              color: Colors.white,
-              size: 34,
+          Positioned(
+            right: -35,
+            top: -35,
+            child: Icon(
+              Icons.health_and_safety_rounded,
+              size: 140,
+              color: Colors.white.withOpacity(.08),
             ),
           ),
-
-          const SizedBox(height: 18),
-
-          const Text(
-            "How can we help you?",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 27,
-              fontWeight: FontWeight.bold,
-              height: 1.1,
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          Text(
-            "Find answers, learn app tips, or contact support for your FitMind AI app.",
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
-              fontSize: 14,
-              height: 1.5,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                height: 62,
+                width: 62,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(.20),
+                  border: Border.all(color: Colors.white.withOpacity(.25)),
+                ),
+                child: const Icon(
+                  Icons.support_agent_rounded,
+                  color: Colors.white,
+                  size: 34,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                "How can we help you?",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w900,
+                  height: 1.1,
+                ),
+              ),
+              const SizedBox(height: 9),
+              Text(
+                "Find answers, learn smart tracking tips, report issues, or contact FitMind AI support anytime.",
+                style: TextStyle(
+                  color: Colors.white.withOpacity(.88),
+                  fontSize: 14,
+                  height: 1.55,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _quickCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(.055),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withOpacity(.08)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _circleIcon(icon, color),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                color: Colors.white.withOpacity(.55),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -335,14 +373,18 @@ class HelpSupportScreen extends StatelessWidget {
     return Row(
       children: [
         Container(
-          height: 7,
-          width: 7,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFF22C55E),
+          height: 30,
+          width: 5,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              colors: [primary, cyan],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
           ),
         ),
-        const SizedBox(width: 9),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,15 +394,16 @@ class HelpSupportScreen extends StatelessWidget {
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 19,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               Text(
                 subtitle,
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.5),
-                  fontSize: 12,
+                  color: Colors.white.withOpacity(.48),
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
@@ -370,7 +413,7 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFAQCard({required String title, required String content}) {
+  Widget _faqCard({required String title, required String content}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: ClipRRect(
@@ -379,9 +422,9 @@ class HelpSupportScreen extends StatelessWidget {
           filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.045),
+              color: Colors.white.withOpacity(.05),
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: Colors.white.withOpacity(0.08)),
+              border: Border.all(color: Colors.white.withOpacity(.08)),
             ),
             child: Theme(
               data: ThemeData().copyWith(
@@ -390,7 +433,7 @@ class HelpSupportScreen extends StatelessWidget {
                 highlightColor: Colors.transparent,
               ),
               child: ExpansionTile(
-                iconColor: const Color(0xFF22C55E),
+                iconColor: primary,
                 collapsedIconColor: Colors.white54,
                 tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                 childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -398,7 +441,7 @@ class HelpSupportScreen extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w900,
                     fontSize: 14.5,
                   ),
                 ),
@@ -408,9 +451,10 @@ class HelpSupportScreen extends StatelessWidget {
                     child: Text(
                       content,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.64),
+                        color: Colors.white.withOpacity(.65),
                         fontSize: 13,
-                        height: 1.5,
+                        height: 1.55,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -423,34 +467,75 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTipCard(String content, IconData icon, Color color) {
+  Widget _featureCard(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.045),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.08)),
+        color: Colors.white.withOpacity(.05),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withOpacity(.08)),
       ),
       child: Row(
         children: [
-          Container(
-            height: 42,
-            width: 42,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: color.withOpacity(0.14),
+          _circleIcon(icon, color),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(.56),
+                    fontSize: 12.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            child: Icon(icon, color: color, size: 22),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tipCard(String text, IconData icon, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.045),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(.075)),
+      ),
+      child: Row(
+        children: [
+          _circleIcon(icon, color),
           const SizedBox(width: 13),
           Expanded(
             child: Text(
-              content,
+              text,
               style: TextStyle(
-                color: Colors.white.withOpacity(0.68),
+                color: Colors.white.withOpacity(.68),
                 fontSize: 13,
                 height: 1.45,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -459,41 +544,75 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContactCard(
+  Widget _privacyCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withOpacity(.12), Colors.white.withOpacity(.035)],
+        ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: color.withOpacity(.16)),
+      ),
+      child: Row(
+        children: [
+          _circleIcon(icon, color),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(.58),
+                    fontSize: 12.5,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _contactCard(
     BuildContext context, {
     required String title,
     required String subtitle,
     required IconData icon,
     required Color color,
-    required String mailto,
+    required String link,
   }) {
     return GestureDetector(
-      onTap: () async {
-        if (await canLaunchUrlString(mailto)) {
-          await launchUrlString(mailto);
-        } else {
-          showCustomSnackBar(context, "Could not open email app.", false);
-        }
-      },
+      onTap: () => _openLink(context, link),
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.045),
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          color: Colors.white.withOpacity(.05),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.white.withOpacity(.08)),
         ),
         child: Row(
           children: [
-            Container(
-              height: 46,
-              width: 46,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withOpacity(0.14),
-              ),
-              child: Icon(icon, color: color, size: 23),
-            ),
+            _circleIcon(icon, color),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -503,16 +622,17 @@ class HelpSupportScreen extends StatelessWidget {
                     title,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 14.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.52),
-                      fontSize: 12,
-                      height: 1.35,
+                      color: Colors.white.withOpacity(.55),
+                      fontSize: 12.3,
+                      height: 1.4,
                     ),
                   ),
                 ],
@@ -520,7 +640,7 @@ class HelpSupportScreen extends StatelessWidget {
             ),
             Icon(
               Icons.arrow_forward_ios_rounded,
-              color: Colors.white.withOpacity(0.35),
+              color: Colors.white.withOpacity(.35),
               size: 16,
             ),
           ],
@@ -529,11 +649,74 @@ class HelpSupportScreen extends StatelessWidget {
     );
   }
 
-  Widget _glowCircle({required Color color, required double size}) {
+  Widget _warningBox() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: orange.withOpacity(.09),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: orange.withOpacity(.20)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: orange),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              "FitMind AI provides general wellness guidance only and is not a substitute for professional medical advice.",
+              style: TextStyle(
+                color: Colors.white.withOpacity(.75),
+                fontSize: 12.5,
+                height: 1.5,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _iconButton(IconData icon) {
+    return Container(
+      height: 48,
+      width: 48,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(.08)),
+      ),
+      child: Icon(icon, color: Colors.white, size: 19),
+    );
+  }
+
+  Widget _circleIcon(IconData icon, Color color) {
+    return Container(
+      height: 46,
+      width: 46,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: color.withOpacity(.14),
+        border: Border.all(color: color.withOpacity(.20)),
+      ),
+      child: Icon(icon, color: color, size: 23),
+    );
+  }
+
+  Widget _glowCircle(Color color, double size) {
     return Container(
       height: size,
       width: size,
       decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
+  }
+
+  Future<void> _openLink(BuildContext context, String link) async {
+    if (await canLaunchUrlString(link)) {
+      await launchUrlString(link, mode: LaunchMode.externalApplication);
+    } else {
+      showCustomSnackBar(context, "Could not open this link.", false);
+    }
   }
 }

@@ -123,33 +123,33 @@ class _SignUpScreenState extends State<SignUpScreen>
     }
   }
 
-  Future<void> _handleGoogleSignIn() async {
-    if (isLoading) return;
+  // Future<void> _handleGoogleSignIn() async {
+  //   if (isLoading) return;
 
-    setState(() => isLoading = true);
-    showLoading();
+  //   setState(() => isLoading = true);
+  //   showLoading();
 
-    final result = await googleController.signInWithGoogle();
+  //   final result = await googleController.signInWithGoogle();
 
-    hideLoading();
+  //   hideLoading();
 
-    if (!mounted) return;
+  //   if (!mounted) return;
 
-    setState(() => isLoading = false);
+  //   setState(() => isLoading = false);
 
-    if (result == null) {
-      showCustomSnackBar(context, "Login Successful", true);
+  //   if (result == null) {
+  //     showCustomSnackBar(context, "Login Successful", true);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const BodyInfoScreen(),
-        ),
-      );
-    } else {
-      showCustomSnackBar(context, result, false);
-    }
-  }
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(
+  //         builder: (_) => const BodyInfoScreen(),
+  //       ),
+  //     );
+  //   } else {
+  //     showCustomSnackBar(context, result, false);
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -284,38 +284,38 @@ class _SignUpScreenState extends State<SignUpScreen>
 
                         const SizedBox(height: 24),
 
-                        _divider(),
+                      //  _divider(),
 
                         const SizedBox(height: 24),
 
-                        GestureDetector(
-                          onTap: _handleGoogleSignIn,
-                          child: Container(
-                            height: 58,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.055),
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.10),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Image.asset("assets/google.png", height: 24),
-                                const SizedBox(width: 12),
-                                const Text(
-                                  "Continue with Google",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        // GestureDetector(
+                        //   onTap: _handleGoogleSignIn,
+                        //   child: Container(
+                        //     height: 58,
+                        //     width: double.infinity,
+                        //     decoration: BoxDecoration(
+                        //       color: Colors.white.withOpacity(0.055),
+                        //       borderRadius: BorderRadius.circular(22),
+                        //       border: Border.all(
+                        //         color: Colors.white.withOpacity(0.10),
+                        //       ),
+                        //     ),
+                        //     child: Row(
+                        //       mainAxisAlignment: MainAxisAlignment.center,
+                        //       children: [
+                        //         Image.asset("assets/google.png", height: 24),
+                        //         const SizedBox(width: 12),
+                        //         const Text(
+                        //           "Continue with Google",
+                        //           style: TextStyle(
+                        //             color: Colors.white,
+                        //             fontWeight: FontWeight.w700,
+                        //           ),
+                        //         ),
+                        //       ],
+                        //     ),
+                        //   ),
+                        // ),
 
                         const SizedBox(height: 26),
 
@@ -349,7 +349,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                           ),
                         ),
 
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 38),
                       ],
                     ),
                   ),
@@ -446,28 +446,28 @@ class _SignUpScreenState extends State<SignUpScreen>
     );
   }
 
-  Widget _divider() {
-    return Row(
-      children: [
-        Expanded(
-          child: Divider(color: Colors.white.withOpacity(0.12)),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            "OR",
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.42),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        Expanded(
-          child: Divider(color: Colors.white.withOpacity(0.12)),
-        ),
-      ],
-    );
-  }
+  // Widget _divider() {
+  //   return Row(
+  //     children: [
+  //       Expanded(
+  //         child: Divider(color: Colors.white.withOpacity(0.12)),
+  //       ),
+  //       Padding(
+  //         padding: const EdgeInsets.symmetric(horizontal: 12),
+  //         child: Text(
+  //           "OR",
+  //           style: TextStyle(
+  //             color: Colors.white.withOpacity(0.42),
+  //             fontWeight: FontWeight.bold,
+  //           ),
+  //         ),
+  //       ),
+  //       Expanded(
+  //         child: Divider(color: Colors.white.withOpacity(0.12)),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   Widget _glowCircle({
     required Color color,

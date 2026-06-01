@@ -19,172 +19,284 @@ class _SettingsSectionState extends State<SettingsSection> {
   void _showAboutDialog() {
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(.7),
+      barrierColor: Colors.black.withOpacity(.78),
       builder: (_) {
         return Dialog(
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
           backgroundColor: Colors.transparent,
           child: Container(
-            padding: const EdgeInsets.all(26),
+            constraints: const BoxConstraints(maxWidth: 420),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(34),
-              gradient: LinearGradient(
+              gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  const Color(0xFF111827),
-                  const Color(0xFF0F172A).withOpacity(.96),
+                  Color(0xFF0B1220),
+                  Color(0xFF111C2E),
+                  Color(0xFF0F172A),
                 ],
               ),
-              border: Border.all(color: Colors.white.withOpacity(.08)),
+              border: Border.all(color: Colors.white12),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF06B6D4).withOpacity(.18),
-                  blurRadius: 35,
-                  offset: const Offset(0, 14),
+                  color: const Color(0xFF22C55E).withOpacity(.22),
+                  blurRadius: 45,
+                  offset: const Offset(0, 18),
                 ),
               ],
             ),
-
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                /// APP LOGO
-                Container(
-                  height: 88,
-                  width: 88,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF22C55E).withOpacity(.35),
-                        blurRadius: 28,
-                      ),
-                    ],
-                  ),
-                  child: Image.asset(
-                    "assets/app/FitMind_AI.png",
-                    fit: BoxFit.cover,
-                  ),
-                ),
-
-                const SizedBox(height: 22),
-
-                /// APP NAME
-                ShaderMask(
-                  shaderCallback: (bounds) {
-                    return const LinearGradient(
-                      colors: [Color(0xFF22C55E), Color(0xFF06B6D4)],
-                    ).createShader(bounds);
-                  },
-                  child: const Text(
-                    "FitMind AI",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .4,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                Text(
-                  "AI Health & Fitness Platform",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(.68),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-
-                const SizedBox(height: 26),
-
-                /// FEATURES
-                _aboutFeature(Icons.restaurant_menu_rounded, "AI Food Scanner"),
-
-                _aboutFeature(
-                  Icons.face_retouching_natural_rounded,
-                  "AI Skin Analysis",
-                ),
-
-                _aboutFeature(Icons.medication_rounded, "Medicine Scanner"),
-
-                _aboutFeature(
-                  Icons.fitness_center_rounded,
-                  "Personalized Fitness Plans",
-                ),
-
-                _aboutFeature(Icons.auto_awesome_rounded, "Smart AI Coach"),
-
-                const SizedBox(height: 26),
-
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 14,
-                  ),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(18),
-                    color: Colors.white.withOpacity(.05),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        "Version 1.0.0+7",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(.9),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(34),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: InkWell(
+                        onTap: () => Navigator.pop(context),
+                        borderRadius: BorderRadius.circular(50),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(.08),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.close_rounded,
+                            color: Colors.white70,
+                            size: 20,
+                          ),
                         ),
                       ),
+                    ),
 
-                      const SizedBox(height: 6),
-
-                      Text(
-                        "Powered by Gemini AI",
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(.55),
-                          fontSize: 13,
+                    Container(
+                      height: 96,
+                      width: 96,
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFF4ADE80),
+                            Color(0xFF22C55E),
+                            Color(0xFF06B6D4),
+                          ],
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF22C55E).withOpacity(.35),
+                            blurRadius: 35,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 28),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-
-                    style: ElevatedButton.styleFrom(
-                      elevation: 0,
-                      backgroundColor: const Color(0xFF22C55E),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(22),
+                      child: ClipOval(
+                        child: Image.asset(
+                          "assets/app/FitMind_AI.png",
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
 
-                    child: const Text(
-                      "Awesome!",
+                    const SizedBox(height: 20),
+
+                    ShaderMask(
+                      shaderCallback: (bounds) {
+                        return const LinearGradient(
+                          colors: [
+                            Color(0xFF4ADE80),
+                            Color(0xFF22C55E),
+                            Color(0xFF06B6D4),
+                          ],
+                        ).createShader(bounds);
+                      },
+                      child: const Text(
+                        "FitMind AI",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 32,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: .4,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    const Text(
+                      "Transform Your Health With AI",
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF4ADE80),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
-                  ),
+
+                    const SizedBox(height: 14),
+
+                    Text(
+                      "Your all-in-one AI health companion for food scanning, calorie tracking, skin insights, medicine scanning, smart coaching, and personalized fitness planning.",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(.72),
+                        fontSize: 14,
+                        height: 1.6,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _aboutStatCard(
+                            "5+",
+                            "AI Tools",
+                            Icons.auto_awesome_rounded,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _aboutStatCard(
+                            "24/7",
+                            "Coach",
+                            Icons.support_agent_rounded,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _aboutStatCard(
+                            "100%",
+                            "Smart",
+                            Icons.favorite_rounded,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    _aboutFeatureCard(
+                      Icons.restaurant_menu_rounded,
+                      "AI Food Scanner",
+                      "Scan meals and get calories, macros, and nutrition insights.",
+                    ),
+                    _aboutFeatureCard(
+                      Icons.water_drop_rounded,
+                      "Water & Calorie Tracker",
+                      "Track daily hydration, meals, calories, and progress.",
+                    ),
+                    _aboutFeatureCard(
+                      Icons.face_retouching_natural_rounded,
+                      "AI Skin Analysis",
+                      "Analyze skin concerns with smart AI-powered guidance.",
+                    ),
+                    _aboutFeatureCard(
+                      Icons.medication_rounded,
+                      "Medicine Scanner",
+                      "Scan medicine and get helpful health-related information.",
+                    ),
+                    _aboutFeatureCard(
+                      Icons.fitness_center_rounded,
+                      "Fitness Plans",
+                      "Get workout plans for weight loss, muscle gain, and health.",
+                    ),
+                    _aboutFeatureCard(
+                      Icons.psychology_alt_rounded,
+                      "Smart AI Coach",
+                      "Ask fitness, diet, and nutrition questions anytime.",
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(22),
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFF22C55E).withOpacity(.16),
+                            const Color(0xFF06B6D4).withOpacity(.10),
+                          ],
+                        ),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(.08),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            "Version 1.0.0+8",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "Advanced Health Intelligence • Smart Nutrition • Personalized Fitness",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(.58),
+                              fontSize: 12.5,
+                              height: 1.4,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    Text(
+                      "Developed by Rashid Apps",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(.45),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: const Color(0xFF22C55E),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(22),
+                          ),
+                        ),
+                        child: const Text(
+                          "Awesome!",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -192,31 +304,89 @@ class _SettingsSectionState extends State<SettingsSection> {
     );
   }
 
-  Widget _aboutFeature(IconData icon, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+  Widget _aboutStatCard(String value, String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        color: Colors.white.withOpacity(.055),
+        border: Border.all(color: Colors.white.withOpacity(.07)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: const Color(0xFF4ADE80), size: 22),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 17,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(.58),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _aboutFeatureCard(IconData icon, String title, String subtitle) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white.withOpacity(.045),
+        border: Border.all(color: Colors.white.withOpacity(.065)),
+      ),
       child: Row(
         children: [
           Container(
-            height: 42,
-            width: 42,
+            height: 44,
+            width: 44,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              color: Colors.white.withOpacity(.06),
-            ),
-            child: Icon(icon, color: const Color(0xFF22C55E), size: 22),
-          ),
-
-          const SizedBox(width: 14),
-
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
+              borderRadius: BorderRadius.circular(15),
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF22C55E).withOpacity(.25),
+                  const Color(0xFF06B6D4).withOpacity(.18),
+                ],
               ),
+            ),
+            child: Icon(icon, color: const Color(0xFF4ADE80), size: 23),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(.55),
+                    fontSize: 12,
+                    height: 1.35,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -397,7 +567,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                   _tile(
                     icon: Icons.info_rounded,
                     title: "About FitMind AI",
-                    subtitle: "Version 1.0.0+7",
+                    subtitle: "Version 1.0.0+8",
                     color: const Color(0xFF14B8A6),
                     onTap: _showAboutDialog,
                   ),

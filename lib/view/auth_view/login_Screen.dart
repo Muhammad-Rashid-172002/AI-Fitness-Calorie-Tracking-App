@@ -7,7 +7,6 @@ import 'package:fitmind_ai/controller/login_controller.dart';
 import 'package:fitmind_ai/view/auth_view/forgot_password.dart';
 import 'package:fitmind_ai/view/auth_view/signup_screen.dart';
 import 'package:fitmind_ai/view/buttom_bar.dart';
-import 'package:fitmind_ai/view/onboarding/body_info_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
@@ -117,31 +116,31 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  Future<void> _handleGoogleLogin() async {
-    if (isLoading) return;
+  // Future<void> _handleGoogleLogin() async {
+  //   if (isLoading) return;
 
-    setState(() => isLoading = true);
-    _showLoading();
+  //   setState(() => isLoading = true);
+  //   _showLoading();
 
-    final result = await googleController.signInWithGoogle();
+  //   final result = await googleController.signInWithGoogle();
 
-    _hideLoading();
+  //   _hideLoading();
 
-    if (!mounted) return;
+  //   if (!mounted) return;
 
-    setState(() => isLoading = false);
+  //   setState(() => isLoading = false);
 
-    if (result == null) {
-      showCustomSnackBar(context, "Login Successful", true);
+  //   if (result == null) {
+  //     showCustomSnackBar(context, "Login Successful", true);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const BodyInfoScreen()),
-      );
-    } else {
-      showCustomSnackBar(context, result, false);
-    }
-  }
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(builder: (_) => const BodyInfoScreen()),
+  //     );
+  //   } else {
+  //     showCustomSnackBar(context, result, false);
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -299,40 +298,40 @@ class _LoginScreenState extends State<LoginScreen>
 
                         const SizedBox(height: 26),
 
-                        _divider(),
+                       // _divider(),
 
                         const SizedBox(height: 26),
 
-                        GestureDetector(
-                          onTap: _handleGoogleLogin,
-                          child: Container(
-                            height: 58,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.055),
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.10),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Image.asset("assets/google.png", height: 25),
-                                const SizedBox(width: 12),
-                                const Text(
-                                  "Continue with Google",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        // GestureDetector(
+                        //   onTap: _handleGoogleLogin,
+                        //   child: Container(
+                        //     height: 58,
+                        //     width: double.infinity,
+                        //     decoration: BoxDecoration(
+                        //       color: Colors.white.withOpacity(0.055),
+                        //       borderRadius: BorderRadius.circular(22),
+                        //       border: Border.all(
+                        //         color: Colors.white.withOpacity(0.10),
+                        //       ),
+                        //     ),
+                        //     child: Row(
+                        //       mainAxisAlignment: MainAxisAlignment.center,
+                        //       children: [
+                        //         Image.asset("assets/google.png", height: 25),
+                        //         const SizedBox(width: 12),
+                        //         const Text(
+                        //           "Continue with Google",
+                        //           style: TextStyle(
+                        //             color: Colors.white,
+                        //             fontWeight: FontWeight.w700,
+                        //           ),
+                        //         ),
+                        //       ],
+                        //     ),
+                        //   ),
+                        // ),
 
-                        const SizedBox(height: 30),
+                        const SizedBox(height: 40),
 
                         Center(
                           child: TextButton(
@@ -364,7 +363,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                         ),
 
-                        const SizedBox(height: 28),
+                        const SizedBox(height: 78),
                       ],
                     ),
                   ),
@@ -446,24 +445,24 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _divider() {
-    return Row(
-      children: [
-        Expanded(child: Divider(color: Colors.white.withOpacity(0.12))),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            "OR",
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.42),
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        Expanded(child: Divider(color: Colors.white.withOpacity(0.12))),
-      ],
-    );
-  }
+  // Widget _divider() {
+  //   return Row(
+  //     children: [
+  //       Expanded(child: Divider(color: Colors.white.withOpacity(0.12))),
+  //       Padding(
+  //         padding: const EdgeInsets.symmetric(horizontal: 12),
+  //         child: Text(
+  //           "OR",
+  //           style: TextStyle(
+  //             color: Colors.white.withOpacity(0.42),
+  //             fontWeight: FontWeight.bold,
+  //           ),
+  //         ),
+  //       ),
+  //       Expanded(child: Divider(color: Colors.white.withOpacity(0.12))),
+  //     ],
+  //   );
+  // }
 
   Widget _glowCircle({
     required Color color,
