@@ -303,7 +303,7 @@ class _SettingsSectionState extends State<SettingsSection> {
       },
     );
   }
-
+// about statistics card
   Widget _aboutStatCard(String value, String label, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
@@ -337,7 +337,7 @@ class _SettingsSectionState extends State<SettingsSection> {
       ),
     );
   }
-
+// about feature card
   Widget _aboutFeatureCard(IconData icon, String title, String subtitle) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
