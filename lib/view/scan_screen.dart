@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:fitmind_ai/controller/scan_controller.dart';
 import 'package:fitmind_ai/view/analyzing_screen.dart';
 import 'package:fitmind_ai/view/quick_add_meal_screen.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 enum ScanMode { food, face, medicine }
 
@@ -88,6 +89,7 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   void _handleImage(File image) {
+    _showAdAfterEvery3Scans();
     setState(() => selectedImage = image);
 
     if (selectedMode == ScanMode.food) {
@@ -128,6 +130,50 @@ class _ScanScreenState extends State<ScanScreen> {
       context,
       MaterialPageRoute(builder: (_) => const QuickAddMealScreen()),
     );
+  }
+
+  // ads
+  InterstitialAd? _interstitialAd;
+  int scanCount = 0;
+
+  void _loadInterstitialAd() {
+    InterstitialAd.load(
+      adUnitId: 'ca-app-pub-3940256099942544/1033173712', // Test ID
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) {
+          _interstitialAd = ad;
+        },
+        onAdFailedToLoad: (error) {
+          print('Interstitial failed: ${error.message}');
+          _interstitialAd = null;
+        },
+      ),
+    );
+  }
+
+  void _showAdAfterEvery3Scans() {
+    scanCount++;
+    print("Scan Count: $scanCount");
+
+    if (scanCount % 3 == 0 && _interstitialAd != null) {
+      _interstitialAd!.show();
+
+      _interstitialAd = null;
+      _loadInterstitialAd();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInterstitialAd();
+  }
+
+  @override
+  void dispose() {
+    _interstitialAd?.dispose();
+    super.dispose();
   }
 
   @override

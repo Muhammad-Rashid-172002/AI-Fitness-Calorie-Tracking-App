@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class FaceResultScreen extends StatefulWidget {
   final File image;
@@ -26,13 +27,29 @@ class FaceResultScreen extends StatefulWidget {
 
 class _FaceResultScreenState extends State<FaceResultScreen> {
   bool isSaved = false;
+  RewardedAd? _rewardedAd;
+  bool isPremiumUnlocked = false;
 
   String get result => widget.result;
   File get image => widget.image;
   String _getValue(String key) {
-    final regex = RegExp('$key:\\s*(.*)', caseSensitive: false);
-    final match = regex.firstMatch(widget.result);
-    return match?.group(1)?.trim() ?? "Not available";
+    final patterns = [
+      key,
+      key.replaceAll("Skin Health Score", "Skin Score"),
+      key.replaceAll("Hydration Level", "Hydration"),
+      key.replaceAll("Oiliness Level", "Oiliness"),
+      key.replaceAll("Doctor Note", "Doctor Recommendation"),
+    ];
+
+    for (final k in patterns) {
+      final regex = RegExp('$k:\\s*(.*)', caseSensitive: false);
+      final match = regex.firstMatch(widget.result);
+      if (match != null && match.group(1)!.trim().isNotEmpty) {
+        return match.group(1)!.trim();
+      }
+    }
+
+    return "Not available";
   }
 
   Future<void> saveFaceScanToFirebase() async {
@@ -66,6 +83,51 @@ class _FaceResultScreenState extends State<FaceResultScreen> {
         });
 
     setState(() => isSaved = true);
+  }
+
+  void loadRewardedAd() {
+    RewardedAd.load(
+      adUnitId: 'ca-app-pub-3940256099942544/5224354917', // test
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _rewardedAd = ad;
+        },
+        onAdFailedToLoad: (error) {
+          print(error);
+        },
+      ),
+    );
+  }
+
+  void showRewardedAd() {
+    if (_rewardedAd == null) {
+      print("Rewarded ad not ready");
+      return;
+    }
+
+    _rewardedAd!.show(
+      onUserEarnedReward: (ad, reward) {
+        setState(() {
+          isPremiumUnlocked = true;
+        });
+      },
+    );
+
+    _rewardedAd = null;
+    loadRewardedAd();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadRewardedAd();
+  }
+
+  @override
+  void dispose() {
+    _rewardedAd?.dispose();
+    super.dispose();
   }
 
   @override
@@ -151,38 +213,109 @@ class _FaceResultScreenState extends State<FaceResultScreen> {
                     value: concerns,
                   ),
 
-                  _infoCard(
-                    icon: Icons.auto_awesome_rounded,
-                    title: "AI Insight",
-                    value: insight,
-                  ),
+                  if (isPremiumUnlocked) ...[
+                    _infoCard(
+                      icon: Icons.auto_awesome_rounded,
+                      title: "AI Insight",
+                      value: insight,
+                    ),
 
-                  _infoCard(
-                    icon: Icons.spa_rounded,
-                    title: "Care Tips",
-                    value: careTips,
-                  ),
+                    _infoCard(
+                      icon: Icons.spa_rounded,
+                      title: "Care Tips",
+                      value: careTips,
+                    ),
 
-                  _infoCard(
-                    icon: Icons.favorite_rounded,
-                    title: "Lifestyle Advice",
-                    value: lifestyle,
-                  ),
+                    _infoCard(
+                      icon: Icons.favorite_rounded,
+                      title: "Lifestyle Advice",
+                      value: lifestyle,
+                    ),
 
-                  _infoCard(
-                    icon: Icons.medical_services_rounded,
-                    title: "Doctor Recommendation",
-                    value: doctorAdvice,
-                  ),
+                    _infoCard(
+                      icon: Icons.medical_services_rounded,
+                      title: "Doctor Recommendation",
+                      value: doctorAdvice,
+                    ),
 
-                  _infoCard(
-                    icon: Icons.shopping_bag_rounded,
-                    title: "Recommended Products",
-                    value: products,
-                  ),
+                    _infoCard(
+                      icon: Icons.shopping_bag_rounded,
+                      title: "Recommended Products",
+                      value: products,
+                    ),
+                  ] else ...[
+                    _unlockCard(),
+                  ],
 
+                  const SizedBox(height: 12),
                   _doctorNote(doctorNote),
                 ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // unlock card
+  Widget _unlockCard() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        color: Colors.white.withOpacity(.055),
+        border: Border.all(color: FaceResultScreen.pink.withOpacity(.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "🔒 Unlock Advanced AI Skin Report",
+            style: TextStyle(
+              color: FaceResultScreen.textMain,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "Watch a short ad to unlock AI Insight, Care Tips, Lifestyle Advice, Doctor Recommendation, and Recommended Products.",
+            style: TextStyle(
+              color: Colors.white.withOpacity(.70),
+              fontSize: 13.5,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: const LinearGradient(
+                colors: [FaceResultScreen.purple, FaceResultScreen.pink],
+              ),
+            ),
+            child: ElevatedButton(
+              onPressed: showRewardedAd,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              child: const Text(
+                "🎁 Watch Ad & Unlock Report",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
             ),
           ),

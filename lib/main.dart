@@ -1,16 +1,18 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:fitmind_ai/config/key.dart';
-
 
 import 'package:fitmind_ai/controller/profile_controller.dart';
 import 'package:fitmind_ai/services/StripePaymentProvider.dart';
 import 'package:fitmind_ai/view/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await MobileAds.instance.initialize();
   await Firebase.initializeApp();
   Stripe.publishableKey = (StripeKeys.publishableKey);
   runApp(const MyApp());
@@ -19,6 +21,7 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  static FirebaseAnalytics analytics = FirebaseAnalytics.instance;
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -30,6 +33,7 @@ class MyApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'FitMind AI',
         home: const SplashScreen(),
+        navigatorObservers: [FirebaseAnalyticsObserver(analytics: analytics)],
       ),
     );
   }

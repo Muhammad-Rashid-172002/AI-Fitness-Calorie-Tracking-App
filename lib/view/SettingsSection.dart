@@ -303,7 +303,8 @@ class _SettingsSectionState extends State<SettingsSection> {
       },
     );
   }
-// about statistics card
+
+  // about statistics card
   Widget _aboutStatCard(String value, String label, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
@@ -337,7 +338,8 @@ class _SettingsSectionState extends State<SettingsSection> {
       ),
     );
   }
-// about feature card
+
+  // about feature card
   Widget _aboutFeatureCard(IconData icon, String title, String subtitle) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -567,7 +569,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                   _tile(
                     icon: Icons.info_rounded,
                     title: "About FitMind AI",
-                    subtitle: "Version 1.0.0+8",
+                    subtitle: "Version 1.0.0+9",
                     color: const Color(0xFF14B8A6),
                     onTap: _showAboutDialog,
                   ),

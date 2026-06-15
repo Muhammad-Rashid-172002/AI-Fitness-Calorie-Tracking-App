@@ -51,3 +51,6 @@ ios/Runner/GoogleService-Info.plist
 
 # Ignore API key file
 lib/config/key.dart
+
+android/key.properties
+android/upload-keystore.jks

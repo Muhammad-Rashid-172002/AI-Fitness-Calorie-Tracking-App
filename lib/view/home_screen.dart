@@ -8,6 +8,7 @@ import 'package:fitmind_ai/controller/ai_coach_controller.dart';
 import 'package:fitmind_ai/view/Fitness_plan/fitness_plan_screen.dart';
 import 'package:fitmind_ai/view/scan_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -37,10 +38,42 @@ class _HomeScreenState extends State<HomeScreen>
   static const Color textMain = Color(0xFFF8FAFC);
   static const Color textSub = Color(0xFF94A3B8);
 
+  // ads
+  BannerAd? _bannerAd;
+  bool _isBannerReady = false;
+
+  void _loadBannerAd() {
+    _bannerAd = BannerAd(
+      adUnitId: 'ca-app-pub-4746244110776521/5240988464',
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (_) {
+          setState(() {
+            _isBannerReady = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          print('Ad Error=====> ${error.message}');
+          ad.dispose();
+        },
+      ),
+    );
+
+    _bannerAd!.load();
+  }
+
   @override
   void initState() {
     super.initState();
     loadUserGoals();
+    _loadBannerAd();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
   }
 
   Stream<Map<String, dynamic>> weeklyStatsStream() {
@@ -283,6 +316,16 @@ class _HomeScreenState extends State<HomeScreen>
                           ),
                           const SizedBox(height: 22),
                           _recentScansSection(),
+                          const SizedBox(height: 20),
+
+                          if (_isBannerReady)
+                            Center(
+                              child: SizedBox(
+                                width: _bannerAd!.size.width.toDouble(),
+                                height: _bannerAd!.size.height.toDouble(),
+                                child: AdWidget(ad: _bannerAd!),
+                              ),
+                            ),
                         ],
                       ),
                     );

@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 class MedicineResultScreen extends StatefulWidget {
   final File image;
@@ -26,6 +27,8 @@ class MedicineResultScreen extends StatefulWidget {
 
 class _MedicineResultScreenState extends State<MedicineResultScreen> {
   bool isSaved = false;
+  bool isPremiumUnlocked = false;
+  RewardedAd? _rewardedAd;
 
   String get result => widget.result;
   File get image => widget.image;
@@ -75,6 +78,18 @@ class _MedicineResultScreenState extends State<MedicineResultScreen> {
         });
 
     setState(() => isSaved = true);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadRewardedAd();
+  }
+
+  @override
+  void dispose() {
+    _rewardedAd?.dispose();
+    super.dispose();
   }
 
   @override
@@ -156,41 +171,147 @@ class _MedicineResultScreenState extends State<MedicineResultScreen> {
                     value: usage,
                   ),
 
-                  _infoCard(
-                    icon: Icons.auto_awesome_rounded,
-                    title: "AI Insight",
-                    value: aiInsight,
-                  ),
-                  _infoCard(
-                    icon: Icons.science_rounded,
-                    title: "Generic Formula",
-                    value: formula,
-                  ),
+                  if (isPremiumUnlocked) ...[
+                    _infoCard(
+                      icon: Icons.auto_awesome_rounded,
+                      title: "AI Insight",
+                      value: aiInsight,
+                    ),
 
-                  _infoCard(
-                    icon: Icons.monitor_weight_rounded,
-                    title: "Strength",
-                    value: strength,
-                  ),
+                    _infoCard(
+                      icon: Icons.science_rounded,
+                      title: "Generic Formula",
+                      value: formula,
+                    ),
 
-                  _infoCard(
-                    icon: Icons.compare_arrows_rounded,
-                    title: "Same Formula Alternatives",
-                    value: alternatives,
-                  ),
+                    _infoCard(
+                      icon: Icons.monitor_weight_rounded,
+                      title: "Strength",
+                      value: strength,
+                    ),
 
-                  _infoCard(
-                    icon: Icons.local_pharmacy_rounded,
-                    title: "If Not Available",
-                    value: ifNotAvailable,
-                  ),
+                    _infoCard(
+                      icon: Icons.compare_arrows_rounded,
+                      title: "Same Formula Alternatives",
+                      value: alternatives,
+                    ),
 
-                  _doctorNote(doctorNote),
+                    _infoCard(
+                      icon: Icons.local_pharmacy_rounded,
+                      title: "If Not Available",
+                      value: ifNotAvailable,
+                    ),
+
+                    _doctorNote(doctorNote),
+                  ] else ...[
+                    _unlockCard(),
+                  ],
+
+                 
                 ],
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _unlockCard() {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        color: Colors.white.withOpacity(.055),
+        border: Border.all(color: MedicineResultScreen.cyan.withOpacity(.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "🔒 Unlock Advanced Medicine Report",
+            style: TextStyle(
+              color: MedicineResultScreen.textMain,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            "Watch a short ad to unlock AI Insight, Generic Formula, Strength, Alternatives, and Doctor Recommendation.",
+            style: TextStyle(
+              color: Colors.white.withOpacity(.70),
+              fontSize: 13.5,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            height: 56,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              gradient: const LinearGradient(
+                colors: [MedicineResultScreen.cyan, MedicineResultScreen.blue],
+              ),
+            ),
+            child: ElevatedButton(
+              onPressed: showRewardedAd,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                ),
+              ),
+              child: const Text(
+                "🎁 Watch Ad & Unlock Report",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showRewardedAd() {
+    if (_rewardedAd == null) {
+      print("Rewarded ad not ready");
+      return;
+    }
+
+    _rewardedAd!.show(
+      onUserEarnedReward: (ad, reward) {
+        setState(() {
+          isPremiumUnlocked = true;
+        });
+      },
+    );
+
+    _rewardedAd = null;
+    loadRewardedAd();
+  }
+
+  void loadRewardedAd() {
+    RewardedAd.load(
+      adUnitId: 'ca-app-pub-3940256099942544/5224354917', // testing id 
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) {
+          _rewardedAd = ad;
+          print("Rewarded Ad Loaded");
+        },
+        onAdFailedToLoad: (error) {
+          print(error);
+        },
       ),
     );
   }
