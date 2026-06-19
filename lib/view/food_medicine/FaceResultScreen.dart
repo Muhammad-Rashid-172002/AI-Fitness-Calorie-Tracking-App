@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -86,18 +87,19 @@ class _FaceResultScreenState extends State<FaceResultScreen> {
   }
 
   void loadRewardedAd() {
-    RewardedAd.load(
-      adUnitId: 'ca-app-pub-3940256099942544/5224354917', // test
-      request: const AdRequest(),
-      rewardedAdLoadCallback: RewardedAdLoadCallback(
-        onAdLoaded: (ad) {
-          _rewardedAd = ad;
-        },
-        onAdFailedToLoad: (error) {
-          print(error);
-        },
-      ),
-    );
+   RewardedAd.load(
+  adUnitId: 'ca-app-pub-4746244110776521/9868345214',
+  request: const AdRequest(),
+  rewardedAdLoadCallback: RewardedAdLoadCallback(
+    onAdLoaded: (ad) {
+      _rewardedAd = ad;
+      print("Rewarded Ad Loaded");
+    },
+    onAdFailedToLoad: (error) {
+      print("Rewarded Error: ${error.message}");
+    },
+  ),
+);
   }
 
   void showRewardedAd() {
@@ -107,7 +109,9 @@ class _FaceResultScreenState extends State<FaceResultScreen> {
     }
 
     _rewardedAd!.show(
-      onUserEarnedReward: (ad, reward) {
+      onUserEarnedReward: (ad, reward) async {
+        await FirebaseAnalytics.instance.logEvent(name: 'face_report_unlocked');
+
         setState(() {
           isPremiumUnlocked = true;
         });
@@ -122,6 +126,8 @@ class _FaceResultScreenState extends State<FaceResultScreen> {
   void initState() {
     super.initState();
     loadRewardedAd();
+
+    FirebaseAnalytics.instance.logEvent(name: 'face_scan_completed');
   }
 
   @override

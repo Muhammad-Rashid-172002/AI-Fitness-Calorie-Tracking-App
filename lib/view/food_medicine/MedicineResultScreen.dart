@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -84,6 +85,8 @@ class _MedicineResultScreenState extends State<MedicineResultScreen> {
   void initState() {
     super.initState();
     loadRewardedAd();
+
+    FirebaseAnalytics.instance.logEvent(name: 'medicine_scan_completed');
   }
 
   @override
@@ -206,8 +209,6 @@ class _MedicineResultScreenState extends State<MedicineResultScreen> {
                   ] else ...[
                     _unlockCard(),
                   ],
-
-                 
                 ],
               ),
             ),
@@ -289,7 +290,11 @@ class _MedicineResultScreenState extends State<MedicineResultScreen> {
     }
 
     _rewardedAd!.show(
-      onUserEarnedReward: (ad, reward) {
+      onUserEarnedReward: (ad, reward) async {
+        await FirebaseAnalytics.instance.logEvent(
+          name: 'medicine_report_unlocked',
+        );
+
         setState(() {
           isPremiumUnlocked = true;
         });
@@ -302,7 +307,7 @@ class _MedicineResultScreenState extends State<MedicineResultScreen> {
 
   void loadRewardedAd() {
     RewardedAd.load(
-      adUnitId: 'ca-app-pub-3940256099942544/5224354917', // testing id 
+      adUnitId: 'ca-app-pub-4746244110776521/9868345214',
       request: const AdRequest(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
@@ -310,7 +315,7 @@ class _MedicineResultScreenState extends State<MedicineResultScreen> {
           print("Rewarded Ad Loaded");
         },
         onAdFailedToLoad: (error) {
-          print(error);
+          print("Rewarded Error: ${error.message}");
         },
       ),
     );

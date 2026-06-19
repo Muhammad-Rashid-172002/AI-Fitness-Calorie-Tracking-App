@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:fitmind_ai/controller/scan_controller.dart';
 import 'package:fitmind_ai/models/food_model.dart';
@@ -32,21 +33,27 @@ class _ScanResultScreenState extends State<ScanResultScreen> {
   @override
   void initState() {
     super.initState();
+
     parsedFood = controller.parseFoodFromResult(widget.result);
+
+    FirebaseAnalytics.instance.logEvent(
+      name: 'food_scan_result_viewed',
+      parameters: {'food_name': parsedFood.name},
+    );
   }
 
-String get foodName {
-  final name = parsedFood.name.trim();
+  String get foodName {
+    final name = parsedFood.name.trim();
 
-  if (name.isEmpty ||
-      name.toLowerCase() == "unknown" ||
-      name.toLowerCase() == "food item" ||
-      name.toLowerCase().contains("not food")) {
-    return "This is not food";
+    if (name.isEmpty ||
+        name.toLowerCase() == "unknown" ||
+        name.toLowerCase() == "food item" ||
+        name.toLowerCase().contains("not food")) {
+      return "This is not food";
+    }
+
+    return name;
   }
-
-  return name;
-}
 
   int get calories => (parsedFood.calories ?? 0).toInt();
   int get protein => (parsedFood.protein ?? 0).toInt();
@@ -165,6 +172,10 @@ String get foodName {
       );
     } catch (e) {
       if (!mounted) return;
+      await FirebaseAnalytics.instance.logEvent(
+        name: 'meal_saved',
+        parameters: {'food_name': parsedFood.name, 'calories': calories},
+      );
       showCustomSnackBar(context, "Failed to save meal. Try again.", false);
     } finally {
       if (mounted) setState(() => isSaving = false);

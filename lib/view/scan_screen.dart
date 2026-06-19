@@ -89,10 +89,11 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   void _handleImage(File image) {
-    _showAdAfterEvery3Scans();
     setState(() => selectedImage = image);
 
     if (selectedMode == ScanMode.food) {
+      _showAdAfterEvery3Scans();
+
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -138,7 +139,7 @@ class _ScanScreenState extends State<ScanScreen> {
 
   void _loadInterstitialAd() {
     InterstitialAd.load(
-      adUnitId: 'ca-app-pub-3940256099942544/1033173712', // Test ID
+      adUnitId: 'ca-app-pub-4746244110776521/1703904413',
       request: const AdRequest(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
