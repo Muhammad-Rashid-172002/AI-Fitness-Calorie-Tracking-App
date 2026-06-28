@@ -1,7 +1,6 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:fitmind_ai/config/key.dart';
-
 import 'package:fitmind_ai/controller/profile_controller.dart';
 import 'package:fitmind_ai/services/StripePaymentProvider.dart';
 import 'package:fitmind_ai/view/splash_screen.dart';
