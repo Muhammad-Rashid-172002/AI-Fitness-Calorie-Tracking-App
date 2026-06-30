@@ -569,7 +569,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                   _tile(
                     icon: Icons.info_rounded,
                     title: "About FitMind AI",
-                    subtitle: "Version 1.0.0+9",
+                    subtitle: "Version 1.0.1+10",
                     color: const Color(0xFF14B8A6),
                     onTap: _showAboutDialog,
                   ),
